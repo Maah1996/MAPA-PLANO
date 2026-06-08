@@ -3,6 +3,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mapa de Riesgos — MONTICHEF</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <style>
   :root{
     --navy:#16314f; --navy2:#22456b; --paper:#f4f1ea; --ink:#1a1a1a;
@@ -98,8 +101,48 @@
     font-family:system-ui,sans-serif; }
   .arrow-dir-btn:hover { background:#c8e6c9; }
   .arrow-dir-btn svg { display:block; }
+
+  /* ── Auth UI ─────────────────────────────── */
+  #auth-bar{display:flex;align-items:center;gap:10px;padding:6px 16px;
+    background:#0d2137;color:#fff;font-family:system-ui,sans-serif;font-size:13px;
+    justify-content:flex-end;min-height:36px}
+  #auth-bar button{padding:5px 14px;border:none;border-radius:5px;cursor:pointer;
+    font-size:13px;font-weight:600}
+  #btn-login{background:#4285f4;color:#fff}
+  #btn-login:hover{background:#3367d6}
+  #btn-logout{background:#555;color:#fff}
+  #btn-logout:hover{background:#333}
+  #auth-user-info{display:flex;align-items:center;gap:8px}
+  #auth-avatar{width:26px;height:26px;border-radius:50%;border:2px solid #4285f4}
+  #auth-name{font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #login-overlay{position:fixed;inset:0;background:rgba(13,33,55,0.92);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    z-index:99999;color:#fff;font-family:system-ui,sans-serif}
+  #login-overlay h2{font-size:26px;margin-bottom:8px}
+  #login-overlay p{opacity:.8;margin-bottom:28px;font-size:15px}
+  #btn-login-big{padding:14px 32px;background:#4285f4;color:#fff;border:none;
+    border-radius:8px;font-size:18px;font-weight:700;cursor:pointer;
+    display:flex;align-items:center;gap:12px;box-shadow:0 4px 16px #0006}
+  #btn-login-big:hover{background:#3367d6}
+  #btn-login-big img{width:28px;height:28px}
 </style>
 
+<div id="auth-bar">
+  <span id="auth-user-info" style="display:none">
+    <img id="auth-avatar" src="" alt="">
+    <span id="auth-name"></span>
+    <button id="btn-logout">Salir</button>
+  </span>
+  <button id="btn-login">Iniciar sesion con Google</button>
+</div>
+<div id="login-overlay">
+  <h2>Mapa de Riesgos / Plano de Evacuacion</h2>
+  <p>Inicia sesion para acceder y guardar tu trabajo en la nube</p>
+  <button id="btn-login-big">
+    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+    Iniciar sesion con Google
+  </button>
+</div>
 <header>
   <h1>Mapa de Riesgos — MONTICHEF</h1>
   <p>Editor según la Guía para la elaboración de Mapas de Riesgos Laborales (DS N°44/2024). Arrastra los íconos sobre el plano.</p>
@@ -1064,112 +1107,176 @@ window.showPlan = function(n) {
 /* =============================================================
    GUARDAR / CARGAR — localStorage
    ============================================================= */
-var STORAGE_KEY = 'montichef_v2';
+/* =============================================================
+   FIREBASE CONFIG
+   ============================================================= */
+var firebaseConfig = {
+  apiKey: 'AIzaSyDi6CPHzqfAvRbofkB4cW4bFRWb9VcU9kQ',
+  authDomain: 'mapa-plano-montichef.firebaseapp.com',
+  projectId: 'mapa-plano-montichef',
+  storageBucket: 'mapa-plano-montichef.firebasestorage.app',
+  messagingSenderId: '18469178569',
+  appId: '1:18469178569:web:92d72ee3e0e0e399619118'
+};
+firebase.initializeApp(firebaseConfig);
+var _db   = firebase.firestore();
+var _auth = firebase.auth();
 
-function saveWork() {
+var STORAGE_KEY = 'montichef_v2';
+var _currentUser = null;
+
+/* Auth UI */
+function _showLoginOverlay(show) {
+  var ov = document.getElementById('login-overlay');
+  if (ov) ov.style.display = show ? 'flex' : 'none';
+}
+function _updateAuthBar(user) {
+  var info   = document.getElementById('auth-user-info');
+  var btnIn  = document.getElementById('btn-login');
+  var avatar = document.getElementById('auth-avatar');
+  var name   = document.getElementById('auth-name');
+  if (user) {
+    if (info)   info.style.display  = 'flex';
+    if (btnIn)  btnIn.style.display = 'none';
+    if (avatar) avatar.src          = user.photoURL || '';
+    if (name)   name.textContent    = user.displayName || user.email;
+  } else {
+    if (info)   info.style.display  = 'none';
+    if (btnIn)  btnIn.style.display = '';
+  }
+}
+
+function _doGoogleLogin() {
+  var provider = new firebase.auth.GoogleAuthProvider();
+  _auth.signInWithPopup(provider).catch(function(err) {
+    _showToast('Error al iniciar sesion: ' + err.message, true);
+  });
+}
+
+document.getElementById('btn-login').addEventListener('click', _doGoogleLogin);
+document.getElementById('btn-login-big').addEventListener('click', _doGoogleLogin);
+document.getElementById('btn-logout').addEventListener('click', function() {
+  _auth.signOut();
+});
+
+_auth.onAuthStateChanged(function(user) {
+  _currentUser = user;
+  _updateAuthBar(user);
+  _showLoginOverlay(!user);
+  if (user) {
+    setTimeout(function(){ loadWork(true); }, 200);
+  }
+});
+
+/* =============================================================
+   GUARDAR / CARGAR - Firestore + localStorage fallback
+   ============================================================= */
+function _buildSaveData() {
   var markers = [];
   document.querySelectorAll('.marker').forEach(function(m) {
-    var entry = {
+    markers.push({
       left:      m.style.left,
       top:       m.style.top,
-      plan:      m.dataset.plan     || '1',
-      mode:      m.dataset.mode     || 'riesgos',
-      isArrow:   m.dataset.isArrow  === '1',
-      itemId:    m.dataset.itemId   || '',
-      itemColor: m.dataset.itemColor|| '',
+      plan:      m.dataset.plan      || '1',
+      mode:      m.dataset.mode      || 'riesgos',
+      isArrow:   m.dataset.isArrow   === '1',
+      itemId:    m.dataset.itemId    || '',
+      itemColor: m.dataset.itemColor || '',
       isEvac:    m.dataset.itemIsEvac === '1',
       label:     (m.querySelector('.mlabel') || {}).innerText || '',
-      /* arrows */
       angle:     m.dataset.angle || '0',
       wpct:      m.dataset.wpct  || '0',
       hpct:      m.dataset.hpct  || '0',
       width:     m.style.width,
       height:    m.style.height
-    };
-    markers.push(entry);
+    });
   });
-
-  var data = {
+  return {
     mode:    _appMode,
     plan:    _currentPlan,
     zw:      _zw,
     markers: markers,
     ts:      new Date().toLocaleString('es-CL')
   };
+}
 
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    _showToast('✔ Guardado a las ' + data.ts);
-  } catch(e) {
-    _showToast('⚠ Error al guardar: ' + e.message, true);
+function saveWork() {
+  var data = _buildSaveData();
+  if (_currentUser) {
+    _db.collection('users').doc(_currentUser.uid)
+       .collection('planos').doc('default')
+       .set(data)
+       .then(function() { _showToast('Guardado en la nube - ' + data.ts); })
+       .catch(function(e) { _showToast('Error al guardar: ' + e.message, true); });
+  } else {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      _showToast('Guardado localmente - ' + data.ts);
+    } catch(e) { _showToast('Error al guardar: ' + e.message, true); }
   }
 }
 
 function loadWork(restoreMode) {
-  var raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) { _showToast('No hay trabajo guardado aun', true); return false; }
-  var data;
-  try { data = JSON.parse(raw); } catch(e) { _showToast('Error al leer guardado', true); return false; }
-  if (!data || !Array.isArray(data.markers)) { _showToast('Guardado vacio o invalido', true); return false; }
+  if (_currentUser) {
+    _db.collection('users').doc(_currentUser.uid)
+       .collection('planos').doc('default')
+       .get()
+       .then(function(doc) {
+         if (!doc.exists) { if (!restoreMode) _showToast('No hay trabajo guardado aun', true); return; }
+         _applyData(doc.data(), restoreMode);
+       })
+       .catch(function(e) { _showToast('Error al cargar: ' + e.message, true); });
+  } else {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) { if (!restoreMode) _showToast('No hay trabajo guardado aun', true); return; }
+    try { _applyData(JSON.parse(raw), restoreMode); }
+    catch(e) { _showToast('Error al leer guardado', true); }
+  }
+}
 
-  /* Limpiar markers actuales */
+function _applyData(data, restoreMode) {
+  if (!data || !Array.isArray(data.markers)) { _showToast('Guardado vacio o invalido', true); return; }
   document.querySelectorAll('.marker').forEach(function(m){ m.remove(); });
-
   var ml = document.getElementById('markerLayer');
   var prevMode = _appMode, prevPlan = _currentPlan;
 
   (data.markers || []).forEach(function(entry) {
     _appMode     = entry.mode || 'riesgos';
     _currentPlan = parseInt(entry.plan) || 1;
-
-    var xPct = parseFloat(entry.left);
-    var yPct = parseFloat(entry.top);
-
+    var xPct = parseFloat(entry.left), yPct = parseFloat(entry.top);
     try {
       if (entry.isArrow) {
         addEvacArrow(parseFloat(entry.angle || 0), xPct, yPct);
         var arr = ml.querySelector('.evac-arrow:last-child');
         if (arr && entry.wpct) {
-          arr.dataset.wpct = entry.wpct;
-          arr.dataset.hpct = entry.hpct;
-          arr.style.width  = entry.width  || '140px';
+          arr.dataset.wpct = entry.wpct; arr.dataset.hpct = entry.hpct;
+          arr.style.width  = entry.width || '140px';
           arr.style.height = entry.height || '18px';
           _updateArrowInner(arr);
         }
       } else {
         var risk = null, color = entry.itemColor || '#888';
         if (entry.isEvac) {
-          EVAC_ITEMS.forEach(function(it){ if(it.id===entry.itemId) risk = Object.assign({}, it, {_isEvac:true}); });
+          EVAC_ITEMS.forEach(function(it){ if(it.id===entry.itemId) risk=Object.assign({},it,{_isEvac:true}); });
         } else {
           RISKS.forEach(function(it){ if(it.id===entry.itemId) risk=it; });
         }
         if (risk) {
           addMarker(risk, color, xPct, yPct);
           var last = ml.querySelector('.marker:last-child');
-          if (last && entry.label) {
-            var lbl = last.querySelector('.mlabel');
-            if (lbl) lbl.innerText = entry.label;
-          }
+          if (last && entry.label) { var lbl=last.querySelector('.mlabel'); if(lbl) lbl.innerText=entry.label; }
         }
       }
     } catch(err) { console.warn('Error restaurando marker:', err, entry); }
   });
 
-  _appMode     = prevMode;
-  _currentPlan = prevPlan;
-
-  /* Restaurar modo y piso:
-     - Si restoreMode=true (carga automática al inicio): restaura el modo guardado
-     - Si restoreMode=false (botón Cargar manual): mantiene el modo activo actual */
+  _appMode = prevMode; _currentPlan = prevPlan;
   var targetMode = restoreMode ? (data.mode || 'riesgos') : _appMode;
   var targetPlan = restoreMode ? (parseInt(data.plan) || 1) : _currentPlan;
   if (data.zw && restoreMode) { _zw = parseFloat(data.zw); _applyZoom(); }
-
   window.switchMode(targetMode);
   window.showPlan(targetPlan);
-
-  if (data.ts) _showToast('↺ Cargado: guardado el ' + data.ts);
-  return true;
+  if (data.ts) _showToast('Cargado: guardado el ' + data.ts);
 }
 
 function _showToast(msg, isError) {
@@ -1184,30 +1291,36 @@ function _showToast(msg, isError) {
   }
   t.textContent = msg;
   t.style.background = isError ? '#c62828' : '#1b7a34';
-  t.style.color = '#fff';
-  t.style.opacity = '1';
+  t.style.color = '#fff'; t.style.opacity = '1';
   clearTimeout(t._to);
   t._to = setTimeout(function(){ t.style.opacity='0'; }, 2800);
 }
 
-/* Botón Guardar */
 document.getElementById('saveBtn').addEventListener('click', saveWork);
 document.getElementById('loadBtn').addEventListener('click', function() {
-  var raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) { _showToast('No hay trabajo guardado aun', true); return; }
-  try {
-    var data = JSON.parse(raw);
-    var ts = data.ts || 'fecha desconocida';
-    var n  = (data.markers || []).length;
-    if (confirm('Cargar trabajo guardado el ' + ts + ' (' + n + ' elementos). Se reemplazara lo que hay ahora.')) {
-      loadWork();
-    }
-  } catch(e) { _showToast('Error al leer el guardado', true); }
+  if (_currentUser) {
+    _db.collection('users').doc(_currentUser.uid).collection('planos').doc('default')
+       .get().then(function(doc) {
+         if (!doc.exists) { _showToast('No hay trabajo guardado aun', true); return; }
+         var data = doc.data();
+         var n = (data.markers || []).length;
+         var ts = data.ts || 'fecha desconocida';
+         if (confirm('Cargar guardado el ' + ts + ' (' + n + ' elementos). Se reemplazara lo que hay ahora.')) {
+           _applyData(data, false);
+         }
+       });
+  } else {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) { _showToast('No hay trabajo guardado aun', true); return; }
+    try {
+      var data = JSON.parse(raw);
+      var n = (data.markers||[]).length, ts = data.ts||'fecha desconocida';
+      if (confirm('Cargar guardado el ' + ts + ' (' + n + ' elementos). Se reemplazara lo que hay ahora.')) {
+        _applyData(data, false);
+      }
+    } catch(e) { _showToast('Error al leer el guardado', true); }
+  }
 });
 
-/* Cargar al inicio */
-window.addEventListener('load', function() {
-  setTimeout(function(){ loadWork(true); }, 120);  /* esperar que switchMode y showPlan estén listos */
-});
 
 </script>
