@@ -142,6 +142,7 @@
     <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
     Iniciar sesion con Google
   </button>
+  <p id="login-error" style="margin-top:16px;color:#ff8a80;font-size:13px;max-width:400px;text-align:center"></p>
 </div>
 <header>
   <h1>Mapa de Riesgos — MONTICHEF</h1>
@@ -1118,7 +1119,7 @@ var firebaseConfig = {
   messagingSenderId: '18469178569',
   appId: '1:18469178569:web:92d72ee3e0e0e399619118'
 };
-firebase.initializeApp(firebaseConfig);
+if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); } else { firebase.app(); }
 var _db   = firebase.firestore();
 var _auth = firebase.auth();
 
@@ -1147,14 +1148,21 @@ function _updateAuthBar(user) {
 }
 
 function _doGoogleLogin() {
+  var errDiv = document.getElementById('login-error');
+  if (errDiv) errDiv.textContent = '';
   var provider = new firebase.auth.GoogleAuthProvider();
-  _auth.signInWithPopup(provider).catch(function(err) {
-    if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user') {
-      _auth.signInWithRedirect(provider);
-    } else {
-      _showToast('Error: ' + err.message, true);
-    }
-  });
+  _auth.signInWithPopup(provider)
+    .then(function(result) {
+      /* exito — onAuthStateChanged lo maneja */
+    })
+    .catch(function(err) {
+      console.error('Login error:', err.code, err.message);
+      var msg = err.message;
+      if (err.code === 'auth/popup-blocked') { msg = 'Popup bloqueado — intentando redireccion...'; _auth.signInWithRedirect(provider); }
+      else if (err.code === 'auth/popup-closed-by-user') { msg = 'Cerraste la ventana de Google.'; }
+      if (errDiv) errDiv.textContent = msg;
+      _showToast('Error: ' + err.code, true);
+    });
 }
 
 document.getElementById('btn-login').addEventListener('click', _doGoogleLogin);
