@@ -1148,7 +1148,13 @@ function _updateAuthBar(user) {
 
 function _doGoogleLogin() {
   var provider = new firebase.auth.GoogleAuthProvider();
-  _auth.signInWithRedirect(provider);
+  _auth.signInWithPopup(provider).catch(function(err) {
+    if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user') {
+      _auth.signInWithRedirect(provider);
+    } else {
+      _showToast('Error: ' + err.message, true);
+    }
+  });
 }
 
 document.getElementById('btn-login').addEventListener('click', _doGoogleLogin);
@@ -1157,9 +1163,11 @@ document.getElementById('btn-logout').addEventListener('click', function() {
   _auth.signOut();
 });
 
-_auth.getRedirectResult().catch(function(err) {
-  if (err.code !== 'auth/no-current-user') {
-    _showToast('Error al iniciar sesion: ' + err.message, true);
+_auth.getRedirectResult().then(function(result) {
+  if (result && result.user) { /* onAuthStateChanged lo maneja */ }
+}).catch(function(err) {
+  if (err.code && err.code !== 'auth/no-current-user') {
+    _showToast('Error: ' + err.message, true);
   }
 });
 
