@@ -1148,15 +1148,19 @@ function _updateAuthBar(user) {
 
 function _doGoogleLogin() {
   var provider = new firebase.auth.GoogleAuthProvider();
-  _auth.signInWithPopup(provider).catch(function(err) {
-    _showToast('Error al iniciar sesion: ' + err.message, true);
-  });
+  _auth.signInWithRedirect(provider);
 }
 
 document.getElementById('btn-login').addEventListener('click', _doGoogleLogin);
 document.getElementById('btn-login-big').addEventListener('click', _doGoogleLogin);
 document.getElementById('btn-logout').addEventListener('click', function() {
   _auth.signOut();
+});
+
+_auth.getRedirectResult().catch(function(err) {
+  if (err.code !== 'auth/no-current-user') {
+    _showToast('Error al iniciar sesion: ' + err.message, true);
+  }
 });
 
 _auth.onAuthStateChanged(function(user) {
