@@ -926,10 +926,35 @@ function _scaleMarkers() {
 
 
 /* Crear/mover flecha */
-function addEvacArrow(angle, xPct, yPct) {
+window._arrowClipboard = null;
+
+function _showPasteBtn() {
+  var btn = document.getElementById('arr-paste-btn');
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.id = 'arr-paste-btn';
+    btn.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9999;background:#1565c0;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px #0004;font-family:system-ui,sans-serif';
+    btn.textContent = "Pegar flecha";
+    btn.addEventListener('click', function() {
+      if (!window._arrowClipboard) return;
+      var ml = document.getElementById('markerLayer');
+      var mlW = ml.offsetWidth || 800;
+      var cb = window._arrowClipboard;
+      var newW = cb.wpct / 100 * mlW;
+      var newH = cb.hpct / 100 * mlW;
+      addEvacArrow(cb.angle, 42, 42, newW, newH);
+      _showToast('Flecha pegada');
+    });
+    document.body.appendChild(btn);
+  }
+  btn.style.display = 'block';
+}
+
+function addEvacArrow(angle, xPct, yPct, initW, initH) {
   var ml  = document.getElementById('markerLayer');
   var mlW = ml.offsetWidth || 800;
-  var initW = 140, initH = 18;
+  initW = initW || 140;
+  initH = initH || 18;
   var wp = initW / mlW * 100;
   var hp = initH / mlW * 100;
 
@@ -953,84 +978,94 @@ function addEvacArrow(angle, xPct, yPct) {
   arr.style.cursor   = 'move';
   arr.style.userSelect = 'none';
 
-  arr.innerHTML =
-    _buildArrowSVG(initW, initH) +
-    /* Botones rotacion — visibles al hover via CSS */
-    '<div class="arr-rotate-wrap" style="position:absolute;top:-30px;left:0;display:none;flex-direction:row;gap:4px">' +
-      '<button class="arr-rot-btn" data-delta="-15" title="Rotar izquierda 15°" ' +
-        'style="width:36px;height:28px;background:#00a040;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:18px;line-height:1">&#8634;</button>' +
-      '<button class="arr-rot-btn" data-delta="15" title="Rotar derecha 15°" ' +
-        'style="width:36px;height:28px;background:#00a040;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:18px;line-height:1">&#8635;</button>' +
-    '</div>' +
-    '<div class="arr-resize" title="Arrastra para alargar/ensanchar" ' +
-      'style="position:absolute;bottom:-7px;right:-7px;width:14px;height:14px;' +
-      'background:#fff;border:2px solid #00a040;border-radius:3px;cursor:nwse-resize;z-index:12;display:none"></div>' +
-    '<div class="arr-del del" title="Eliminar" ' +
-      'style="position:absolute;top:-14px;right:0;font-size:12px;cursor:pointer;background:#fff;' +
-      'border-radius:50%;width:16px;height:16px;text-align:center;line-height:15px;' +
-      'border:1px solid #aaa;color:#555;display:none">x</div>';
+  var ctrlStyle = 'position:absolute;top:-58px;left:0;display:none;flex-direction:column;gap:4px;z-index:20;background:#fff;border:1px solid #bbb;border-radius:7px;padding:6px 8px;box-shadow:0 2px 10px #0003;min-width:240px';
 
-  /* Mostrar/ocultar controles al hover */
+  arr.innerHTML = _buildArrowSVG(initW, initH) +
+    '<div class="arr-ctrl" style="' + ctrlStyle + '">' +
+      '<div style="display:flex;align-items:center;gap:4px;flex-wrap:nowrap">' +
+        '<span style="font-size:10px;color:#555;margin-right:1px">Grosor:</span>' +
+        '<button class="arr-thick-btn" data-h="10" style="padding:1px 7px;font-size:11px;font-weight:700;border:1px solid #00a040;border-radius:4px;background:#e8f5e9;color:#1b5e20;cursor:pointer">S</button>' +
+        '<button class="arr-thick-btn" data-h="18" style="padding:1px 7px;font-size:11px;font-weight:700;border:1px solid #00a040;border-radius:4px;background:#e8f5e9;color:#1b5e20;cursor:pointer">M</button>' +
+        '<button class="arr-thick-btn" data-h="28" style="padding:1px 7px;font-size:11px;font-weight:700;border:1px solid #00a040;border-radius:4px;background:#e8f5e9;color:#1b5e20;cursor:pointer">L</button>' +
+        '<span style="font-size:10px;color:#aaa;margin:0 3px">|</span>' +
+        '<button class="arr-rot-btn" data-delta="-15" style="width:26px;height:22px;background:#00a040;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;line-height:1">&#8634;</button>' +
+        '<button class="arr-rot-btn" data-delta="15" style="width:26px;height:22px;background:#00a040;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;line-height:1">&#8635;</button>' +
+        '<button class="arr-rot-180" style="height:22px;padding:0 6px;background:#00a040;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:10px;font-weight:700">180&deg;</button>' +
+        '<span style="font-size:10px;color:#aaa;margin:0 3px">|</span>' +
+        '<button class="arr-copy-btn" style="height:22px;padding:0 7px;background:#1565c0;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700">Copiar</button>' +
+        '<button class="arr-del del" style="width:22px;height:22px;background:#c62828;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;line-height:1;margin-left:2px">&times;</button>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:6px">' +
+        '<span style="font-size:10px;color:#555;white-space:nowrap">Largo:</span>' +
+        '<input class="arr-len-slider" type="range" min="40" max="500" step="5" value="' + Math.round(initW) + '" style="flex:1;accent-color:#00a040;cursor:pointer">' +
+        '<span class="arr-len-val" style="font-size:10px;color:#333;min-width:32px;text-align:right">' + Math.round(initW) + 'px</span>' +
+      '</div>' +
+    '</div>';
+
   arr.addEventListener('mouseenter', function() {
-    var rw = arr.querySelector('.arr-rotate-wrap');
-    var dl = arr.querySelector('.arr-del');
-    var rh = arr.querySelector('.arr-resize');
-    if (rw) rw.style.display = 'flex';
-    if (dl) dl.style.display = 'block';
-    if (rh) rh.style.display = 'block';
+    arr.querySelector('.arr-ctrl').style.display = 'flex';
   });
-  arr.addEventListener('mouseleave', function() {
-    var rw = arr.querySelector('.arr-rotate-wrap');
-    var dl = arr.querySelector('.arr-del');
-    var rh = arr.querySelector('.arr-resize');
-    if (rw) rw.style.display = 'none';
-    if (dl) dl.style.display = 'none';
-    if (rh) rh.style.display = 'none';
+  arr.addEventListener('mouseleave', function(e) {
+    if (!arr.contains(e.relatedTarget)) {
+      arr.querySelector('.arr-ctrl').style.display = 'none';
+    }
   });
 
-  /* Botones de rotacion */
-  arr.querySelectorAll('.arr-rot-btn').forEach(function(btn) {
+  arr.querySelectorAll('.arr-thick-btn').forEach(function(btn) {
     btn.addEventListener('click', function(e) {
       e.stopPropagation();
-      var delta = parseFloat(btn.dataset.delta || 0);
-      var cur = parseFloat(arr.dataset.angle || 0);
-      var newAngle = cur + delta;
-      arr.dataset.angle = newAngle;
-      arr.style.transform = 'rotate(' + newAngle + 'deg)';
+      var newH = parseInt(btn.dataset.h);
+      arr.style.height = newH + 'px';
+      arr.dataset.hpct = newH / (document.getElementById('markerLayer').offsetWidth || 800) * 100;
+      _updateArrowInner(arr);
     });
   });
 
-  /* Resize handle */
-  var rh = arr.querySelector('.arr-resize');
-  rh.addEventListener('mousedown', function(ev) {
-    ev.preventDefault(); ev.stopPropagation();
-    var sx = ev.clientX, sy = ev.clientY;
-    var sw = arr.offsetWidth, sh = arr.offsetHeight;
-    var ml2 = document.getElementById('markerLayer');
-    function mvResize(ev2) {
-      var newW = Math.max(30, sw + (ev2.clientX - sx));
-      var newH = Math.max(6,  sh + (ev2.clientY - sy));
-      arr.style.width  = newW + 'px';
-      arr.style.height = newH + 'px';
-      /* Actualizar % para que el zoom lo respete */
-      var mlW2 = ml2.offsetWidth || 800;
-      arr.dataset.wpct = newW / mlW2 * 100;
-      arr.dataset.hpct = newH / mlW2 * 100;
-      _updateArrowInner(arr);
-    }
-    function upResize() {
-      document.removeEventListener('mousemove', mvResize);
-      document.removeEventListener('mouseup',   upResize);
-    }
-    document.addEventListener('mousemove', mvResize);
-    document.addEventListener('mouseup',   upResize);
+  arr.querySelectorAll('.arr-rot-btn').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var newA = parseFloat(arr.dataset.angle || 0) + parseFloat(btn.dataset.delta || 0);
+      arr.dataset.angle = newA;
+      arr.style.transform = 'rotate(' + newA + 'deg)';
+    });
   });
 
-  /* Mover */
+  arr.querySelector('.arr-rot-180').addEventListener('click', function(e) {
+    e.stopPropagation();
+    var newA = parseFloat(arr.dataset.angle || 0) + 180;
+    arr.dataset.angle = newA;
+    arr.style.transform = 'rotate(' + newA + 'deg)';
+  });
+
+  var slider = arr.querySelector('.arr-len-slider');
+  var lenVal = arr.querySelector('.arr-len-val');
+  slider.addEventListener('input', function(e) {
+    e.stopPropagation();
+    var newW = parseInt(slider.value);
+    lenVal.textContent = newW + 'px';
+    arr.style.width = newW + 'px';
+    arr.dataset.wpct = newW / (document.getElementById('markerLayer').offsetWidth || 800) * 100;
+    _updateArrowInner(arr);
+  });
+  slider.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+
+  arr.querySelector('.arr-copy-btn').addEventListener('click', function(e) {
+    e.stopPropagation();
+    window._arrowClipboard = {
+      angle: parseFloat(arr.dataset.angle || 0),
+      wpct:  parseFloat(arr.dataset.wpct),
+      hpct:  parseFloat(arr.dataset.hpct)
+    };
+    _showPasteBtn();
+    _showToast('Flecha copiada');
+  });
+
+  arr.querySelector('.arr-del').addEventListener('click', function(e) {
+    e.stopPropagation(); arr.remove();
+  });
+
   arr.addEventListener('mousedown', function(ev) {
-    if (ev.target.classList.contains('arr-resize') ||
-        ev.target.classList.contains('arr-del')    ||
-        ev.target.classList.contains('arr-rot-btn')) return;
+    if (ev.target.closest('.arr-ctrl')) return;
     ev.preventDefault();
     var _ml = document.getElementById('markerLayer');
     var _r  = _ml.getBoundingClientRect();
@@ -1039,11 +1074,6 @@ function addEvacArrow(angle, xPct, yPct) {
     movingMarker = arr;
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup',   onUp);
-  });
-
-  /* Borrar */
-  arr.querySelector('.arr-del').addEventListener('click', function(ev) {
-    ev.stopPropagation(); arr.remove();
   });
 
   ml.appendChild(arr);
