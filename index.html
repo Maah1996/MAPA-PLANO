@@ -942,7 +942,7 @@ function _showPasteBtn() {
       var cb = window._arrowClipboard;
       var newW = cb.wpct / 100 * mlW;
       var newH = cb.hpct / 100 * mlW;
-      addEvacArrow(cb.angle, 42, 42, newW, newH);
+      var pL = Math.min(95, (cb.left || 42) + 3); var pT = Math.min(95, (cb.top || 42) + 3); addEvacArrow(cb.angle, pL, pT, newW, newH);
       _showToast('Flecha pegada');
     });
     document.body.appendChild(btn);
@@ -1054,7 +1054,9 @@ function addEvacArrow(angle, xPct, yPct, initW, initH) {
     window._arrowClipboard = {
       angle: parseFloat(arr.dataset.angle || 0),
       wpct:  parseFloat(arr.dataset.wpct),
-      hpct:  parseFloat(arr.dataset.hpct)
+      hpct:  parseFloat(arr.dataset.hpct),
+      left:  parseFloat(arr.style.left),
+      top:   parseFloat(arr.style.top)
     };
     _showPasteBtn();
     _showToast('Flecha copiada');
