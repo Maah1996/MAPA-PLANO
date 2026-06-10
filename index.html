@@ -327,10 +327,19 @@ async function _capturePlan(scaleFactor) {
   });
 
   // Resetear zoom a 100% para captura limpia
-  var origMlW  = ml.style.width;
-  var origImgW = _activeImg().style.width;
-  ml.style.width = '100%';
+  var origMlW      = ml.style.width;
+  var origImgW     = _activeImg().style.width;
+  var origMlMargin = ml.style.marginTop;
+  ml.style.width     = '100%';
+  ml.style.marginTop = '-380px';
   _activeImg().style.width = '100%';
+
+  // Resetear transforms de marcadores a scale(1) para que html2canvas los capture
+  document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){
+    m._origTransform = m.style.transform;
+    m.style.transform = 'scale(1)';
+    m.style.transformOrigin = 'top left';
+  });
 
   var planCanvas;
   try {
@@ -345,11 +354,15 @@ async function _capturePlan(scaleFactor) {
       logging: false
     });
   } finally {
-    ml.style.width   = origMlW;
+    ml.style.width     = origMlW;
+    ml.style.marginTop = origMlMargin;
     _activeImg().style.width = origImgW;
     document.querySelectorAll('.del').forEach(function(d){ d.style.display=''; });
     document.querySelectorAll('.marker').forEach(function(m){
       m.style.visibility = m._origVis || 'visible';
+    });
+    document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){
+      m.style.transform = m._origTransform || '';
     });
   }
 
