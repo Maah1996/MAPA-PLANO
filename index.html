@@ -904,7 +904,8 @@ _applyZoom = function() {
 function _scaleMarkers() {
   var sc = _zw / 100;
   document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m) {
-    m.style.transform = 'translate(-50%,-50%) scale(' + sc + ')';
+    m.style.transform       = 'translate(-50%,-50%) scale(' + sc + ')';
+    m.style.transformOrigin = '50% 50%';
   });
 }
 
