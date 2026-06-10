@@ -911,6 +911,136 @@ function _scaleMarkers() {
 
 
 /* Crear/mover flecha */
+
+function _initArrowFloatPanel() {
+  if (document.getElementById('arr-float-panel')) return;
+  var p = document.createElement('div');
+  p.id = 'arr-float-panel';
+  p.style.cssText = 'position:fixed;display:none;flex-direction:column;gap:4px;z-index:9999;background:#fff;border:1px solid #bbb;border-radius:7px;padding:6px 8px;box-shadow:0 2px 10px #0003;min-width:240px;font-family:system-ui,sans-serif';
+  p.innerHTML =
+    '<div style="display:flex;align-items:center;gap:4px;flex-wrap:nowrap">' +
+      '<span style="font-size:10px;color:#555;margin-right:1px">Grosor:</span>' +
+      '<button class="afp-thick" data-h="10" style="padding:1px 7px;font-size:11px;font-weight:700;border:1px solid #00a040;border-radius:4px;background:#e8f5e9;color:#1b5e20;cursor:pointer">S</button>' +
+      '<button class="afp-thick" data-h="18" style="padding:1px 7px;font-size:11px;font-weight:700;border:1px solid #00a040;border-radius:4px;background:#e8f5e9;color:#1b5e20;cursor:pointer">M</button>' +
+      '<button class="afp-thick" data-h="28" style="padding:1px 7px;font-size:11px;font-weight:700;border:1px solid #00a040;border-radius:4px;background:#e8f5e9;color:#1b5e20;cursor:pointer">L</button>' +
+      '<span style="font-size:10px;color:#aaa;margin:0 3px">|</span>' +
+      '<button class="afp-rot" data-delta="-15" style="width:26px;height:22px;background:#00a040;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;line-height:1">&#8634;</button>' +
+      '<button class="afp-rot" data-delta="15" style="width:26px;height:22px;background:#00a040;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;line-height:1">&#8635;</button>' +
+      '<button class="afp-rot180" style="height:22px;padding:0 6px;background:#00a040;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:10px;font-weight:700">180°</button>' +
+      '<span style="font-size:10px;color:#aaa;margin:0 3px">|</span>' +
+      '<button class="afp-copy" style="height:22px;padding:0 7px;background:#1565c0;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700">Copiar</button>' +
+      '<button class="afp-paste" style="height:22px;padding:0 7px;background:#0d6e3a;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700">Pegar</button>' +
+      '<button class="afp-del" style="width:22px;height:22px;background:#c62828;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;line-height:1;margin-left:2px">&times;</button>' +
+    '</div>' +
+    '<div style="display:flex;align-items:center;gap:6px">' +
+      '<span style="font-size:10px;color:#555;white-space:nowrap">Largo:</span>' +
+      '<input class="afp-slider" type="range" min="40" max="500" step="5" style="flex:1;accent-color:#00a040;cursor:pointer">' +
+      '<span class="afp-len-val" style="font-size:10px;color:#333;min-width:32px;text-align:right"></span>' +
+    '</div>';
+  document.body.appendChild(p);
+
+  /* Wire up buttons — they act on window._afpArrow */
+  p.querySelectorAll('.afp-thick').forEach(function(btn) {
+    btn.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var a = window._afpArrow; if (!a) return;
+      var newH = parseInt(btn.dataset.h);
+      a.style.height = newH + 'px';
+      a.dataset.hpct = newH / (document.getElementById('markerLayer').offsetWidth || 800) * 100;
+      _updateArrowInner(a);
+    });
+  });
+  p.querySelectorAll('.afp-rot').forEach(function(btn) {
+    btn.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var a = window._afpArrow; if (!a) return;
+      var newA = parseFloat(a.dataset.angle || 0) + parseFloat(btn.dataset.delta || 0);
+      a.dataset.angle = newA; a.style.transform = 'rotate(' + newA + 'deg)';
+    });
+  });
+  p.querySelector('.afp-rot180').addEventListener('mousedown', function(e) { e.stopPropagation(); });
+  p.querySelector('.afp-rot180').addEventListener('click', function(e) {
+    e.stopPropagation();
+    var a = window._afpArrow; if (!a) return;
+    var newA = parseFloat(a.dataset.angle || 0) + 180;
+    a.dataset.angle = newA; a.style.transform = 'rotate(' + newA + 'deg)';
+  });
+  var slider = p.querySelector('.afp-slider');
+  var lenVal = p.querySelector('.afp-len-val');
+  slider.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+  slider.addEventListener('input', function(e) {
+    e.stopPropagation();
+    var a = window._afpArrow; if (!a) return;
+    var newW = parseInt(slider.value);
+    lenVal.textContent = newW + 'px';
+    a.style.width = newW + 'px';
+    a.dataset.wpct = newW / (document.getElementById('markerLayer').offsetWidth || 800) * 100;
+    _updateArrowInner(a);
+  });
+  p.querySelector('.afp-copy').addEventListener('mousedown', function(e) { e.stopPropagation(); });
+  p.querySelector('.afp-copy').addEventListener('click', function(e) {
+    e.stopPropagation();
+    var a = window._afpArrow; if (!a) return;
+    window._arrowClipboard = { angle: parseFloat(a.dataset.angle||0), wpct: parseFloat(a.dataset.wpct), hpct: parseFloat(a.dataset.hpct), left: parseFloat(a.style.left), top: parseFloat(a.style.top) };
+    _showToast('Flecha copiada');
+  });
+  p.querySelector('.afp-paste').addEventListener('mousedown', function(e) { e.stopPropagation(); });
+  p.querySelector('.afp-paste').addEventListener('click', function(e) {
+    e.stopPropagation();
+    if (!window._arrowClipboard) { _showToast('Primero copia una flecha'); return; }
+    var ml2 = document.getElementById('markerLayer'); var mlW2 = ml2.offsetWidth || 800;
+    var cb = window._arrowClipboard;
+    var pL = Math.min(95, (cb.left||42)+3); var pT = Math.min(95, (cb.top||42)+3);
+    addEvacArrow(cb.angle, pL, pT, cb.wpct/100*mlW2, cb.hpct/100*mlW2);
+    window._arrowClipboard.left = pL; window._arrowClipboard.top = pT;
+    _showToast('Flecha pegada');
+  });
+  p.querySelector('.afp-del').addEventListener('mousedown', function(e) { e.stopPropagation(); });
+  p.querySelector('.afp-del').addEventListener('click', function(e) {
+    e.stopPropagation();
+    var a = window._afpArrow; if (!a) return;
+    a.remove(); _hideFloatPanel();
+  });
+
+  /* Hide panel when clicking outside arrows */
+  document.addEventListener('mousedown', function(e) {
+    var p2 = document.getElementById('arr-float-panel');
+    if (!p2 || p2.style.display === 'none') return;
+    if (p2.contains(e.target)) return;
+    var onArrow = e.target.closest('.evac-arrow');
+    if (onArrow) return;
+    document.querySelectorAll('.evac-arrow').forEach(function(a) { a._pinned = false; });
+    _hideFloatPanel();
+  });
+}
+
+function _showFloatPanel(arr) {
+  window._afpArrow = arr;
+  var p = document.getElementById('arr-float-panel');
+  if (!p) return;
+  var r = arr.getBoundingClientRect();
+  var panelW = 260, margin = 10;
+  var left = Math.max(10, Math.min(window.innerWidth - panelW - 10, r.left));
+  var top  = r.top - 80;
+  if (top < 10) top = r.bottom + margin;
+  p.style.left = left + 'px';
+  p.style.top  = top + 'px';
+  p.style.display = 'flex';
+  /* Sync slider value */
+  var slider = p.querySelector('.afp-slider');
+  var lenVal = p.querySelector('.afp-len-val');
+  var w = arr.offsetWidth || 140;
+  slider.value = w; lenVal.textContent = Math.round(w) + 'px';
+}
+
+function _hideFloatPanel() {
+  var p = document.getElementById('arr-float-panel');
+  if (p) p.style.display = 'none';
+  window._afpArrow = null;
+}
+
 window._arrowClipboard = null;
 
 function _showPasteBtn() {
@@ -963,130 +1093,15 @@ function addEvacArrow(angle, xPct, yPct, initW, initH) {
   arr.style.cursor   = 'move';
   arr.style.userSelect = 'none';
 
-  var ctrlStyle = 'position:absolute;top:-58px;left:0;display:none;flex-direction:column;gap:4px;z-index:20;background:#fff;border:1px solid #bbb;border-radius:7px;padding:6px 8px;box-shadow:0 2px 10px #0003;min-width:240px';
+  arr.innerHTML = _buildArrowSVG(initW, initH);
+  arr._initW = initW;
 
-  arr.innerHTML = _buildArrowSVG(initW, initH) +
-    '<div class="arr-ctrl" style="' + ctrlStyle + '">' +
-      '<div style="display:flex;align-items:center;gap:4px;flex-wrap:nowrap">' +
-        '<span style="font-size:10px;color:#555;margin-right:1px">Grosor:</span>' +
-        '<button class="arr-thick-btn" data-h="10" style="padding:1px 7px;font-size:11px;font-weight:700;border:1px solid #00a040;border-radius:4px;background:#e8f5e9;color:#1b5e20;cursor:pointer">S</button>' +
-        '<button class="arr-thick-btn" data-h="18" style="padding:1px 7px;font-size:11px;font-weight:700;border:1px solid #00a040;border-radius:4px;background:#e8f5e9;color:#1b5e20;cursor:pointer">M</button>' +
-        '<button class="arr-thick-btn" data-h="28" style="padding:1px 7px;font-size:11px;font-weight:700;border:1px solid #00a040;border-radius:4px;background:#e8f5e9;color:#1b5e20;cursor:pointer">L</button>' +
-        '<span style="font-size:10px;color:#aaa;margin:0 3px">|</span>' +
-        '<button class="arr-rot-btn" data-delta="-15" style="width:26px;height:22px;background:#00a040;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;line-height:1">&#8634;</button>' +
-        '<button class="arr-rot-btn" data-delta="15" style="width:26px;height:22px;background:#00a040;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;line-height:1">&#8635;</button>' +
-        '<button class="arr-rot-180" style="height:22px;padding:0 6px;background:#00a040;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:10px;font-weight:700">180&deg;</button>' +
-        '<span style="font-size:10px;color:#aaa;margin:0 3px">|</span>' +
-        '<button class="arr-copy-btn" style="height:22px;padding:0 7px;background:#1565c0;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700">Copiar</button>' +
-        '<button class="arr-paste-inline" style="height:22px;padding:0 7px;background:#0d6e3a;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700">Pegar</button>' +
-        '<button class="arr-del del" style="width:22px;height:22px;background:#c62828;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;line-height:1;margin-left:2px">&times;</button>' +
-      '</div>' +
-      '<div style="display:flex;align-items:center;gap:6px">' +
-        '<span style="font-size:10px;color:#555;white-space:nowrap">Largo:</span>' +
-        '<input class="arr-len-slider" type="range" min="40" max="500" step="5" value="' + Math.round(initW) + '" style="flex:1;accent-color:#00a040;cursor:pointer">' +
-        '<span class="arr-len-val" style="font-size:10px;color:#333;min-width:32px;text-align:right">' + Math.round(initW) + 'px</span>' +
-      '</div>' +
-    '</div>';
-
-  function _showArrowCtrl() {
-    var ctrl = arr.querySelector('.arr-ctrl');
-    ctrl.style.display = 'flex';
-    var ang = parseFloat(arr.dataset.angle || 0);
-    ctrl.style.transform = 'rotate(' + (-ang) + 'deg)';
-    ctrl.style.transformOrigin = '0% 100%';
-  }
-  arr.addEventListener('mouseenter', function() { _showArrowCtrl(); });
-  arr.addEventListener('mouseleave', function(e) {
-    if (!arr._pinned && !arr.contains(e.relatedTarget)) {
-      arr.querySelector('.arr-ctrl').style.display = 'none';
-    }
-  });
-  arr.addEventListener('click', function(e) {
-    if (e.target.closest('.arr-ctrl')) return;
-    arr._pinned = true;
-    _showArrowCtrl();
-  });
-  if (!window._arrowPinListener) {
-    window._arrowPinListener = true;
-    document.getElementById('zoom-wrap').addEventListener('mousedown', function(e) {
-      document.querySelectorAll('.evac-arrow').forEach(function(a) {
-        if (!a.contains(e.target)) {
-          a._pinned = false;
-          var ctrl = a.querySelector('.arr-ctrl');
-          if (ctrl && !a.matches(':hover')) ctrl.style.display = 'none';
-        }
-      });
-    });
-  }
-
-  arr.querySelectorAll('.arr-thick-btn').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      var newH = parseInt(btn.dataset.h);
-      arr.style.height = newH + 'px';
-      arr.dataset.hpct = newH / (document.getElementById('markerLayer').offsetWidth || 800) * 100;
-      _updateArrowInner(arr);
-    });
-  });
-
-  arr.querySelectorAll('.arr-rot-btn').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      var newA = parseFloat(arr.dataset.angle || 0) + parseFloat(btn.dataset.delta || 0);
-      arr.dataset.angle = newA;
-      arr.style.transform = 'rotate(' + newA + 'deg)';
-    });
-  });
-
-  arr.querySelector('.arr-rot-180').addEventListener('click', function(e) {
-    e.stopPropagation();
-    var newA = parseFloat(arr.dataset.angle || 0) + 180;
-    arr.dataset.angle = newA;
-    arr.style.transform = 'rotate(' + newA + 'deg)';
-  });
-
-  var slider = arr.querySelector('.arr-len-slider');
-  var lenVal = arr.querySelector('.arr-len-val');
-  slider.addEventListener('input', function(e) {
-    e.stopPropagation();
-    var newW = parseInt(slider.value);
-    lenVal.textContent = newW + 'px';
-    arr.style.width = newW + 'px';
-    arr.dataset.wpct = newW / (document.getElementById('markerLayer').offsetWidth || 800) * 100;
-    _updateArrowInner(arr);
-  });
-  slider.addEventListener('mousedown', function(e) { e.stopPropagation(); });
-
-  arr.querySelector('.arr-copy-btn').addEventListener('click', function(e) {
-    e.stopPropagation();
-    window._arrowClipboard = {
-      angle: parseFloat(arr.dataset.angle || 0),
-      wpct:  parseFloat(arr.dataset.wpct),
-      hpct:  parseFloat(arr.dataset.hpct),
-      left:  parseFloat(arr.style.left),
-      top:   parseFloat(arr.style.top)
-    };
-    _showToast('Flecha copiada — usa Pegar en el panel');
-  });
-
-  arr.querySelector('.arr-paste-inline').addEventListener('click', function(e) {
-    e.stopPropagation();
-    if (!window._arrowClipboard) { _showToast('Primero copia una flecha'); return; }
-    var ml2 = document.getElementById('markerLayer');
-    var mlW2 = ml2.offsetWidth || 800;
-    var cb = window._arrowClipboard;
-    var pL = Math.min(95, (cb.left || 42) + 3);
-    var pT = Math.min(95, (cb.top || 42) + 3);
-    addEvacArrow(cb.angle, pL, pT, cb.wpct/100*mlW2, cb.hpct/100*mlW2);
-    window._arrowClipboard.left = pL; window._arrowClipboard.top = pT;
-    _showToast('Flecha pegada');
-  });
-  arr.querySelector('.arr-del').addEventListener('click', function(e) {
-    e.stopPropagation(); arr.remove();
-  });
+  _initArrowFloatPanel();
+  arr.addEventListener('mouseenter', function() { _showFloatPanel(arr); });
+  arr.addEventListener('click', function(e) { arr._pinned = true; _showFloatPanel(arr); });
 
   arr.addEventListener('mousedown', function(ev) {
-    if (ev.target.closest('.arr-ctrl')) return;
+    if (ev.target.closest('#arr-float-panel')) return;
     ev.preventDefault();
     var _ml = document.getElementById('markerLayer');
     var _r  = _ml.getBoundingClientRect();
