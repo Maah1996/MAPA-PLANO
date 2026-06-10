@@ -334,11 +334,12 @@ async function _capturePlan(scaleFactor) {
   ml.style.marginTop = '0px';
   _activeImg().style.width = '100%';
 
-  // Resetear transforms de marcadores a scale(1) para que html2canvas los capture
+  // Restaurar transform original (centrado) para captura correcta en PDF/PNG
   document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){
     m._origTransform = m.style.transform;
-    m.style.transform = 'scale(1)';
-    m.style.transformOrigin = 'top left';
+    m._origOrigin    = m.style.transformOrigin;
+    m.style.transform       = 'translate(-50%,-50%)';
+    m.style.transformOrigin = '50% 50%';
   });
 
   var planCanvas;
@@ -362,7 +363,8 @@ async function _capturePlan(scaleFactor) {
       m.style.visibility = m._origVis || 'visible';
     });
     document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){
-      m.style.transform = m._origTransform || '';
+      m.style.transform       = m._origTransform || '';
+      m.style.transformOrigin = m._origOrigin    || 'top left';
     });
   }
 
