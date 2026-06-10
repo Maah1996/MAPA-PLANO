@@ -53,6 +53,7 @@
   #captureTitle{display:none;text-align:center;font-size:16px;font-weight:bold;color:var(--navy);
     margin:0 0 8px;font-family:Georgia,serif}
   .planwrap{position:relative;width:100%;line-height:0}
+  #markerLayer{margin-top:-380px}
   .planwrap img.plan{width:100%;display:block;user-select:none;-webkit-user-drag:none}
   /* MARKERS */
   .marker{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;
@@ -472,7 +473,6 @@ function showPlan(n) {
     m.style.visibility = (String(m.dataset.plan) === String(n)) ? 'visible' : 'hidden';
   });
   _zw = 100; _applyZoom();
-  setTimeout(function(){ document.getElementById('zoom-wrap').scrollTop = 390; }, 50);
 }
 
 /* Ctrl+rueda = zoom solo en el contenedor del plano */
@@ -1343,7 +1343,4 @@ document.getElementById('loadBtn').addEventListener('click', function() {
   }
 });
 
-window.addEventListener('load', function() {
-  setTimeout(function(){ document.getElementById('zoom-wrap').scrollTop = 220; }, 100);
-});
 </script>
