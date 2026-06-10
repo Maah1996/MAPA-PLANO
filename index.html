@@ -993,6 +993,7 @@ function addEvacArrow(angle, xPct, yPct, initW, initH) {
         '<button class="arr-rot-180" style="height:22px;padding:0 6px;background:#00a040;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:10px;font-weight:700">180&deg;</button>' +
         '<span style="font-size:10px;color:#aaa;margin:0 3px">|</span>' +
         '<button class="arr-copy-btn" style="height:22px;padding:0 7px;background:#1565c0;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700">Copiar</button>' +
+        '<button class="arr-paste-inline" style="height:22px;padding:0 7px;background:#0d6e3a;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700">Pegar</button>' +
         '<button class="arr-del del" style="width:22px;height:22px;background:#c62828;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;line-height:1;margin-left:2px">&times;</button>' +
       '</div>' +
       '<div style="display:flex;align-items:center;gap:6px">' +
@@ -1002,18 +1003,36 @@ function addEvacArrow(angle, xPct, yPct, initW, initH) {
       '</div>' +
     '</div>';
 
-  arr.addEventListener('mouseenter', function() {
+  function _showArrowCtrl() {
     var ctrl = arr.querySelector('.arr-ctrl');
     ctrl.style.display = 'flex';
     var ang = parseFloat(arr.dataset.angle || 0);
     ctrl.style.transform = 'rotate(' + (-ang) + 'deg)';
     ctrl.style.transformOrigin = '0% 100%';
-  });
+  }
+  arr.addEventListener('mouseenter', function() { _showArrowCtrl(); });
   arr.addEventListener('mouseleave', function(e) {
-    if (!arr.contains(e.relatedTarget)) {
+    if (!arr._pinned && !arr.contains(e.relatedTarget)) {
       arr.querySelector('.arr-ctrl').style.display = 'none';
     }
   });
+  arr.addEventListener('click', function(e) {
+    if (e.target.closest('.arr-ctrl')) return;
+    arr._pinned = true;
+    _showArrowCtrl();
+  });
+  if (!window._arrowPinListener) {
+    window._arrowPinListener = true;
+    document.getElementById('zoom-wrap').addEventListener('mousedown', function(e) {
+      document.querySelectorAll('.evac-arrow').forEach(function(a) {
+        if (!a.contains(e.target)) {
+          a._pinned = false;
+          var ctrl = a.querySelector('.arr-ctrl');
+          if (ctrl && !a.matches(':hover')) ctrl.style.display = 'none';
+        }
+      });
+    });
+  }
 
   arr.querySelectorAll('.arr-thick-btn').forEach(function(btn) {
     btn.addEventListener('click', function(e) {
@@ -1062,10 +1081,21 @@ function addEvacArrow(angle, xPct, yPct, initW, initH) {
       left:  parseFloat(arr.style.left),
       top:   parseFloat(arr.style.top)
     };
-    _showPasteBtn();
-    _showToast('Flecha copiada');
+    _showToast('Flecha copiada — usa Pegar en el panel');
   });
 
+  arr.querySelector('.arr-paste-inline').addEventListener('click', function(e) {
+    e.stopPropagation();
+    if (!window._arrowClipboard) { _showToast('Primero copia una flecha'); return; }
+    var ml2 = document.getElementById('markerLayer');
+    var mlW2 = ml2.offsetWidth || 800;
+    var cb = window._arrowClipboard;
+    var pL = Math.min(95, (cb.left || 42) + 3);
+    var pT = Math.min(95, (cb.top || 42) + 3);
+    addEvacArrow(cb.angle, pL, pT, cb.wpct/100*mlW2, cb.hpct/100*mlW2);
+    window._arrowClipboard.left = pL; window._arrowClipboard.top = pT;
+    _showToast('Flecha pegada');
+  });
   arr.querySelector('.arr-del').addEventListener('click', function(e) {
     e.stopPropagation(); arr.remove();
   });
