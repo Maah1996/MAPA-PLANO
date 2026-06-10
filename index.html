@@ -53,7 +53,6 @@
   #captureTitle{display:none;text-align:center;font-size:16px;font-weight:bold;color:var(--navy);
     margin:0 0 8px;font-family:Georgia,serif}
   .planwrap{position:relative;width:100%;line-height:0}
-  #markerLayer{margin-top:-380px}
   .planwrap img.plan{width:100%;display:block;user-select:none;-webkit-user-drag:none}
   /* MARKERS */
   .marker{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;
@@ -448,12 +447,12 @@ function _activeImg() {
 }
 function _applyZoom() {
   var ml = document.getElementById('markerLayer');
-  // markerLayer controla el zoom; imagen siempre ocupa 100% de markerLayer
   ml.style.width = _zw + '%';
-  // Aplicar 100% a la imagen activa (relativo al markerLayer)
   var ai = _activeImg();
   ai.style.width = '100%';
   document.getElementById('zoom-pct').textContent = Math.round(_zw) + '%';
+  // Ocultar margen blanco superior del PNG proporcionalmente al zoom
+  ml.style.marginTop = (-380 * _zw / 100) + 'px';
 }
 function zoomIn()    { _zw = Math.min(500, _zw + 25); _applyZoom(); }
 function zoomOut()   { _zw = Math.max(30,  _zw - 25); _applyZoom(); }
