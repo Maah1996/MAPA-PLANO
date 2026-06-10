@@ -472,6 +472,7 @@ function showPlan(n) {
     m.style.visibility = (String(m.dataset.plan) === String(n)) ? 'visible' : 'hidden';
   });
   _zw = 100; _applyZoom();
+  setTimeout(function(){ document.getElementById('zoom-wrap').scrollTop = 220; }, 50);
 }
 
 /* Ctrl+rueda = zoom solo en el contenedor del plano */
@@ -1342,5 +1343,7 @@ document.getElementById('loadBtn').addEventListener('click', function() {
   }
 });
 
-
+window.addEventListener('load', function() {
+  setTimeout(function(){ document.getElementById('zoom-wrap').scrollTop = 220; }, 100);
+});
 </script>
