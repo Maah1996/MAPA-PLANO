@@ -942,7 +942,7 @@ function _showPasteBtn() {
       var cb = window._arrowClipboard;
       var newW = cb.wpct / 100 * mlW;
       var newH = cb.hpct / 100 * mlW;
-      var pL = Math.min(95, (cb.left || 42) + 3); var pT = Math.min(95, (cb.top || 42) + 3); addEvacArrow(cb.angle, pL, pT, newW, newH);
+      var pL = Math.min(95, (cb.left || 42) + 3); var pT = Math.min(95, (cb.top || 42) + 3); addEvacArrow(cb.angle, pL, pT, newW, newH); window._arrowClipboard.left = pL; window._arrowClipboard.top = pT;
       _showToast('Flecha pegada');
     });
     document.body.appendChild(btn);
@@ -1003,7 +1003,11 @@ function addEvacArrow(angle, xPct, yPct, initW, initH) {
     '</div>';
 
   arr.addEventListener('mouseenter', function() {
-    arr.querySelector('.arr-ctrl').style.display = 'flex';
+    var ctrl = arr.querySelector('.arr-ctrl');
+    ctrl.style.display = 'flex';
+    var ang = parseFloat(arr.dataset.angle || 0);
+    ctrl.style.transform = 'rotate(' + (-ang) + 'deg)';
+    ctrl.style.transformOrigin = '0% 100%';
   });
   arr.addEventListener('mouseleave', function(e) {
     if (!arr.contains(e.relatedTarget)) {
