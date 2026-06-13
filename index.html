@@ -192,19 +192,10 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
     <span id="auth-name"></span>
     <button id="btn-logout">Salir</button>
   </span>
-  <button id="btn-login">Iniciar sesión con Google</button>
+  <button id="btn-login">Iniciar sesión (nube)</button>
 </div>
 
-<div id="login-overlay">
-  <h2>Mapa de Riesgos / Plano de Evacuación</h2>
-  <p>Inicia sesión para acceder y guardar tu trabajo en la nube</p>
-  <button id="btn-login-big">
-    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
-    Iniciar sesión con Google
-  </button>
-  <p id="login-error"></p>
-</div>
-
+<div id="login-overlay" style="display:none"></div>
 <!-- Modal Guardar/Cargar -->
 <div id="sl-overlay">
   <div id="sl-panel">
@@ -469,14 +460,14 @@ var _LS_LEGACY='mapaRiesgos_v2';
 /* nuevo formato: array de slots por modo */
 var _LS_KEY='mapaRiesgos_v3';
 
-function _showLoginOverlay(show){document.getElementById('login-overlay').style.display=show?'':'none';}
+function _showLoginOverlay(show){ /* login opcional — no bloquear app */ }
 function _updateAuthBar(user){var info=document.getElementById('auth-user-info'),btnIn=document.getElementById('btn-login'),av=document.getElementById('auth-avatar'),nm=document.getElementById('auth-name');if(user){info.style.display='flex';btnIn.style.display='none';av.src=user.photoURL||'';nm.textContent=user.displayName||user.email;}else{info.style.display='none';btnIn.style.display='';}}
-function _doGoogleLogin(){var provider=new firebase.auth.GoogleAuthProvider();_auth.signInWithRedirect(provider);}
+function _doGoogleLogin(){var errDiv=document.getElementById('login-error');errDiv.textContent='';var provider=new firebase.auth.GoogleAuthProvider();_auth.signInWithPopup(provider).then(function(r){_currentUser=r.user;}).catch(function(err){var msg=err.message;if(err.code==='auth/popup-blocked'){msg='Popup bloqueado — intentando redirección...';_auth.signInWithRedirect(provider);}else if(err.code==='auth/popup-closed-by-user'){msg='Cerraste la ventana de Google.';}errDiv.textContent=msg;});}
 document.getElementById('btn-login').addEventListener('click',_doGoogleLogin);
 document.getElementById('btn-login-big').addEventListener('click',_doGoogleLogin);
 document.getElementById('btn-logout').addEventListener('click',function(){_auth.signOut();});
 _auth.getRedirectResult().then(function(r){if(r&&r.user)_currentUser=r.user;}).catch(function(err){if(err.code&&err.code!=='auth/no-current-user')document.getElementById('login-error').textContent=err.message;});
-_auth.onAuthStateChanged(function(user){_currentUser=user;_updateAuthBar(user);_showLoginOverlay(!user);});
+_auth.onAuthStateChanged(function(user){_currentUser=user;_updateAuthBar(user);if(user){setTimeout(function(){_showToast('Sesión iniciada: '+( user.displayName||user.email));},300);}});
 
 /* ══════════════════════════════════════════════════════════
    SERIALIZACIÓN (solo markers del modo actual)
