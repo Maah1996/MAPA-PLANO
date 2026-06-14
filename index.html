@@ -363,8 +363,7 @@ function addMarker(risk,color,xPct,yPct){
   m.innerHTML=svgH+'<div class="mlabel" contenteditable="true" spellcheck="false" title="Clic para escribir etiqueta"></div><div class="del" title="Eliminar">×</div>';
   m.addEventListener('mousedown',function(e){if(e.target.classList.contains('del')||e.target.classList.contains('mlabel'))return;e.preventDefault();var r2=document.getElementById('markerLayer').getBoundingClientRect();m._dragOffX=(e.clientX-r2.left)-parseFloat(m.style.left)/100*r2.width;m._dragOffY=(e.clientY-r2.top)-parseFloat(m.style.top)/100*r2.height;movingMarker=m;window.addEventListener('mousemove',onMove);window.addEventListener('mouseup',onUp);});
   m.querySelector('.del').addEventListener('click',function(e){e.stopPropagation();m.remove();_hideMkrPanel();});
-  m.addEventListener('mouseenter',function(){_showMkrPanel(m);});
-  m.addEventListener('click',function(){_showMkrPanel(m);});
+  m.addEventListener('click',function(e){if(e.target.classList.contains('del')||e.target.classList.contains('mlabel'))return;_showMkrPanel(m);});
   ml.appendChild(m);
 }
 
@@ -438,18 +437,21 @@ function _initMkrPanel(){
 
   _sp(p.querySelector('.mkp-del'));
   p.querySelector('.mkp-del').addEventListener('click',function(){if(!_m)return;_m.remove();_hideMkrPanel();});
-  /* Click fuera: colapsa si es en un ícono, desaparece si es en otro lado */
+  /* Click fuera: ocultar completamente */
   document.addEventListener('mousedown',function(e){
     if(p.contains(e.target))return;
-    body.style.display='none';chev.textContent='▾';
-    if(!(e.target.closest&&e.target.closest('.marker:not(.evac-arrow)')))_hideMkrPanel();
+    _hideMkrPanel();
   });
 }
 function _showMkrPanel(m){
   _initMkrPanel();
   var p=document.getElementById('mkr-float-panel');
-  p._set(m);p.style.display='flex';
-  /* posicionar encima del ícono con separación generosa */
+  p._set(m);
+  /* expandir directamente */
+  var body=p.querySelector('.afp-body'),chev=p.querySelector('.afp-chev');
+  if(body)body.style.display='flex';
+  if(chev)chev.textContent='▴';
+  p.style.display='flex';
   var r=m.getBoundingClientRect(),pH=p.offsetHeight||50,pW=p.offsetWidth||260;
   var top=Math.max(10,r.top-pH-30);
   var left=Math.max(10,Math.min(r.left+(r.width/2)-(pW/2),window.innerWidth-pW-10));
@@ -564,8 +566,7 @@ function addEvacArrow(angle,xPct,yPct,initW,initH){
   arr.style.transform='rotate('+angle+'deg)';
   arr.innerHTML=_buildArrowSVG(initW,initH)+'<div class="arr-del" title="Eliminar">×</div>';
   arr.querySelector('.arr-del').addEventListener('click',function(e){e.stopPropagation();arr.remove();_hideFloatPanel();});
-  arr.addEventListener('mouseenter',function(){_showFloatPanel(arr);});
-  arr.addEventListener('click',function(){arr._pinned=true;_showFloatPanel(arr);});
+  arr.addEventListener('click',function(ev){if(ev.target.classList.contains('arr-del'))return;_showFloatPanel(arr);});
   arr.addEventListener('mousedown',function(ev){
     if(ev.target.classList.contains('arr-del'))return;
     ev.preventDefault();
@@ -710,17 +711,10 @@ function _initArrowFloatPanel(){
   p.querySelector('.afp-del').addEventListener('mousedown',function(e){e.stopPropagation();});
   p.querySelector('.afp-del').addEventListener('click',function(){var a=_s;if(!a)return;a.remove();_hideFloatPanel();});
 
-  /* Click fuera del panel: colapsa si es en una flecha, desaparece si es en otro lado */
+  /* Click fuera: ocultar panel completamente */
   document.addEventListener('mousedown',function(e){
-    if(p.contains(e.target))return; /* dentro del panel — no hacer nada */
-    /* siempre colapsar el cuerpo */
-    body.style.display='none';
-    chev.textContent='▾';
-    /* si el click NO fue en una flecha, ocultar el panel completo */
-    if(!(e.target.closest&&e.target.closest('.evac-arrow'))){
-      document.querySelectorAll('.evac-arrow').forEach(function(a){a._pinned=false;});
-      _hideFloatPanel();
-    }
+    if(p.contains(e.target))return;
+    _hideFloatPanel();
   });
 }
 
@@ -728,6 +722,10 @@ function _showFloatPanel(arr){
   _initArrowFloatPanel();
   var p=document.getElementById('arr-float-panel');
   p._setArr(arr);
+  /* expandir directamente */
+  var body=p.querySelector('.afp-body'),chev=p.querySelector('.afp-chev');
+  if(body)body.style.display='flex';
+  if(chev)chev.textContent='▴';
   p.style.display='flex';
   var r=arr.getBoundingClientRect(),pH=p.offsetHeight||50,pW=p.offsetWidth||480;
   var top=Math.max(10,r.top-pH-30);
