@@ -915,23 +915,119 @@ async function _capturePlan(scaleFactor){
   scaleFactor=scaleFactor||2;
   var title=(document.getElementById('titleInput').value.trim())||'Mapa de Riesgos — MONTICHEF';
   var ml=document.getElementById('markerLayer');
-  document.querySelectorAll('.del,.arr-del,.arr-resize').forEach(function(d){d.style.display='none';});
-  document.querySelectorAll('.marker').forEach(function(m){m._origVis=m.style.visibility;m.style.visibility=(!m.dataset.plan||String(m.dataset.plan)===String(_currentPlan))?'visible':'hidden';});
-  document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){m._origTr=m.style.transform;m.style.transform='translate(-50%,-50%)';m.style.transformOrigin='50% 50%';});
-  var origW=ml.style.width,origMT=ml.style.marginTop;ml.style.width='100%';ml.style.marginTop='0px';_activeImg().style.width='100%';
+
+  /* 1. Ocultar controles UI */
+  document.querySelectorAll('.del,.arr-del,.arr-resize,.afp-toggle,#arr-float-panel,#mkr-float-panel').forEach(function(d){d.style.display='none';});
+
+  /* 2. Filtrar visibilidad por MODO y PLAN (fix: antes solo filtraba por plan) */
+  document.querySelectorAll('.marker').forEach(function(m){
+    m._origVis=m.style.visibility;
+    var modeOk=(m.dataset.mode||'riesgos')===_appMode;
+    var planOk=String(m.dataset.plan||1)===String(_currentPlan);
+    m.style.visibility=(modeOk&&planOk)?'visible':'hidden';
+  });
+
+  /* 3. Aplicar escala correcta a íconos (markerScale individual, zoom global=1 durante captura) */
+  document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){
+    m._origTr=m.style.transform;
+    m._origOrg=m.style.transformOrigin;
+    var ms=parseFloat(m.dataset.markerScale||1);
+    m.style.transform='translate(-50%,-50%) scale('+ms+')';
+    m.style.transformOrigin='50% 50%';
+  });
+
+  /* 4. Resetear zoom del markerLayer para captura completa */
+  var origW=ml.style.width,origMT=ml.style.marginTop;
+  ml.style.width='100%';ml.style.marginTop='0px';
+  _activeImg().style.width='100%';
+
   var planCanvas;
-  try{planCanvas=await html2canvas(ml,{backgroundColor:'#ffffff',scale:scaleFactor,useCORS:true,scrollX:0,scrollY:0,width:ml.offsetWidth,height:ml.offsetHeight,logging:false});}
-  finally{ml.style.width=origW;ml.style.marginTop=origMT;_activeImg().style.width='100%';document.querySelectorAll('.del,.arr-del,.arr-resize').forEach(function(d){d.style.display='';});document.querySelectorAll('.marker').forEach(function(m){m.style.visibility=m._origVis||'visible';});document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){m.style.transform=m._origTr||'';m.style.transformOrigin='top left';});}
-  var blankPx=Math.round(380*scaleFactor);var crop=document.createElement('canvas');crop.width=planCanvas.width;crop.height=Math.max(1,planCanvas.height-blankPx);crop.getContext('2d').drawImage(planCanvas,0,-blankPx);
+  try{
+    planCanvas=await html2canvas(ml,{
+      backgroundColor:'#ffffff',scale:scaleFactor,useCORS:true,
+      scrollX:0,scrollY:0,
+      width:ml.offsetWidth,height:ml.offsetHeight,
+      logging:false
+    });
+  }finally{
+    /* Restaurar estado original */
+    ml.style.width=origW;ml.style.marginTop=origMT;
+    _activeImg().style.width='100%';
+    document.querySelectorAll('.del,.arr-del,.arr-resize').forEach(function(d){d.style.display='';});
+    document.querySelectorAll('.marker').forEach(function(m){m.style.visibility=m._origVis||'visible';});
+    document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){
+      m.style.transform=m._origTr||'';
+      m.style.transformOrigin=m._origOrg||'50% 50%';
+    });
+    _scaleMarkers(); /* re-aplicar escala real de pantalla */
+  }
+
+  /* 5. Recortar zona blanca superior del PNG del plano */
+  var blankPx=Math.round(380*scaleFactor);
+  var crop=document.createElement('canvas');
+  crop.width=planCanvas.width;
+  crop.height=Math.max(1,planCanvas.height-blankPx);
+  crop.getContext('2d').drawImage(planCanvas,0,-blankPx);
+
+  /* 6. Agregar franja de título */
   var pad=Math.round(2.5*scaleFactor),titleH=Math.round(26*scaleFactor),gap=Math.round(scaleFactor);
-  var fin=document.createElement('canvas');fin.width=crop.width;fin.height=crop.height+pad+titleH+gap;
-  var ctx=fin.getContext('2d');ctx.fillStyle='#ffffff';ctx.fillRect(0,0,fin.width,fin.height);
-  ctx.font='bold '+Math.round(16*scaleFactor)+'px Georgia,serif';ctx.fillStyle='#16314f';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(title,fin.width/2,pad+titleH/2);
-  ctx.strokeStyle='#cdbf9b';ctx.lineWidth=Math.round(1.5*scaleFactor);ctx.beginPath();ctx.moveTo(0,pad+titleH);ctx.lineTo(fin.width,pad+titleH);ctx.stroke();
-  ctx.drawImage(crop,0,pad+titleH+gap);return fin;
+  var fin=document.createElement('canvas');
+  fin.width=crop.width;fin.height=crop.height+pad+titleH+gap;
+  var ctx=fin.getContext('2d');
+  ctx.fillStyle='#ffffff';ctx.fillRect(0,0,fin.width,fin.height);
+  ctx.font='bold '+Math.round(16*scaleFactor)+'px Georgia,serif';
+  ctx.fillStyle='#16314f';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(title,fin.width/2,pad+titleH/2);
+  ctx.strokeStyle='#cdbf9b';ctx.lineWidth=Math.round(1.5*scaleFactor);
+  ctx.beginPath();ctx.moveTo(0,pad+titleH);ctx.lineTo(fin.width,pad+titleH);ctx.stroke();
+  ctx.drawImage(crop,0,pad+titleH+gap);
+  return fin;
 }
-document.getElementById('exportBtn').onclick=async function(){this.textContent='Generando...';this.disabled=true;try{var c=await _capturePlan(2);var a=document.createElement('a');a.download='Mapa_de_Riesgos_MONTICHEF.png';a.href=c.toDataURL('image/png');a.click();}catch(err){alert('Error: '+err);}this.textContent='Exportar PNG';this.disabled=false;};
-document.getElementById('pdfBtn').onclick=async function(){this.textContent='Generando PDF...';this.disabled=true;try{var c=await _capturePlan(3);var imgSrc=c.toDataURL('image/png');var w=window.open('','_blank');w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Mapa MONTICHEF</title><style>*{margin:0;padding:0;box-sizing:border-box}html,body{width:100%;background:#fff}img{display:block;max-width:100%;max-height:100vh}@media print{img{max-width:100%;max-height:100%;page-break-inside:avoid}@page{margin:4mm;size:A3 portrait}}<\/style><\/head><body><img src="'+imgSrc+'"><script>window.onload=function(){setTimeout(function(){window.print();},500);};<\/script><\/body><\/html>');w.document.close();}catch(err){alert('Error: '+err);}this.textContent='Exportar PDF';this.disabled=false;};
+
+document.getElementById('exportBtn').onclick=async function(){
+  this.textContent='Generando...';this.disabled=true;
+  try{
+    var c=await _capturePlan(2);
+    var a=document.createElement('a');
+    a.download='Plano_MONTICHEF.png';
+    a.href=c.toDataURL('image/png');a.click();
+  }catch(err){alert('Error al exportar PNG: '+err);}
+  this.textContent='Exportar PNG';this.disabled=false;
+};
+
+document.getElementById('pdfBtn').onclick=async function(){
+  this.textContent='Generando PDF...';this.disabled=true;
+  try{
+    var c=await _capturePlan(3);
+    var imgSrc=c.toDataURL('image/png');
+    /* Calcular tamaño de página en mm proporcional al canvas (96dpi base) */
+    var pxPerMm=3.7795275591;
+    var sf=3;
+    var wMm=Math.ceil(c.width/sf/pxPerMm)+10;
+    var hMm=Math.ceil(c.height/sf/pxPerMm)+10;
+    var w=window.open('','_blank');
+    w.document.write(
+      '<!DOCTYPE html><html><head>'
+      +'<meta charset="UTF-8"><title>Plano MONTICHEF</title>'
+      +'<style>'
+      +'*{margin:0;padding:0;box-sizing:border-box}'
+      +'html,body{width:100%;background:#fff}'
+      +'img{display:block;width:100%;height:auto}'
+      +'@media print{'
+      +'  @page{margin:5mm;size:'+wMm+'mm '+hMm+'mm}'
+      +'  img{width:100%;height:auto;page-break-inside:avoid}'
+      +'}'
+      +'<\/style>'
+      +'<\/head><body>'
+      +'<img src="'+imgSrc+'">'
+      +'<script>window.onload=function(){setTimeout(function(){window.print();},600);};<\/script>'
+      +'<\/body><\/html>'
+    );
+    w.document.close();
+  }catch(err){alert('Error al exportar PDF: '+err);}
+  this.textContent='Exportar PDF';this.disabled=false;
+};
+
 </script>
 </body>
 </html>
