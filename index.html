@@ -233,7 +233,7 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
       <span id="sl-mode-badge" class="riesgos">Riesgos</span>
       <button id="sl-close" title="Cerrar">&times;</button>
     </div>
-    <div id="sl-new">
+    <div id="sl-save-row">
       <input type="text" id="sl-name-input" placeholder="Nombre del guardado (ej: Turno mañana)" maxlength="60">
       <button id="sl-save-new">&#128190; Guardar nuevo</button>
     </div>
@@ -808,7 +808,7 @@ function _fsCol(){return _db.collection('users').doc(_currentUser.uid).collectio
 
 function _fsSaveNew(data,cb){_fsCol().add(data).then(function(ref){data.id=ref.id;_showToast('Guardado en la nube');if(cb)cb();}).catch(function(e){_showToast('Error al guardar: '+e.message,true);});}
 
-function _fsListMode(mode,cb){_fsCol().where('mode','==',mode).orderBy('tsMs','desc').get().then(function(snap){var list=[];snap.forEach(function(d){var v=d.data();v._docId=d.id;list.push(v);});cb(list);}).catch(function(e){_showToast('Error al listar: '+e.message,true);cb([]);});}
+function _fsListMode(mode,cb){_fsCol().get().then(function(snap){var list=[];snap.forEach(function(d){var v=d.data();v._docId=d.id;if(v.mode===mode)list.push(v);});list.sort(function(a,b){return(b.tsMs||0)-(a.tsMs||0);});cb(list);}).catch(function(e){_showToast('Error al listar: '+e.message,true);cb([]);});}
 
 function _fsDelete(docId,cb){_fsCol().doc(docId).delete().then(cb).catch(function(e){_showToast('Error al borrar: '+e.message,true);});}
 
@@ -825,11 +825,19 @@ function _lsDelete(id){var list=_lsGetAll().filter(function(s){return s.id!==id;
 ══════════════════════════════════════════════════════════ */
 var _panelMode=null; /* modo al abrir el panel */
 
-function openSLPanel(){
+function openSLPanel(context){
+  /* context: 'save' | 'load' */
   _panelMode=_appMode;
   var badge=document.getElementById('sl-mode-badge');
   badge.textContent=_appMode==='riesgos'?'Riesgos':'Evacuación';
   badge.className='';badge.classList.add(_appMode);
+  /* mostrar u ocultar zona de guardar según contexto */
+  var saveRow=document.getElementById('sl-save-row');
+  var isSave=(context==='save'||!context);
+  if(saveRow)saveRow.style.display=isSave?'':'none';
+  /* título dinámico */
+  var title=document.getElementById('sl-title');
+  if(title)title.textContent=isSave?'Guardados':'Cargar guardado';
   document.getElementById('sl-name-input').value='';
   document.getElementById('sl-overlay').classList.add('open');
   _refreshPanelList();
@@ -888,9 +896,9 @@ function _renderPanelList(list,source){
 
 function _escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-/* Botones Guardar / Mis guardados */
-document.getElementById('saveBtn').addEventListener('click',openSLPanel);
-document.getElementById('loadBtn').addEventListener('click',openSLPanel);
+/* Botones Guardar / Cargar */
+document.getElementById('saveBtn').addEventListener('click',function(){openSLPanel('save');});
+document.getElementById('loadBtn').addEventListener('click',function(){openSLPanel('load');});
 
 /* ── Toast ── */
 function _showToast(msg,isError){var t=document.getElementById('_toast');if(!t){t=document.createElement('div');t.id='_toast';document.body.appendChild(t);}t.textContent=msg;t.style.background=isError?'#7f1d1d':'#14532d';t.style.color='#fff';t.style.opacity='1';clearTimeout(t._to);t._to=setTimeout(function(){t.style.opacity='0';},2800);}
