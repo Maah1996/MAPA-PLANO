@@ -215,7 +215,7 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
   <button id="btn-login">Iniciar sesión con Google</button>
 </div>
 
-<div id="login-overlay">
+<div id="login-overlay" style="display:none">
   <h2>Mapa de Riesgos / Plano de Evacuación</h2>
   <p>Inicia sesión para acceder y guardar tu trabajo en la nube</p>
   <button id="btn-login-big">
@@ -762,7 +762,7 @@ document.getElementById('btn-login').addEventListener('click',_doGoogleLogin);
 document.getElementById('btn-login-big').addEventListener('click',_doGoogleLogin);
 document.getElementById('btn-logout').addEventListener('click',function(){_auth.signOut();});
 _auth.getRedirectResult().then(function(r){if(r&&r.user)_currentUser=r.user;}).catch(function(err){if(err.code&&err.code!=='auth/no-current-user')document.getElementById('login-error').textContent=err.message;});
-_auth.onAuthStateChanged(function(user){_currentUser=user;_updateAuthBar(user);_showLoginOverlay(!user);});
+_auth.onAuthStateChanged(function(user){_currentUser=user;_updateAuthBar(user);/* login es opcional — no bloquear app */});
 
 /* ══════════════════════════════════════════════════════════
    SERIALIZACIÓN (solo markers del modo actual)
