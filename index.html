@@ -438,8 +438,11 @@ function _initMkrPanel(){
 
   _sp(p.querySelector('.mkp-del'));
   p.querySelector('.mkp-del').addEventListener('click',function(){if(!_m)return;_m.remove();_hideMkrPanel();});
+  /* Click fuera: colapsa si es en un ícono, desaparece si es en otro lado */
   document.addEventListener('mousedown',function(e){
-    if(!p.contains(e.target)&&!(e.target.closest&&e.target.closest('.marker:not(.evac-arrow)')))_hideMkrPanel();
+    if(p.contains(e.target))return;
+    body.style.display='none';chev.textContent='▾';
+    if(!(e.target.closest&&e.target.closest('.marker:not(.evac-arrow)')))_hideMkrPanel();
   });
 }
 function _showMkrPanel(m){
@@ -707,9 +710,14 @@ function _initArrowFloatPanel(){
   p.querySelector('.afp-del').addEventListener('mousedown',function(e){e.stopPropagation();});
   p.querySelector('.afp-del').addEventListener('click',function(){var a=_s;if(!a)return;a.remove();_hideFloatPanel();});
 
-  /* Cierra al click fuera */
+  /* Click fuera del panel: colapsa si es en una flecha, desaparece si es en otro lado */
   document.addEventListener('mousedown',function(e){
-    if(!p.contains(e.target)&&!(e.target.closest&&e.target.closest('.evac-arrow'))){
+    if(p.contains(e.target))return; /* dentro del panel — no hacer nada */
+    /* siempre colapsar el cuerpo */
+    body.style.display='none';
+    chev.textContent='▾';
+    /* si el click NO fue en una flecha, ocultar el panel completo */
+    if(!(e.target.closest&&e.target.closest('.evac-arrow'))){
       document.querySelectorAll('.evac-arrow').forEach(function(a){a._pinned=false;});
       _hideFloatPanel();
     }
