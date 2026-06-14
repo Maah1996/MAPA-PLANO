@@ -909,6 +909,97 @@ document.getElementById('loadBtn').addEventListener('click',function(){openSLPan
 /* ── Toast ── */
 function _showToast(msg,isError){var t=document.getElementById('_toast');if(!t){t=document.createElement('div');t.id='_toast';document.body.appendChild(t);}t.textContent=msg;t.style.background=isError?'#7f1d1d':'#14532d';t.style.color='#fff';t.style.opacity='1';clearTimeout(t._to);t._to=setTimeout(function(){t.style.opacity='0';},2800);}
 
+/* ══════════════════════════════════════════════════════════
+   AUTO-SAVE / RESTORE AUTOMÁTICO
+══════════════════════════════════════════════════════════ */
+var _LS_AUTO='mapaRiesgos_autosave';
+var _autoSaveTimer=null;
+
+function _buildAutoSaveData(){
+  var markers=[];
+  document.querySelectorAll('.marker').forEach(function(m){
+    markers.push({left:m.style.left,top:m.style.top,plan:m.dataset.plan||'1',mode:m.dataset.mode||'riesgos',isArrow:m.dataset.isArrow==='1',itemId:m.dataset.itemId||'',itemColor:m.dataset.itemColor||'',isEvac:m.dataset.itemIsEvac==='1',label:(m.querySelector('.mlabel')||{}).innerText||'',angle:m.dataset.angle||'0',wpct:m.dataset.wpct||'0',hpct:m.dataset.hpct||'0',width:m.style.width,height:m.style.height,markerScale:m.dataset.markerScale||'1'});
+  });
+  return{markers:markers,mode:_appMode,plan:_currentPlan,zw:_zw,title:(document.getElementById('titleInput')||{}).value||'',ts:new Date().toLocaleString('es-CL')};
+}
+
+function _doAutoSave(){
+  try{localStorage.setItem(_LS_AUTO,JSON.stringify(_buildAutoSaveData()));}catch(e){}
+}
+
+function _scheduleAutoSave(){
+  clearTimeout(_autoSaveTimer);
+  _autoSaveTimer=setTimeout(_doAutoSave,1500);
+}
+
+function _applyAutoSave(data){
+  if(!data||!Array.isArray(data.markers))return;
+  document.querySelectorAll('.marker').forEach(function(m){m.remove();});
+  var prevMode=_appMode,prevPlan=_currentPlan;
+  data.markers.forEach(function(entry){
+    _appMode=entry.mode||'riesgos';_currentPlan=parseInt(entry.plan)||1;
+    var xPct=parseFloat(entry.left),yPct=parseFloat(entry.top);
+    try{
+      if(entry.isArrow){
+        var ml=document.getElementById('markerLayer');
+        var cntBefore=ml.querySelectorAll('.evac-arrow').length;
+        addEvacArrow(parseFloat(entry.angle||0),xPct,yPct);
+        var arr=ml.querySelectorAll('.evac-arrow')[cntBefore];
+        if(arr&&entry.wpct){arr.dataset.wpct=entry.wpct;arr.dataset.hpct=entry.hpct;arr.style.width=entry.width||'140px';arr.style.height=entry.height||'18px';_updateArrowInner(arr);}
+      }else{
+        var risk=null,color=entry.itemColor||'#888';
+        if(entry.isEvac){EVAC_ITEMS.forEach(function(it){if(it.id===entry.itemId)risk=Object.assign({},it,{_isEvac:true});});}
+        else{RISKS.forEach(function(it){if(it.id===entry.itemId)risk=it;});}
+        if(risk){
+          addMarker(risk,color,xPct,yPct);
+          var ml2=document.getElementById('markerLayer');
+          var last=ml2.querySelector('.marker:not(.evac-arrow):last-child');
+          if(last){if(entry.label){var lbl=last.querySelector('.mlabel');if(lbl)lbl.innerText=entry.label;}if(entry.markerScale)last.dataset.markerScale=entry.markerScale;}
+        }
+      }
+    }catch(err){console.warn('Autosave restore error:',err);}
+  });
+  _appMode=prevMode;_currentPlan=prevPlan;
+  if(data.zw)_zw=parseFloat(data.zw);
+  if(data.title&&document.getElementById('titleInput'))document.getElementById('titleInput').value=data.title;
+  switchMode(data.mode||'riesgos');
+  showPlan(data.plan||1);
+  _scaleMarkers();
+  _scaleArrows();
+}
+
+/* Restaurar al cargar, luego observar cambios */
+window.addEventListener('load',function(){
+  try{
+    var saved=localStorage.getItem(_LS_AUTO);
+    if(saved){
+      var data=JSON.parse(saved);
+      if(data&&Array.isArray(data.markers)&&data.markers.length>0){
+        _applyAutoSave(data);
+        _showToast('Trabajo restaurado ('+( data.ts||'')+')');
+      }
+    }
+  }catch(e){console.warn('No se pudo restaurar autosave:',e);}
+
+  /* Iniciar observador DESPUÉS de restaurar */
+  var ml=document.getElementById('markerLayer');
+  if(ml&&window.MutationObserver){
+    var obs=new MutationObserver(_scheduleAutoSave);
+    obs.observe(ml,{childList:true,subtree:true,attributes:true,attributeFilter:['style','data-angle','data-wpct','data-hpct']});
+  }
+});
+
+/* Aviso al cerrar — guardar automático + ofrecer guardar con nombre */
+window.addEventListener('beforeunload',function(e){
+  _doAutoSave();
+  var ml=document.getElementById('markerLayer');
+  if(!ml||!ml.querySelector('.marker'))return;
+  e.preventDefault();
+  e.returnValue='';
+  /* Si el usuario elige quedarse, abrir panel de guardado después de 350ms */
+  setTimeout(function(){openSLPanel('save');},350);
+});
+
 async function _capturePlan(scaleFactor){
   scaleFactor=scaleFactor||2;
   var title=(document.getElementById('titleInput').value.trim())||'Mapa de Riesgos — MONTICHEF';
