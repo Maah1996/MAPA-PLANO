@@ -9,6 +9,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <style>
+
 :root{
   --bg:#0f1923; --surf:#162030; --surf2:#1e2d40; --brd:#2a3d54;
   --acc:#c8a84b; --txt:#e8e4d8; --txt2:#8fa3b8;
@@ -182,7 +183,10 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 
 /* Toast */
 #_toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);padding:10px 22px;border-radius:8px;font-size:13.5px;font-weight:600;z-index:9999;pointer-events:none;transition:opacity .4s;opacity:0;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+
 </style>
+</head>
+<body>
 </head>
 <body>
 
@@ -279,10 +283,10 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
     </div>
   </main>
 </div>
-
 <script>
 
-const LEVELS={intolerable:{color:'#c0392b',label:'Intolerable (4)'},importante:{color:'#d4691a',label:'Importante (3)'},moderado:{color:'#c8a32a',label:'Moderado (2)'},tolerable:{color:'#217a47',label:'Tolerable (1)'}};
+
+const LEVELS={intolerable:{color:'#e00000',label:'Intolerable (4)'},importante:{color:'#ff8c00',label:'Importante (3)'},moderado:{color:'#f5d000',label:'Moderado (2)'},tolerable:{color:'#7dc560',label:'Tolerable (1)'}};
 let currentLevel='intolerable';
 const RISKS=[
   {id:'incendio',name:'Incendio',g:'<path d="M32 26c6 7 8 12 4 18 4-1 5-6 3-9 5 5 5 14-7 14s-12-9-7-14c-1 3 0 7 3 8-3-7 1-12 5-17z" fill="#111"/>'},
@@ -426,30 +430,6 @@ function _scaleMarkers(){document.querySelectorAll('.marker:not(.evac-arrow)').f
 function _initArrowFloatPanel(){if(document.getElementById('arr-float-panel'))return;var p=document.createElement('div');p.id='arr-float-panel';p.innerHTML='<label>Grosor</label><button class="afp-thick" data-h="8">Fino</button><button class="afp-thick" data-h="14">Medio</button><button class="afp-thick" data-h="22">Grueso</button><label>Largo</label><input type="range" class="afp-slider" min="40" max="600" value="140" style="width:80px;accent-color:var(--acc)"><button class="afp-rot" data-d="-15">↺ 15°</button><button class="afp-rot" data-d="15">↻ 15°</button><button class="afp-rot180" data-d="180">↕ 180°</button><button class="afp-copy">Copiar</button><button class="afp-paste" id="arr-paste-btn" style="display:none">Pegar</button><button class="afp-del">Eliminar</button>';document.body.appendChild(p);var _s=null;p._setArr=function(a){_s=a;};p.querySelectorAll('.afp-thick').forEach(function(btn){btn.addEventListener('mousedown',function(e){e.stopPropagation();});btn.addEventListener('click',function(){var a=_s;if(!a)return;a.style.height=parseInt(this.dataset.h)+'px';a.dataset.hpct=parseInt(this.dataset.h)/(document.getElementById('markerLayer').offsetWidth||800)*100;_updateArrowInner(a);});});p.querySelectorAll('.afp-rot').forEach(function(btn){btn.addEventListener('mousedown',function(e){e.stopPropagation();});btn.addEventListener('click',function(){var a=_s;if(!a)return;var ang=(parseFloat(a.dataset.angle||0)+parseInt(this.dataset.d)+360)%360;a.dataset.angle=ang;a.style.transform='rotate('+ang+'deg)';});});p.querySelector('.afp-rot180').addEventListener('mousedown',function(e){e.stopPropagation();});p.querySelector('.afp-rot180').addEventListener('click',function(){var a=_s;if(!a)return;var ang=(parseFloat(a.dataset.angle||0)+180)%360;a.dataset.angle=ang;a.style.transform='rotate('+ang+'deg)';});var slider=p.querySelector('.afp-slider');slider.addEventListener('mousedown',function(e){e.stopPropagation();});slider.addEventListener('input',function(){var a=_s;if(!a)return;var nw=parseInt(this.value);a.style.width=nw+'px';a.dataset.wpct=nw/(document.getElementById('markerLayer').offsetWidth||800)*100;_updateArrowInner(a);});p.querySelector('.afp-copy').addEventListener('mousedown',function(e){e.stopPropagation();});p.querySelector('.afp-copy').addEventListener('click',function(){var a=_s;if(!a)return;window._arrowClipboard={angle:parseFloat(a.dataset.angle||0),wpct:parseFloat(a.dataset.wpct||0),hpct:parseFloat(a.dataset.hpct||0),left:parseFloat(a.style.left),top:parseFloat(a.style.top)};document.getElementById('arr-paste-btn').style.display='';});p.querySelector('.afp-paste').addEventListener('mousedown',function(e){e.stopPropagation();});p.querySelector('.afp-paste').addEventListener('click',function(){var cb=window._arrowClipboard;if(!cb)return;var ml=document.getElementById('markerLayer'),mlW=ml.offsetWidth||800;var pL=Math.min(95,(cb.left||42)+3),pT=Math.min(95,(cb.top||42)+3);addEvacArrow(cb.angle,pL,pT,cb.wpct/100*mlW,cb.hpct/100*mlW);window._arrowClipboard.left=pL;window._arrowClipboard.top=pT;});p.querySelector('.afp-del').addEventListener('mousedown',function(e){e.stopPropagation();});p.querySelector('.afp-del').addEventListener('click',function(){var a=_s;if(!a)return;a.remove();_hideFloatPanel();});document.addEventListener('mousedown',function(e){if(!p.contains(e.target)&&!(e.target.closest&&e.target.closest('.evac-arrow'))){document.querySelectorAll('.evac-arrow').forEach(function(a){a._pinned=false;});_hideFloatPanel();}});}
 function _showFloatPanel(arr){_initArrowFloatPanel();var p=document.getElementById('arr-float-panel');p._setArr(arr);var r=arr.getBoundingClientRect();p.style.display='flex';p.style.left=Math.min(r.left,window.innerWidth-300)+'px';p.style.top=Math.max(10,r.top-p.offsetHeight-8)+'px';var sl=p.querySelector('.afp-slider');if(sl)sl.value=arr.offsetWidth;}
 function _hideFloatPanel(){var p=document.getElementById('arr-float-panel');if(p){p.style.display='none';if(p._setArr)p._setArr(null);}}
-
-
-async function _capturePlan(scaleFactor){
-  scaleFactor=scaleFactor||2;
-  var title=(document.getElementById('titleInput').value.trim())||'Mapa de Riesgos — MONTICHEF';
-  var ml=document.getElementById('markerLayer');
-  document.querySelectorAll('.del,.arr-del,.arr-resize').forEach(function(d){d.style.display='none';});
-  document.querySelectorAll('.marker').forEach(function(m){m._origVis=m.style.visibility;m.style.visibility=(!m.dataset.plan||String(m.dataset.plan)===String(_currentPlan))?'visible':'hidden';});
-  document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){m._origTr=m.style.transform;m.style.transform='translate(-50%,-50%)';m.style.transformOrigin='50% 50%';});
-  var origW=ml.style.width,origMT=ml.style.marginTop;ml.style.width='100%';ml.style.marginTop='0px';_activeImg().style.width='100%';
-  var planCanvas;
-  try{planCanvas=await html2canvas(ml,{backgroundColor:'#ffffff',scale:scaleFactor,useCORS:true,scrollX:0,scrollY:0,width:ml.offsetWidth,height:ml.offsetHeight,logging:false});}
-  finally{ml.style.width=origW;ml.style.marginTop=origMT;_activeImg().style.width='100%';document.querySelectorAll('.del,.arr-del,.arr-resize').forEach(function(d){d.style.display='';});document.querySelectorAll('.marker').forEach(function(m){m.style.visibility=m._origVis||'visible';});document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){m.style.transform=m._origTr||'';m.style.transformOrigin='top left';});}
-  var blankPx=Math.round(380*scaleFactor);var crop=document.createElement('canvas');crop.width=planCanvas.width;crop.height=Math.max(1,planCanvas.height-blankPx);crop.getContext('2d').drawImage(planCanvas,0,-blankPx);
-  var pad=Math.round(2.5*scaleFactor),titleH=Math.round(26*scaleFactor),gap=Math.round(scaleFactor);
-  var fin=document.createElement('canvas');fin.width=crop.width;fin.height=crop.height+pad+titleH+gap;
-  var ctx=fin.getContext('2d');ctx.fillStyle='#ffffff';ctx.fillRect(0,0,fin.width,fin.height);
-  ctx.font='bold '+Math.round(16*scaleFactor)+'px Georgia,serif';ctx.fillStyle='#16314f';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(title,fin.width/2,pad+titleH/2);
-  ctx.strokeStyle='#cdbf9b';ctx.lineWidth=Math.round(1.5*scaleFactor);ctx.beginPath();ctx.moveTo(0,pad+titleH);ctx.lineTo(fin.width,pad+titleH);ctx.stroke();
-  ctx.drawImage(crop,0,pad+titleH+gap);return fin;
-}
-document.getElementById('exportBtn').onclick=async function(){this.textContent='Generando...';this.disabled=true;try{var c=await _capturePlan(2);var a=document.createElement('a');a.download='Mapa_de_Riesgos_MONTICHEF.png';a.href=c.toDataURL('image/png');a.click();}catch(err){alert('Error: '+err);}this.textContent='Exportar PNG';this.disabled=false;};
-document.getElementById('pdfBtn').onclick=async function(){this.textContent='Generando PDF...';this.disabled=true;try{var c=await _capturePlan(3);var imgSrc=c.toDataURL('image/png');var w=window.open('','_blank');w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Mapa MONTICHEF</title><style>*{margin:0;padding:0;box-sizing:border-box}html,body{width:100%;background:#fff}img{display:block;max-width:100%;max-height:100vh}@media print{img{max-width:100%;max-height:100%;page-break-inside:avoid}@page{margin:4mm;size:A3 portrait}}<\/style><\/head><body><img src="'+imgSrc+'"><script>window.onload=function(){setTimeout(function(){window.print();},500);};<\/script><\/body><\/html>');w.document.close();}catch(err){alert('Error: '+err);}this.textContent='Exportar PDF';this.disabled=false;};
-
 
 /* ══════════════════════════════════════════════════════════
    FIREBASE
@@ -617,6 +597,27 @@ document.getElementById('loadBtn').addEventListener('click',openSLPanel);
 /* ── Toast ── */
 function _showToast(msg,isError){var t=document.getElementById('_toast');if(!t){t=document.createElement('div');t.id='_toast';document.body.appendChild(t);}t.textContent=msg;t.style.background=isError?'#7f1d1d':'#14532d';t.style.color='#fff';t.style.opacity='1';clearTimeout(t._to);t._to=setTimeout(function(){t.style.opacity='0';},2800);}
 
+async function _capturePlan(scaleFactor){
+  scaleFactor=scaleFactor||2;
+  var title=(document.getElementById('titleInput').value.trim())||'Mapa de Riesgos — MONTICHEF';
+  var ml=document.getElementById('markerLayer');
+  document.querySelectorAll('.del,.arr-del,.arr-resize').forEach(function(d){d.style.display='none';});
+  document.querySelectorAll('.marker').forEach(function(m){m._origVis=m.style.visibility;m.style.visibility=(!m.dataset.plan||String(m.dataset.plan)===String(_currentPlan))?'visible':'hidden';});
+  document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){m._origTr=m.style.transform;m.style.transform='translate(-50%,-50%)';m.style.transformOrigin='50% 50%';});
+  var origW=ml.style.width,origMT=ml.style.marginTop;ml.style.width='100%';ml.style.marginTop='0px';_activeImg().style.width='100%';
+  var planCanvas;
+  try{planCanvas=await html2canvas(ml,{backgroundColor:'#ffffff',scale:scaleFactor,useCORS:true,scrollX:0,scrollY:0,width:ml.offsetWidth,height:ml.offsetHeight,logging:false});}
+  finally{ml.style.width=origW;ml.style.marginTop=origMT;_activeImg().style.width='100%';document.querySelectorAll('.del,.arr-del,.arr-resize').forEach(function(d){d.style.display='';});document.querySelectorAll('.marker').forEach(function(m){m.style.visibility=m._origVis||'visible';});document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){m.style.transform=m._origTr||'';m.style.transformOrigin='top left';});}
+  var blankPx=Math.round(380*scaleFactor);var crop=document.createElement('canvas');crop.width=planCanvas.width;crop.height=Math.max(1,planCanvas.height-blankPx);crop.getContext('2d').drawImage(planCanvas,0,-blankPx);
+  var pad=Math.round(2.5*scaleFactor),titleH=Math.round(26*scaleFactor),gap=Math.round(scaleFactor);
+  var fin=document.createElement('canvas');fin.width=crop.width;fin.height=crop.height+pad+titleH+gap;
+  var ctx=fin.getContext('2d');ctx.fillStyle='#ffffff';ctx.fillRect(0,0,fin.width,fin.height);
+  ctx.font='bold '+Math.round(16*scaleFactor)+'px Georgia,serif';ctx.fillStyle='#16314f';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(title,fin.width/2,pad+titleH/2);
+  ctx.strokeStyle='#cdbf9b';ctx.lineWidth=Math.round(1.5*scaleFactor);ctx.beginPath();ctx.moveTo(0,pad+titleH);ctx.lineTo(fin.width,pad+titleH);ctx.stroke();
+  ctx.drawImage(crop,0,pad+titleH+gap);return fin;
+}
+document.getElementById('exportBtn').onclick=async function(){this.textContent='Generando...';this.disabled=true;try{var c=await _capturePlan(2);var a=document.createElement('a');a.download='Mapa_de_Riesgos_MONTICHEF.png';a.href=c.toDataURL('image/png');a.click();}catch(err){alert('Error: '+err);}this.textContent='Exportar PNG';this.disabled=false;};
+document.getElementById('pdfBtn').onclick=async function(){this.textContent='Generando PDF...';this.disabled=true;try{var c=await _capturePlan(3);var imgSrc=c.toDataURL('image/png');var w=window.open('','_blank');w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Mapa MONTICHEF</title><style>*{margin:0;padding:0;box-sizing:border-box}html,body{width:100%;background:#fff}img{display:block;max-width:100%;max-height:100vh}@media print{img{max-width:100%;max-height:100%;page-break-inside:avoid}@page{margin:4mm;size:A3 portrait}}<\/style><\/head><body><img src="'+imgSrc+'"><script>window.onload=function(){setTimeout(function(){window.print();},500);};<\/script><\/body><\/html>');w.document.close();}catch(err){alert('Error: '+err);}this.textContent='Exportar PDF';this.disabled=false;};
 </script>
 </body>
 </html>
