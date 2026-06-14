@@ -495,6 +495,8 @@ function switchMode(mode){
   document.getElementById('modetab-evacuacion').className='mode-tab '+(isR?'inactive':'active');
   document.getElementById('riesgos-palette').style.display=isR?'':'none';
   document.getElementById('evac-palette').style.display=isR?'none':'';
+  legendEl.style.display=isR&&legendOn?'block':'none';
+  document.getElementById('toggleLegend').style.display=isR?'':'none';
   if(!isR){renderEvacPalette();renderArrowPalette();}
   document.querySelectorAll('.marker').forEach(function(m){
     var modeOk=(m.dataset.mode||'riesgos')===mode;
