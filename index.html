@@ -1045,14 +1045,14 @@ window.addEventListener('beforeunload',function(e){
 });
 
 async function _capturePlan(scaleFactor){
-  scaleFactor=scaleFactor||2;
+  scaleFactor=scaleFactor||3;
   var title=(document.getElementById('titleInput').value.trim())||'Mapa de Riesgos — MONTICHEF';
   var ml=document.getElementById('markerLayer');
 
   /* 1. Ocultar controles UI */
   document.querySelectorAll('.del,.arr-del,.arr-resize,.afp-toggle,#arr-float-panel,#mkr-float-panel').forEach(function(d){d.style.display='none';});
 
-  /* 2. Filtrar visibilidad por MODO y PLAN (fix: antes solo filtraba por plan) */
+  /* 2. Filtrar visibilidad por MODO y PLAN */
   document.querySelectorAll('.marker').forEach(function(m){
     m._origVis=m.style.visibility;
     var modeOk=(m.dataset.mode||'riesgos')===_appMode;
@@ -1060,16 +1060,19 @@ async function _capturePlan(scaleFactor){
     m.style.visibility=(modeOk&&planOk)?'visible':'hidden';
   });
 
-  /* 3. Aplicar escala correcta a íconos (markerScale individual, zoom global=1 durante captura) */
+  /* 3. Escala de íconos: usar la misma que en pantalla (_zw/100 * markerScale)
+        así si el usuario tiene zoom 150%, los íconos aparecen igual de grandes
+        en el export que en pantalla */
+  var zoomRatio=_zw/100;
   document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){
     m._origTr=m.style.transform;
     m._origOrg=m.style.transformOrigin;
     var ms=parseFloat(m.dataset.markerScale||1);
-    m.style.transform='translate(-50%,-50%) scale('+ms+')';
+    m.style.transform='translate(-50%,-50%) scale('+(zoomRatio*ms)+')';
     m.style.transformOrigin='50% 50%';
   });
 
-  /* 4. Resetear zoom del markerLayer para captura completa */
+  /* 4. Resetear zoom del markerLayer a 100% para captura completa del plano */
   var origW=ml.style.width,origMT=ml.style.marginTop;
   ml.style.width='100%';ml.style.marginTop='0px';
   _activeImg().style.width='100%';
@@ -1092,23 +1095,39 @@ async function _capturePlan(scaleFactor){
       m.style.transform=m._origTr||'';
       m.style.transformOrigin=m._origOrg||'50% 50%';
     });
-    _scaleMarkers(); /* re-aplicar escala real de pantalla */
+    _scaleMarkers();
   }
 
-  /* 5. Recortar zona blanca superior del PNG del plano */
-  var blankPx=Math.round(380*scaleFactor);
+  /* 5. Auto-detectar área en blanco superior escaneando filas de píxeles
+        Evita el problema del hardcode 380px que desplazaba los íconos */
+  var scanCtx=planCanvas.getContext('2d');
+  var blankRows=0;
+  var maxScan=Math.floor(planCanvas.height*0.35); /* no escanear más del 35% */
+  for(var row=0;row<maxScan;row++){
+    var rowData=scanCtx.getImageData(0,row,planCanvas.width,1).data;
+    var isBlank=true;
+    for(var p=0;p<rowData.length;p+=4){
+      /* Si algún pixel no es casi-blanco, terminamos */
+      if(rowData[p]<245||rowData[p+1]<245||rowData[p+2]<245){isBlank=false;break;}
+    }
+    if(isBlank)blankRows++;
+    else break;
+  }
+  /* Pequeño margen de seguridad: dejar 4px para no cortar el borde del plano */
+  blankRows=Math.max(0,blankRows-Math.round(4*scaleFactor));
+
   var crop=document.createElement('canvas');
   crop.width=planCanvas.width;
-  crop.height=Math.max(1,planCanvas.height-blankPx);
-  crop.getContext('2d').drawImage(planCanvas,0,-blankPx);
+  crop.height=Math.max(1,planCanvas.height-blankRows);
+  crop.getContext('2d').drawImage(planCanvas,0,-blankRows);
 
   /* 6. Agregar franja de título */
-  var pad=Math.round(2.5*scaleFactor),titleH=Math.round(26*scaleFactor),gap=Math.round(scaleFactor);
+  var pad=Math.round(3*scaleFactor),titleH=Math.round(28*scaleFactor),gap=Math.round(scaleFactor);
   var fin=document.createElement('canvas');
   fin.width=crop.width;fin.height=crop.height+pad+titleH+gap;
   var ctx=fin.getContext('2d');
   ctx.fillStyle='#ffffff';ctx.fillRect(0,0,fin.width,fin.height);
-  ctx.font='bold '+Math.round(16*scaleFactor)+'px Georgia,serif';
+  ctx.font='bold '+Math.round(17*scaleFactor)+'px Georgia,serif';
   ctx.fillStyle='#16314f';ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.fillText(title,fin.width/2,pad+titleH/2);
   ctx.strokeStyle='#cdbf9b';ctx.lineWidth=Math.round(1.5*scaleFactor);
@@ -1120,7 +1139,7 @@ async function _capturePlan(scaleFactor){
 document.getElementById('exportBtn').onclick=async function(){
   this.textContent='Generando...';this.disabled=true;
   try{
-    var c=await _capturePlan(2);
+    var c=await _capturePlan(3);
     var a=document.createElement('a');
     a.download='Plano_MONTICHEF.png';
     a.href=c.toDataURL('image/png');a.click();
@@ -1131,11 +1150,10 @@ document.getElementById('exportBtn').onclick=async function(){
 document.getElementById('pdfBtn').onclick=async function(){
   this.textContent='Generando PDF...';this.disabled=true;
   try{
-    var c=await _capturePlan(3);
+    var c=await _capturePlan(4);
     var imgSrc=c.toDataURL('image/png');
-    /* Calcular tamaño de página en mm proporcional al canvas (96dpi base) */
     var pxPerMm=3.7795275591;
-    var sf=3;
+    var sf=4;
     var wMm=Math.ceil(c.width/sf/pxPerMm)+10;
     var hMm=Math.ceil(c.height/sf/pxPerMm)+10;
     var w=window.open('','_blank');
