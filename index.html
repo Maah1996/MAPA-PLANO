@@ -116,10 +116,15 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 .marker:hover .del{display:block}
 
 /* Legend */
-.legend{position:absolute;right:10px;bottom:10px;background:rgba(15,25,35,.95);border:1px solid rgba(200,168,75,.5);border-radius:6px;padding:8px 10px;font-size:10.5px;z-index:8;max-width:200px;box-shadow:0 4px 16px rgba(0,0,0,.5);font-family:inherit}
-.legend b{display:block;font-size:11px;color:var(--acc);margin-bottom:5px;font-weight:700}
-.legend .row{display:flex;align-items:center;gap:6px;margin:2px 0;color:var(--txt2)}
-.legend .sw{width:12px;height:12px;border-radius:50%;flex:0 0 12px;border:1px solid #0004}
+.legend{position:absolute;left:10px;bottom:10px;background:rgba(15,25,35,.95);border:1px solid rgba(200,168,75,.5);border-radius:6px;padding:6px 10px 8px;font-size:10.5px;z-index:8;max-width:230px;box-shadow:0 4px 16px rgba(0,0,0,.5);font-family:inherit;user-select:none}
+.legend-drag{display:flex;align-items:center;gap:5px;cursor:grab;color:var(--acc);font-size:11px;font-weight:700;padding:0 0 4px;border-bottom:1px solid rgba(200,168,75,.3);margin-bottom:5px}
+.legend-drag:active{cursor:grabbing}
+.legend-drag .drag-grip{font-size:14px;opacity:.55;line-height:1}
+.legend .lvl-head{font-size:0.78em;font-weight:bold;margin-top:3px;margin-bottom:1px}
+.legend .row{display:flex;align-items:center;gap:5px;margin:2px 0;color:var(--txt2);line-height:1.2}
+.legend .row-icon{width:22px;height:22px;flex:0 0 22px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.legend .row-icon svg{width:22px;height:22px;display:block}
+.legend .row-icon img{width:22px;height:22px;object-fit:contain;display:block;border-radius:2px}
 .dragghost{position:fixed;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);opacity:.9}
 
 /* Evac Arrows */
@@ -343,31 +348,65 @@ function _renderLegendSummary(){
   var isR=_appMode==='riesgos';
   var allM=[].slice.call(document.querySelectorAll('.marker:not(.evac-arrow)'));
   var curr=allM.filter(function(m){return(m.dataset.mode||'riesgos')===_appMode&&String(m.dataset.plan||1)===String(_currentPlan);});
-  var html='';
+  var title=isR?'Mapa de riesgos':'Plano de evacuación';
+  var html='<div class="legend-drag"><span class="drag-grip">⠿</span>'+title+'</div>';
+
   if(isR){
-    html='<b>Niveles de riesgo</b>'+Object.keys(LEVELS).map(function(k){return'<div class="row"><span class="sw" style="background:'+LEVELS[k].color+'"></span>'+LEVELS[k].label+'</div>';}).join('');
-    if(curr.length){
-      var byLvl={},eaCnt=0;
-      curr.forEach(function(m){var id=m.dataset.itemId||'',c=m.dataset.itemColor||'';if(id==='estoy_aqui'){eaCnt++;return;}if(!byLvl[c])byLvl[c]=[];var found=false;byLvl[c].forEach(function(g){if(g.id===id){g.n++;found=true;}});if(!found)byLvl[c].push({id:id,n:1});});
-      html+='<div style="margin-top:7px;padding-top:5px;border-top:1px solid rgba(255,255,255,0.15);font-size:0.8em"><b>En este plano (N'+_currentPlan+'):</b></div>';
-      Object.keys(LEVELS).forEach(function(lk){var lc=LEVELS[lk].color;if(!byLvl[lc]||!byLvl[lc].length)return;html+='<div style="font-size:0.78em;font-weight:bold;color:'+lc+';margin-top:3px">'+LEVELS[lk].label+'</div>';byLvl[lc].forEach(function(g){var nm='';RISKS.forEach(function(r){if(r.id===g.id)nm=r.name;});html+='<div class="row"><span class="sw" style="background:'+lc+'"></span>'+(nm||g.id)+' ×'+g.n+'</div>';});});
-      if(eaCnt)html+='<div class="row"><span class="sw" style="background:#ff6600;border-radius:50%;border:1px solid #111"></span>Estoy aquí ×'+eaCnt+'</div>';
+    var byLvl={},eaCnt=0;
+    curr.forEach(function(m){var id=m.dataset.itemId||'',c=m.dataset.itemColor||'';if(id==='estoy_aqui'){eaCnt++;return;}if(!byLvl[c])byLvl[c]=[];var found=false;byLvl[c].forEach(function(g){if(g.id===id){g.n++;found=true;}});if(!found)byLvl[c].push({id:id,n:1});});
+    var anyItems=Object.keys(byLvl).some(function(c){return byLvl[c].length>0;})||eaCnt>0;
+    if(!anyItems){
+      html+='<div style="opacity:0.55;font-size:0.85em;margin-top:4px">Sin íconos en este plano</div>';
+    }else{
+      Object.keys(LEVELS).forEach(function(lk){
+        var lc=LEVELS[lk].color;
+        if(!byLvl[lc]||!byLvl[lc].length)return;
+        html+='<div class="lvl-head" style="color:'+lc+'">'+LEVELS[lk].label+'</div>';
+        byLvl[lc].forEach(function(g){
+          var nm='',ico='';
+          RISKS.forEach(function(r){if(r.id===g.id){nm=r.name;ico=iconSVG(r.g,lc,22);}});
+          html+='<div class="row"><span class="row-icon">'+ico+'</span><span>'+(nm||g.id)+' ×'+g.n+'</span></div>';
+        });
+      });
+      if(eaCnt)html+='<div class="row"><span class="row-icon">'+iconSVGEstoyAqui(22)+'</span><span>Estoy aquí ×'+eaCnt+'</span></div>';
     }
   }else{
-    html='<b>Leyenda evacuación</b>';
-    var grps={},eaCnt=0;
-    curr.forEach(function(m){var id=m.dataset.itemId||'';if(id==='estoy_aqui'){eaCnt++;return;}if(!grps[id])grps[id]=0;grps[id]++;});
+    var grps=[],idSet={},eaCnt=0;
+    curr.forEach(function(m){var id=m.dataset.itemId||'';if(id==='estoy_aqui'){eaCnt++;return;}if(!idSet[id]){idSet[id]=0;grps.push(id);}idSet[id]++;});
     var arrows=[].slice.call(document.querySelectorAll('.evac-arrow')).filter(function(m){return String(m.dataset.plan||1)===String(_currentPlan);});
-    if(!Object.keys(grps).length&&!eaCnt&&!arrows.length){
-      html+='<div style="opacity:0.6;font-size:0.85em;margin-top:6px">Sin elementos en este plano</div>';
+    if(!grps.length&&!eaCnt&&!arrows.length){
+      html+='<div style="opacity:0.55;font-size:0.85em;margin-top:4px">Sin elementos en este plano</div>';
     }else{
-      Object.keys(grps).forEach(function(id){var nm='',n=grps[id];if(typeof EVAC_ITEMS!=='undefined')EVAC_ITEMS.forEach(function(it){if(it.id===id)nm=it.name;});html+='<div class="row"><span class="sw" style="background:#217a47"></span>'+(nm||id)+' ×'+n+'</div>';});
-      if(eaCnt)html+='<div class="row"><span class="sw" style="background:#ff6600;border-radius:50%;border:1px solid #111"></span>Estoy aquí ×'+eaCnt+'</div>';
-      if(arrows.length)html+='<div class="row"><span class="sw" style="background:#7dc560"></span>Flechas evacuación ×'+arrows.length+'</div>';
+      grps.forEach(function(id){
+        var nm='',ico='',n=idSet[id];
+        if(typeof EVAC_ITEMS!=='undefined')EVAC_ITEMS.forEach(function(it){if(it.id===id){nm=it.name;ico='<img src="'+it.img+'">';}});
+        html+='<div class="row"><span class="row-icon">'+ico+'</span><span>'+(nm||id)+' ×'+n+'</span></div>';
+      });
+      if(eaCnt)html+='<div class="row"><span class="row-icon">'+iconSVGEstoyAqui(22)+'</span><span>Estoy aquí ×'+eaCnt+'</span></div>';
+      if(arrows.length){
+        var arwIco=typeof arrowSVGThumb==='function'?arrowSVGThumb(0):'→';
+        html+='<div class="row"><span class="row-icon">'+arwIco+'</span><span>Flechas evacuación ×'+arrows.length+'</span></div>';
+      }
     }
   }
   legendEl.innerHTML=html;
 }
+
+/* ── Drag leyenda ── */
+(function(){
+  var _dragging=false,_ox=0,_oy=0,_elx=0,_ely=0;
+  legendEl.addEventListener('mousedown',function(e){
+    if(!e.target.closest||!e.target.closest('.legend-drag'))return;
+    _dragging=true;
+    var ml=document.getElementById('markerLayer'),mr=ml.getBoundingClientRect(),lr=legendEl.getBoundingClientRect();
+    _elx=lr.left-mr.left;_ely=lr.top-mr.top;_ox=e.clientX;_oy=e.clientY;
+    legendEl.style.left=_elx+'px';legendEl.style.top=_ely+'px';legendEl.style.bottom='auto';legendEl.style.right='auto';
+    e.preventDefault();e.stopPropagation();
+    document.addEventListener('mousemove',_legMove);document.addEventListener('mouseup',_legUp);
+  });
+  function _legMove(e){if(!_dragging)return;legendEl.style.left=(_elx+e.clientX-_ox)+'px';legendEl.style.top=(_ely+e.clientY-_oy)+'px';}
+  function _legUp(){_dragging=false;document.removeEventListener('mousemove',_legMove);document.removeEventListener('mouseup',_legUp);}
+})();
 
 /* ── Drag & Drop ── */
 function startDragFromPalette(e,item){
