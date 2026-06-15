@@ -115,16 +115,6 @@
   #auth-user-info{display:flex;align-items:center;gap:8px}
   #auth-avatar{width:26px;height:26px;border-radius:50%;border:2px solid #4285f4}
   #auth-name{font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  #login-overlay{position:fixed;inset:0;background:rgba(13,33,55,0.92);
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    z-index:99999;color:#fff;font-family:system-ui,sans-serif}
-  #login-overlay h2{font-size:26px;margin-bottom:8px}
-  #login-overlay p{opacity:.8;margin-bottom:28px;font-size:15px}
-  #btn-login-big{padding:14px 32px;background:#4285f4;color:#fff;border:none;
-    border-radius:8px;font-size:18px;font-weight:700;cursor:pointer;
-    display:flex;align-items:center;gap:12px;box-shadow:0 4px 16px #0006}
-  #btn-login-big:hover{background:#3367d6}
-  #btn-login-big img{width:28px;height:28px}
 
 /* =========================================================
    SAVE/LOAD MODAL
@@ -168,15 +158,6 @@
     <button id="btn-logout">Salir</button>
   </span>
   <button id="btn-login">Iniciar sesion con Google</button>
-</div>
-<div id="login-overlay">
-  <h2>Mapa de Riesgos / Plano de Evacuacion</h2>
-  <p>Inicia sesion para acceder y guardar tu trabajo en la nube</p>
-  <button id="btn-login-big">
-    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
-    Iniciar sesion con Google
-  </button>
-  <p id="login-error" style="margin-top:16px;color:#ff8a80;font-size:13px;max-width:400px;text-align:center"></p>
 </div>
 <header>
   <h1>Mapa de Riesgos — MONTICHEF</h1>
