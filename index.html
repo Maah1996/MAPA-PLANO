@@ -825,8 +825,50 @@ function _fsDelete(docId,cb){_fsCol().doc(docId).delete().then(cb).catch(functio
 ══════════════════════════════════════════════════════════ */
 function _lsGetAll(){try{return JSON.parse(localStorage.getItem(_LS_KEY)||'[]');}catch(e){return[];}}
 function _lsSave(data){var list=_lsGetAll();list.unshift(data);localStorage.setItem(_LS_KEY,JSON.stringify(list));_showToast('Guardado localmente');}
-function _lsListMode(mode){return _lsGetAll().filter(function(s){return s.mode===mode;});}
-function _lsDelete(id){var list=_lsGetAll().filter(function(s){return s.id!==id;});localStorage.setItem(_LS_KEY,JSON.stringify(list));}
+function _lsListMode(mode){
+  var list=_lsGetAll().filter(function(s){return s.mode===mode;});
+  /* Migrar desde clave legacy v2 si existe */
+  try{
+    var leg=localStorage.getItem(_LS_LEGACY);
+    if(leg){
+      var legArr=JSON.parse(leg);
+      if(Array.isArray(legArr)){
+        legArr.forEach(function(s){if(s.mode===mode)list.push(s);});
+      } else if(legArr&&legArr.mode===mode){
+        list.push(legArr);
+      }
+    }
+  }catch(e){}
+  /* Incluir autosave como opción de recuperación si hay datos para este modo */
+  try{
+    var auto=localStorage.getItem(_LS_AUTO);
+    if(auto){
+      var ad=JSON.parse(auto);
+      if(ad&&Array.isArray(ad.markers)){
+        var hasMode=ad.markers.some(function(m){return(m.mode||'riesgos')===mode;});
+        if(hasMode){
+          list.push({
+            id:'__autosave__',
+            name:'⟳ Recuperar trabajo anterior (autosave)',
+            mode:mode,
+            plan:ad.plan||1,
+            zw:ad.zw||100,
+            markers:ad.markers.filter(function(m){return(m.mode||'riesgos')===mode;}),
+            ts:ad.ts||'',
+            tsMs:0,
+            _isAutosave:true
+          });
+        }
+      }
+    }
+  }catch(e){}
+  return list;
+}
+function _lsDelete(id){
+  if(id==='__autosave__')return; /* no borrar autosave desde el panel */
+  var list=_lsGetAll().filter(function(s){return s.id!==id;});
+  localStorage.setItem(_LS_KEY,JSON.stringify(list));
+}
 
 /* ══════════════════════════════════════════════════════════
    PANEL VISUAL (modal)
