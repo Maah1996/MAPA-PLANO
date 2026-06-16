@@ -124,9 +124,9 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 .leg-sz:hover{background:rgba(200,168,75,.25)}
 .legend .lvl-head{font-size:0.78em;font-weight:bold;margin-top:3px;margin-bottom:1px}
 .legend .row{display:flex;align-items:center;gap:5px;margin:2px 0;color:var(--txt2);line-height:1.2}
-.legend .row-icon{width:22px;height:22px;flex:0 0 22px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.legend .row-icon svg{width:22px;height:22px;display:block}
-.legend .row-icon img{width:22px;height:22px;object-fit:contain;display:block;border-radius:2px}
+.legend .row-icon{width:32px;height:32px;flex:0 0 32px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.legend .row-icon svg{width:32px;height:32px;display:block}
+.legend .row-icon img{width:32px;height:32px;object-fit:contain;display:block;border-radius:3px}
 .dragghost{position:fixed;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);opacity:.9}
 
 /* Evac Arrows */
@@ -344,7 +344,19 @@ var legendEl=document.getElementById('legend'),legendOn=true;
 var ghost=null,draggingNew=null,movingMarker=null;
 var _appMode='riesgos',_currentPlan=1,_zw=100;
 
+/* ── Singular/plural español para leyenda ── */
+function _singForm(name,n){
+  if(n!==1)return name;
+  return name.replace(/^(\S+)/,function(w){
+    if(/[^aeiouáéíóuAEIOUÁÉÍÓÚ]es$/i.test(w))return w.slice(0,-2); /* MEDIDORES→MEDIDOR */
+    if(/[aeiouáéíóuAEIOUÁÉÍÓÚ]s$/i.test(w))return w.slice(0,-1);   /* FLECHAS→FLECHA */
+    if(/[^aeiouáéíóuAEIOUÁÉÍÓÚ]s$/i.test(w))return w.slice(0,-1);  /* otros en S */
+    return w;
+  });
+}
+
 /* ── Leyenda dinámica ── */
+var _LEG_ICO=32; /* tamaño íconos en leyenda px */
 function _renderLegendSummary(){
   if(!legendEl)return;
   var isR=_appMode==='riesgos';
@@ -366,11 +378,11 @@ function _renderLegendSummary(){
         html+='<div class="lvl-head" style="color:'+lc+'">'+LEVELS[lk].label+'</div>';
         byLvl[lc].forEach(function(g){
           var nm='',ico='';
-          RISKS.forEach(function(r){if(r.id===g.id){nm=r.name;ico=iconSVG(r.g,lc,22);}});
-          html+='<div class="row"><span class="row-icon">'+ico+'</span><span>'+(nm||g.id)+' ×'+g.n+'</span></div>';
+          RISKS.forEach(function(r){if(r.id===g.id){nm=r.name;ico=iconSVG(r.g,lc,_LEG_ICO);}});
+          html+='<div class="row"><span class="row-icon">'+ico+'</span><span>'+_singForm(nm||g.id,g.n)+(g.n>1?' '+g.n:'')+'</span></div>';
         });
       });
-      if(eaCnt)html+='<div class="row"><span class="row-icon">'+iconSVGEstoyAqui(22)+'</span><span>Estoy aquí ×'+eaCnt+'</span></div>';
+      if(eaCnt)html+='<div class="row"><span class="row-icon">'+iconSVGEstoyAqui(_LEG_ICO)+'</span><span>Estoy aquí'+(eaCnt>1?' '+eaCnt:'')+'</span></div>';
     }
   }else{
     var grps=[],idSet={},eaCnt=0;
@@ -381,13 +393,14 @@ function _renderLegendSummary(){
     }else{
       grps.forEach(function(id){
         var nm='',ico='',n=idSet[id];
-        if(typeof EVAC_ITEMS!=='undefined')EVAC_ITEMS.forEach(function(it){if(it.id===id){nm=it.name;ico='<img src="'+it.img+'">';}});
-        html+='<div class="row"><span class="row-icon">'+ico+'</span><span>'+(nm||id)+' ×'+n+'</span></div>';
+        if(typeof EVAC_ITEMS!=='undefined')EVAC_ITEMS.forEach(function(it){if(it.id===id){nm=it.name;ico='<img src="'+it.img+'" style="width:'+_LEG_ICO+'px;height:'+_LEG_ICO+'px;object-fit:contain;border-radius:3px">';}});
+        html+='<div class="row"><span class="row-icon">'+ico+'</span><span>'+_singForm(nm||id,n)+(n>1?' '+n:'')+'</span></div>';
       });
-      if(eaCnt)html+='<div class="row"><span class="row-icon">'+iconSVGEstoyAqui(22)+'</span><span>Estoy aquí ×'+eaCnt+'</span></div>';
+      if(eaCnt)html+='<div class="row"><span class="row-icon">'+iconSVGEstoyAqui(_LEG_ICO)+'</span><span>Estoy aquí'+(eaCnt>1?' '+eaCnt:'')+'</span></div>';
       if(arrows.length){
         var arwIco=typeof arrowSVGThumb==='function'?arrowSVGThumb(0):'→';
-        html+='<div class="row"><span class="row-icon">'+arwIco+'</span><span>Flechas evacuación ×'+arrows.length+'</span></div>';
+        var arwNm=arrows.length===1?'Flecha evacuación':'Flechas evacuación';
+        html+='<div class="row"><span class="row-icon" style="width:36px;flex:0 0 36px">'+arwIco+'</span><span>'+arwNm+(arrows.length>1?' '+arrows.length:'')+'</span></div>';
       }
     }
   }
