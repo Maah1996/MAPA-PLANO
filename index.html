@@ -1242,14 +1242,14 @@ async function _capturePlan(scaleFactor){
   crop.getContext('2d').drawImage(planCanvas,0,-blankRows);
 
   /* 6. Agregar franja de título */
-  var pad=Math.round(6*scaleFactor),titleH=Math.round(44*scaleFactor),gap=Math.round(2*scaleFactor);
+  var pad=Math.round(6*scaleFactor),titleH=Math.round(54*scaleFactor),gap=Math.round(2*scaleFactor);
   var fin=document.createElement('canvas');
   fin.width=crop.width;fin.height=crop.height+pad+titleH+gap;
   var ctx=fin.getContext('2d');
   ctx.fillStyle='#ffffff';ctx.fillRect(0,0,fin.width,fin.height);
   /* Franja de fondo oscuro para el título */
   ctx.fillStyle='#16314f';ctx.fillRect(0,0,fin.width,pad+titleH);
-  ctx.font='bold '+Math.round(26*scaleFactor)+'px Georgia,serif';
+  ctx.font='bold '+Math.round(32*scaleFactor)+'px Georgia,serif';
   ctx.fillStyle='#ffffff';ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.fillText(title,fin.width/2,pad+titleH/2);
   ctx.strokeStyle='#cdbf9b';ctx.lineWidth=Math.round(2*scaleFactor);
