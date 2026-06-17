@@ -1580,7 +1580,7 @@ function _getPos(e){
 function _cadOpenEditor(){
   _cadOpen=true;
   _cadShapes=[];_cadUndoStack=[];_cadDrawing=false;_cadStart=null;_cadMouse=null;
-  document.getElementById('cad-overlay').style.display='';
+  document.getElementById('cad-overlay').style.display='flex';
   _showPlansOverlay(false);
   _cadApplyTheme();
   setTimeout(_cadResize,40);
