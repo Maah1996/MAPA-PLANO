@@ -330,10 +330,14 @@ function _cadSavePlan(){
   if(!_cadShapes.length){_showToast('Dibuja algo primero.',true);return;}
   var nameEl=document.getElementById('cad-plan-name');
   var name=(nameEl?nameEl.value.trim():'')||'Plano CAD';
-  /* Exportar canvas limpio como JPEG */
+  /* Exportar siempre en modo CLARO (fondo blanco) para que sea legible como fondo de plano */
   _cadDrawing=false;_cadMouse=null;_cadStart=null;
+  var wasDark=_cadDark;
+  _cadDark=false;
   _cadRender();
-  var dataUrl=_cCanvas.toDataURL('image/jpeg',0.88);
+  var dataUrl=_cCanvas.toDataURL('image/jpeg',0.92);
+  _cadDark=wasDark;
+  _cadRender();
   _plansCol().add({
     name:name,img:dataUrl,builtin:false,cad:true,
     markers:[],zw:100,title:name,
