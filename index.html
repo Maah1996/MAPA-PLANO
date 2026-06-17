@@ -19,6 +19,15 @@
 html,body{height:100%}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--txt);display:flex;flex-direction:column;height:100vh;overflow:hidden}
 
+/* Barra de edición admin */
+#edit-banner{display:flex;align-items:center;gap:12px;padding:9px 16px;background:#7c4a03;color:#fff;font-size:13px;border-bottom:2px solid #f0a829;flex-shrink:0}
+#edit-banner b{color:#ffd98a;font-weight:700}
+#edit-banner button{padding:6px 14px;border:none;border-radius:6px;cursor:pointer;font-size:12.5px;font-weight:700;font-family:inherit}
+#edit-save{background:#f0a829;color:#3a2400}
+#edit-save:hover{filter:brightness(1.08)}
+#edit-exit{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.3)!important}
+#edit-exit:hover{background:rgba(255,255,255,.24)}
+
 /* Auth Bar */
 #auth-bar{display:flex;align-items:center;gap:10px;padding:6px 16px;background:#0a111a;border-bottom:1px solid var(--brd);font-size:12.5px;justify-content:flex-end;min-height:38px;flex-shrink:0}
 #auth-bar button{padding:5px 12px;border:none;border-radius:5px;cursor:pointer;font-size:12px;font-weight:600}
@@ -282,6 +291,14 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 <body>
 </head>
 <body>
+
+<!-- Barra de edición admin (visible solo cuando el admin abre el trabajo de un usuario) -->
+<div id="edit-banner" style="display:none">
+  <span id="edit-banner-txt"></span>
+  <span style="flex:1"></span>
+  <button id="edit-save" type="button">💾 Guardar cambios</button>
+  <button id="edit-exit" type="button">Salir de edición</button>
+</div>
 
 <div id="auth-bar">
   <span id="auth-user-info" style="display:none">
@@ -1140,6 +1157,43 @@ document.querySelectorAll('.pw-toggle').forEach(function(btn){
   });
 });
 
+/* ══════════════════════════════════════════════════════════
+   MODO EDICIÓN ADMIN — editar el trabajo de otro usuario
+   index.html?au=<uid>&as=<docId>
+══════════════════════════════════════════════════════════ */
+var _editCtx=null;
+function _parseEditParams(){
+  try{var p=new URLSearchParams(location.search);var au=p.get('au'),as=p.get('as');if(au&&as)return{uid:au,docId:as};}catch(e){}
+  return null;
+}
+function _enterEditMode(ctx){
+  var ref=_db.collection('users').doc(ctx.uid).collection('saves').doc(ctx.docId);
+  Promise.all([ref.get(),_db.collection('users').doc(ctx.uid).get()]).then(function(res){
+    var saveDoc=res[0],userDoc=res[1];
+    if(!saveDoc.exists){_showToast('El guardado ya no existe.',true);return;}
+    var data=saveDoc.data();
+    var uname=userDoc.exists?(userDoc.data().name||userDoc.data().email||'usuario'):'usuario';
+    _editCtx={uid:ctx.uid,docId:ctx.docId,name:data.name||'Sin nombre',user:uname};
+    _applyData(data);
+    document.getElementById('edit-banner-txt').innerHTML='✎ Editando <b>'+_escHtml(_editCtx.name)+'</b> de <b>'+_escHtml(uname)+'</b> — los cambios se guardan en la cuenta del usuario.';
+    document.getElementById('edit-banner').style.display='flex';
+    /* ocultar guardar/cargar normales para evitar confusión */
+    var sb=document.getElementById('saveBtn'),lb=document.getElementById('loadBtn');
+    if(sb)sb.style.display='none';if(lb)lb.style.display='none';
+  }).catch(function(e){_showToast('Error al abrir el trabajo: '+e.message,true);});
+}
+document.getElementById('edit-save').addEventListener('click',function(){
+  if(!_editCtx)return;
+  var data=_buildSaveData(_editCtx.name);
+  _db.collection('users').doc(_editCtx.uid).collection('saves').doc(_editCtx.docId).set(data)
+    .then(function(){_showToast('Cambios guardados en la cuenta de '+_editCtx.user);})
+    .catch(function(e){_showToast('Error al guardar: '+e.message,true);});
+});
+document.getElementById('edit-exit').addEventListener('click',function(){
+  _editCtx=null;
+  location.href=location.pathname; /* recarga limpia, sin parámetros */
+});
+
 /* ── Estado de autenticación ── */
 function _grantAccess(){
   _showStatusOverlay(false);
@@ -1164,6 +1218,8 @@ _auth.onAuthStateChanged(function(user){
   if(_isAdminEmail(user.email)){
     _userPerms={mapaRiesgo:true,planoEmerg:true,admin:true};
     _grantAccess();
+    var ec=_parseEditParams();
+    if(ec)setTimeout(function(){_enterEditMode(ec);},250);
     return;
   }
   /* Usuario normal: verificar permisos y caducidad en Firestore */

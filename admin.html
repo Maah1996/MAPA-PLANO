@@ -307,7 +307,11 @@ function _toggleSaves(tr,id){
       var item=document.createElement('div');item.className='save-item';
       item.innerHTML='<div style="flex:1;min-width:0"><div class="si-name">'+_esc(s.name||'Sin nombre')+'</div>'
         +'<div class="si-meta"><span>'+_esc(s.ts||'')+'</span><span>'+modeLbl+'</span><span>'+planLbl+'</span><span>'+n+' elemento'+(n!==1?'s':'')+'</span></div></div>'
+        +'<button class="btn-sm btn-view si-edit">Abrir / editar</button>'
         +'<button class="btn-sm btn-del si-del">Borrar</button>';
+      item.querySelector('.si-edit').addEventListener('click',function(){
+        window.open('index.html?au='+encodeURIComponent(id)+'&as='+encodeURIComponent(s._docId),'_blank');
+      });
       item.querySelector('.si-del').addEventListener('click',function(){
         if(!confirm('¿Borrar el guardado "'+(s.name||'')+'"?'))return;
         _db.collection('users').doc(id).collection('saves').doc(s._docId).delete().then(function(){
