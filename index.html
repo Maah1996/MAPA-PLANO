@@ -38,8 +38,14 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .login-tab{flex:1;padding:9px 0;border:none;background:transparent;color:var(--txt2);font-size:13px;font-weight:700;cursor:pointer;border-radius:6px;transition:.15s;font-family:inherit}
 .login-tab.active{background:var(--surf2);color:var(--acc)}
 .login-form{display:flex;flex-direction:column;gap:11px}
-.login-form input{padding:11px 13px;background:var(--bg);border:1px solid var(--brd);border-radius:7px;color:var(--txt);font-size:14px;outline:none;font-family:inherit}
+.login-form input{padding:11px 13px;background:var(--bg);border:1px solid var(--brd);border-radius:7px;color:var(--txt);font-size:14px;outline:none;font-family:inherit;width:100%}
 .login-form input:focus{border-color:var(--acc)}
+/* Campo de contraseña con ojo */
+.pw-wrap{position:relative;display:flex}
+.pw-wrap input{padding-right:42px!important}
+.pw-toggle{position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;line-height:1;padding:6px 8px;opacity:.55;filter:grayscale(1)}
+.pw-toggle:hover{opacity:.9}
+.pw-toggle.on{opacity:1;filter:none}
 .login-submit{margin-top:5px;padding:12px;background:var(--acc);color:var(--bg);border:none;border-radius:7px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:.12s}
 .login-submit:hover{filter:brightness(1.08)}
 .login-link{background:none;border:none;color:var(--txt2);font-size:12px;cursor:pointer;font-family:inherit;text-decoration:underline;padding:4px;margin-top:2px}
@@ -251,7 +257,7 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 
     <form id="form-login" class="login-form">
       <input type="email" id="li-email" placeholder="Correo electrónico" autocomplete="email" required>
-      <input type="password" id="li-pass" placeholder="Contraseña" autocomplete="current-password" required>
+      <div class="pw-wrap"><input type="password" id="li-pass" placeholder="Contraseña" autocomplete="current-password" required><button type="button" class="pw-toggle" aria-label="Mostrar contraseña">👁</button></div>
       <button type="submit" class="login-submit">Ingresar</button>
       <button type="button" id="li-forgot" class="login-link">¿Olvidaste tu contraseña?</button>
     </form>
@@ -259,8 +265,8 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
     <form id="form-register" class="login-form" style="display:none">
       <input type="text" id="re-name" placeholder="Nombre completo" autocomplete="name" required>
       <input type="email" id="re-email" placeholder="Correo electrónico" autocomplete="email" required>
-      <input type="password" id="re-pass" placeholder="Contraseña (mín. 6 caracteres)" autocomplete="new-password" required>
-      <input type="password" id="re-pass2" placeholder="Repetir contraseña" autocomplete="new-password" required>
+      <div class="pw-wrap"><input type="password" id="re-pass" placeholder="Contraseña (mín. 6 caracteres)" autocomplete="new-password" required><button type="button" class="pw-toggle" aria-label="Mostrar contraseña">👁</button></div>
+      <div class="pw-wrap"><input type="password" id="re-pass2" placeholder="Repetir contraseña" autocomplete="new-password" required><button type="button" class="pw-toggle" aria-label="Mostrar contraseña">👁</button></div>
       <button type="submit" class="login-submit">Crear cuenta</button>
     </form>
 
@@ -1005,6 +1011,18 @@ function _applyPermsToTabs(){
   if(!p.mapaRiesgo&&p.planoEmerg){if(_appMode!=='evacuacion')switchMode('evacuacion');}
   else if(p.mapaRiesgo&&!p.planoEmerg){if(_appMode!=='riesgos')switchMode('riesgos');}
 }
+
+/* ── Mostrar/ocultar contraseña (ojo) ── */
+document.querySelectorAll('.pw-toggle').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    var inp=btn.parentNode.querySelector('input');
+    if(!inp)return;
+    var show=inp.type==='password';
+    inp.type=show?'text':'password';
+    btn.classList.toggle('on',show);
+    btn.setAttribute('aria-label',show?'Ocultar contraseña':'Mostrar contraseña');
+  });
+});
 
 /* ── Estado de autenticación ── */
 function _grantAccess(){

@@ -26,6 +26,11 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .login-card .sub{text-align:center;opacity:.6;font-size:12px;letter-spacing:2px;text-transform:uppercase;margin-bottom:22px}
 .login-card input{width:100%;padding:11px 13px;margin-bottom:11px;background:var(--bg);border:1px solid var(--brd);border-radius:7px;color:var(--txt);font-size:14px;outline:none;font-family:inherit}
 .login-card input:focus{border-color:var(--acc)}
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:42px!important}
+.pw-toggle{position:absolute;right:4px;top:21px;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;line-height:1;padding:6px 8px;opacity:.55;filter:grayscale(1)}
+.pw-toggle:hover{opacity:.9}
+.pw-toggle.on{opacity:1;filter:none}
 .login-card button{width:100%;padding:12px;background:var(--acc);color:var(--bg);border:none;border-radius:7px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
 .login-card button:hover{filter:brightness(1.08)}
 #login-err{color:#f87171;font-size:13px;text-align:center;margin-top:12px;line-height:1.4}
@@ -98,7 +103,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
     <div class="sub">Gestión de acceso</div>
     <form id="adm-form">
       <input type="email" id="adm-email" placeholder="Correo de administrador" autocomplete="email" required>
-      <input type="password" id="adm-pass" placeholder="Contraseña" autocomplete="current-password" required>
+      <div class="pw-wrap"><input type="password" id="adm-pass" placeholder="Contraseña" autocomplete="current-password" required><button type="button" class="pw-toggle" aria-label="Mostrar contraseña">👁</button></div>
       <button type="submit">Ingresar</button>
     </form>
     <p id="login-err"></p>
@@ -153,6 +158,17 @@ document.getElementById('adm-form').addEventListener('submit',function(e){
   _auth.signInWithEmailAndPassword(em,pw).catch(function(err){document.getElementById('login-err').textContent=_authMsg(err);});
 });
 document.getElementById('btn-logout').addEventListener('click',function(){_auth.signOut();});
+
+/* ── Mostrar/ocultar contraseña (ojo) ── */
+document.querySelectorAll('.pw-toggle').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    var inp=btn.parentNode.querySelector('input');if(!inp)return;
+    var show=inp.type==='password';
+    inp.type=show?'text':'password';
+    btn.classList.toggle('on',show);
+    btn.setAttribute('aria-label',show?'Ocultar contraseña':'Mostrar contraseña');
+  });
+});
 
 _auth.onAuthStateChanged(function(user){
   if(user&&(user.email||'').toLowerCase()===ADMIN_EMAIL){
