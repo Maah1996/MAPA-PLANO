@@ -22,22 +22,39 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 /* Auth Bar */
 #auth-bar{display:flex;align-items:center;gap:10px;padding:6px 16px;background:#0a111a;border-bottom:1px solid var(--brd);font-size:12.5px;justify-content:flex-end;min-height:38px;flex-shrink:0}
 #auth-bar button{padding:5px 12px;border:none;border-radius:5px;cursor:pointer;font-size:12px;font-weight:600}
-#btn-login{background:#2563eb;color:#fff}
-#btn-login:hover{background:#1d4ed8}
 #btn-logout{background:var(--surf2);color:var(--txt2);border:1px solid var(--brd)}
 #btn-logout:hover{background:var(--brd);color:var(--txt)}
-#auth-user-info{display:flex;align-items:center;gap:8px}
-#auth-avatar{width:26px;height:26px;border-radius:50%;border:2px solid var(--acc)}
-#auth-name{font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#auth-user-info{display:flex;align-items:center;gap:12px}
+#auth-name{font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#admin-link{color:var(--acc);text-decoration:none;font-weight:700;font-size:12px;padding:4px 10px;border:1px solid rgba(200,168,75,.45);border-radius:5px}
+#admin-link:hover{background:rgba(200,168,75,.15)}
 
 /* Login Overlay */
-#login-overlay{position:fixed;inset:0;z-index:99999;background:rgba(10,17,26,.96);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--txt)}
-#login-overlay h2{font-size:24px;font-weight:700;margin-bottom:8px;color:var(--acc)}
-#login-overlay>p{opacity:.7;margin-bottom:28px;font-size:14px}
-#btn-login-big{padding:14px 36px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:17px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:12px;box-shadow:0 4px 24px rgba(37,99,235,.4);transition:background .15s,transform .1s}
-#btn-login-big:hover{background:#1d4ed8;transform:translateY(-1px)}
-#btn-login-big img{width:26px;height:26px}
-#login-error{margin-top:16px;color:#f87171;font-size:13px;max-width:380px;text-align:center}
+#login-overlay{position:fixed;inset:0;z-index:99999;background:rgba(10,17,26,.97);display:flex;align-items:center;justify-content:center;color:var(--txt);padding:20px}
+.login-card{background:var(--surf);border:1px solid var(--brd);border-top:3px solid var(--acc);border-radius:14px;padding:30px 32px 26px;width:min(390px,94vw);box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.login-card h2{font-size:21px;font-weight:700;color:var(--acc);text-align:center;line-height:1.25}
+.login-sub{text-align:center;opacity:.6;font-size:12px;letter-spacing:2px;margin-top:2px;margin-bottom:22px;text-transform:uppercase}
+.login-tabs{display:flex;gap:6px;background:var(--bg);border:1px solid var(--brd);border-radius:8px;padding:4px;margin-bottom:20px}
+.login-tab{flex:1;padding:9px 0;border:none;background:transparent;color:var(--txt2);font-size:13px;font-weight:700;cursor:pointer;border-radius:6px;transition:.15s;font-family:inherit}
+.login-tab.active{background:var(--surf2);color:var(--acc)}
+.login-form{display:flex;flex-direction:column;gap:11px}
+.login-form input{padding:11px 13px;background:var(--bg);border:1px solid var(--brd);border-radius:7px;color:var(--txt);font-size:14px;outline:none;font-family:inherit}
+.login-form input:focus{border-color:var(--acc)}
+.login-submit{margin-top:5px;padding:12px;background:var(--acc);color:var(--bg);border:none;border-radius:7px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:.12s}
+.login-submit:hover{filter:brightness(1.08)}
+.login-link{background:none;border:none;color:var(--txt2);font-size:12px;cursor:pointer;font-family:inherit;text-decoration:underline;padding:4px;margin-top:2px}
+.login-link:hover{color:var(--acc)}
+#login-error{margin-top:14px;color:#f87171;font-size:13px;text-align:center;line-height:1.4}
+#login-info{margin-top:10px;color:#86efac;font-size:13px;text-align:center;line-height:1.4}
+
+/* Status Overlay (pendiente / expirado) */
+#status-overlay{position:fixed;inset:0;z-index:99999;background:rgba(10,17,26,.97);display:flex;align-items:center;justify-content:center;color:var(--txt);padding:20px}
+.status-card{background:var(--surf);border:1px solid var(--brd);border-radius:14px;padding:34px 36px;width:min(420px,94vw);text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+#status-icon{font-size:52px;margin-bottom:10px}
+.status-card h2{font-size:21px;font-weight:700;color:var(--acc);margin-bottom:12px}
+#status-msg{font-size:14px;color:var(--txt2);line-height:1.5;margin-bottom:24px}
+#status-logout{padding:10px 24px;background:var(--surf2);color:var(--txt);border:1px solid var(--brd);border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+#status-logout:hover{background:var(--brd)}
 
 /* Header */
 header{background:var(--surf);border-bottom:2px solid var(--acc);padding:10px 18px;flex-shrink:0}
@@ -215,21 +232,51 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 
 <div id="auth-bar">
   <span id="auth-user-info" style="display:none">
-    <img id="auth-avatar" src="" alt="">
     <span id="auth-name"></span>
+    <a id="admin-link" href="admin.html" style="display:none">⚙ Panel admin</a>
     <button id="btn-logout">Salir</button>
   </span>
-  <button id="btn-login">Iniciar sesión con Google</button>
 </div>
 
-<div id="login-overlay" style="display:none">
-  <h2>Mapa de Riesgos / Plano de Evacuación</h2>
-  <p>Inicia sesión para acceder y guardar tu trabajo en la nube</p>
-  <button id="btn-login-big">
-    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
-    Iniciar sesión con Google
-  </button>
-  <p id="login-error"></p>
+<!-- Overlay de Login / Registro (visible por defecto hasta autenticar) -->
+<div id="login-overlay">
+  <div class="login-card">
+    <h2>Mapa de Riesgos / Plano de Evacuación</h2>
+    <p class="login-sub">MONTICHEF</p>
+
+    <div class="login-tabs">
+      <button class="login-tab active" id="tab-login" type="button">Iniciar sesión</button>
+      <button class="login-tab" id="tab-register" type="button">Crear cuenta</button>
+    </div>
+
+    <form id="form-login" class="login-form">
+      <input type="email" id="li-email" placeholder="Correo electrónico" autocomplete="email" required>
+      <input type="password" id="li-pass" placeholder="Contraseña" autocomplete="current-password" required>
+      <button type="submit" class="login-submit">Ingresar</button>
+      <button type="button" id="li-forgot" class="login-link">¿Olvidaste tu contraseña?</button>
+    </form>
+
+    <form id="form-register" class="login-form" style="display:none">
+      <input type="text" id="re-name" placeholder="Nombre completo" autocomplete="name" required>
+      <input type="email" id="re-email" placeholder="Correo electrónico" autocomplete="email" required>
+      <input type="password" id="re-pass" placeholder="Contraseña (mín. 6 caracteres)" autocomplete="new-password" required>
+      <input type="password" id="re-pass2" placeholder="Repetir contraseña" autocomplete="new-password" required>
+      <button type="submit" class="login-submit">Crear cuenta</button>
+    </form>
+
+    <p id="login-error"></p>
+    <p id="login-info"></p>
+  </div>
+</div>
+
+<!-- Overlay de estado: cuenta pendiente o expirada -->
+<div id="status-overlay" style="display:none">
+  <div class="status-card">
+    <div id="status-icon">⏳</div>
+    <h2 id="status-title">Cuenta pendiente</h2>
+    <p id="status-msg"></p>
+    <button id="status-logout" type="button">Cerrar sesión</button>
+  </div>
 </div>
 
 <!-- Modal Guardar/Cargar -->
@@ -847,20 +894,159 @@ var firebaseConfig = {
   appId: '1:18469178569:web:92d72ee3e0e0e399619118'
 };
 if(!firebase.apps.length){firebase.initializeApp(firebaseConfig);}
-var _db=firebase.firestore(),_auth=firebase.auth(),_currentUser=null;
+var _db=firebase.firestore(),_auth=firebase.auth(),_currentUser=null,_userPerms=null;
+var ADMIN_EMAIL='marcoaraya1973@gmail.com';
 /* clave localStorage legacy — para migrar datos viejos si existen */
 var _LS_LEGACY='mapaRiesgos_v2';
 /* nuevo formato: array de slots por modo */
 var _LS_KEY='mapaRiesgos_v3';
 
+/* ── Overlays y mensajes ── */
 function _showLoginOverlay(show){document.getElementById('login-overlay').style.display=show?'':'none';}
-function _updateAuthBar(user){var info=document.getElementById('auth-user-info'),btnIn=document.getElementById('btn-login'),av=document.getElementById('auth-avatar'),nm=document.getElementById('auth-name');if(user){info.style.display='flex';btnIn.style.display='none';av.src=user.photoURL||'';nm.textContent=user.displayName||user.email;}else{info.style.display='none';btnIn.style.display='';}}
-function _doGoogleLogin(){var errDiv=document.getElementById('login-error');errDiv.textContent='';var provider=new firebase.auth.GoogleAuthProvider();_auth.signInWithPopup(provider).then(function(r){_currentUser=r.user;}).catch(function(err){var msg=err.message;if(err.code==='auth/popup-blocked'){msg='Popup bloqueado — intentando redirección...';_auth.signInWithRedirect(provider);}else if(err.code==='auth/popup-closed-by-user'){msg='Cerraste la ventana de Google.';}errDiv.textContent=msg;});}
-document.getElementById('btn-login').addEventListener('click',_doGoogleLogin);
-document.getElementById('btn-login-big').addEventListener('click',_doGoogleLogin);
+function _showStatusOverlay(show){document.getElementById('status-overlay').style.display=show?'':'none';}
+function _setLoginError(msg){document.getElementById('login-error').textContent=msg||'';}
+function _setLoginInfo(msg){document.getElementById('login-info').textContent=msg||'';}
+function _isAdminEmail(em){return(em||'').toLowerCase()===ADMIN_EMAIL;}
+
+function _updateAuthBar(user){
+  var info=document.getElementById('auth-user-info'),nm=document.getElementById('auth-name'),adminLink=document.getElementById('admin-link');
+  if(user){info.style.display='flex';nm.textContent=user.displayName||user.email;adminLink.style.display=_isAdminEmail(user.email)?'':'none';}
+  else{info.style.display='none';}
+}
+
+/* ── Traducción de errores Firebase ── */
+function _firebaseAuthMsg(err){
+  switch(err.code||''){
+    case 'auth/invalid-email':return 'Correo inválido.';
+    case 'auth/user-not-found':case 'auth/wrong-password':case 'auth/invalid-credential':case 'auth/invalid-login-credentials':return 'Correo o contraseña incorrectos.';
+    case 'auth/email-already-in-use':return 'Ya existe una cuenta con ese correo.';
+    case 'auth/weak-password':return 'La contraseña es muy débil (mín. 6 caracteres).';
+    case 'auth/too-many-requests':return 'Demasiados intentos. Espera un momento e intenta de nuevo.';
+    case 'auth/network-request-failed':return 'Sin conexión a internet.';
+    case 'auth/operation-not-allowed':return 'El acceso por correo/contraseña no está habilitado en Firebase.';
+    default:return err.message||'Error desconocido.';
+  }
+}
+
+/* ── Tabs login / registro ── */
+function _showLoginTab(which){
+  var isLogin=which==='login';
+  document.getElementById('tab-login').classList.toggle('active',isLogin);
+  document.getElementById('tab-register').classList.toggle('active',!isLogin);
+  document.getElementById('form-login').style.display=isLogin?'':'none';
+  document.getElementById('form-register').style.display=isLogin?'none':'';
+  _setLoginError('');_setLoginInfo('');
+}
+document.getElementById('tab-login').addEventListener('click',function(){_showLoginTab('login');});
+document.getElementById('tab-register').addEventListener('click',function(){_showLoginTab('register');});
+
+/* ── Iniciar sesión ── */
+document.getElementById('form-login').addEventListener('submit',function(e){
+  e.preventDefault();_setLoginError('');_setLoginInfo('');
+  var em=document.getElementById('li-email').value.trim(),pw=document.getElementById('li-pass').value;
+  _auth.signInWithEmailAndPassword(em,pw).catch(function(err){_setLoginError(_firebaseAuthMsg(err));});
+});
+
+/* ── Crear cuenta ── */
+document.getElementById('form-register').addEventListener('submit',function(e){
+  e.preventDefault();_setLoginError('');_setLoginInfo('');
+  var name=document.getElementById('re-name').value.trim(),em=document.getElementById('re-email').value.trim();
+  var pw=document.getElementById('re-pass').value,pw2=document.getElementById('re-pass2').value;
+  if(name.length<2){_setLoginError('Ingresa tu nombre completo.');return;}
+  if(pw.length<6){_setLoginError('La contraseña debe tener al menos 6 caracteres.');return;}
+  if(pw!==pw2){_setLoginError('Las contraseñas no coinciden.');return;}
+  _auth.createUserWithEmailAndPassword(em,pw).then(function(cred){
+    var user=cred.user;
+    return user.updateProfile({displayName:name}).then(function(){
+      return _db.collection('users').doc(user.uid).set({
+        name:name,email:em,mapaRiesgo:false,planoEmerg:false,expDate:null,createdAt:Date.now(),role:'user'
+      });
+    });
+  }).then(function(){
+    /* onAuthStateChanged mostrará la pantalla "pendiente" */
+  }).catch(function(err){_setLoginError(_firebaseAuthMsg(err));});
+});
+
+/* ── Recuperar contraseña ── */
+document.getElementById('li-forgot').addEventListener('click',function(){
+  var em=document.getElementById('li-email').value.trim();
+  if(!em){_setLoginError('Escribe tu correo arriba y vuelve a tocar este botón.');return;}
+  _auth.sendPasswordResetEmail(em).then(function(){
+    _setLoginError('');_setLoginInfo('Te enviamos un correo para restablecer tu contraseña. Revisa tu bandeja y spam.');
+  }).catch(function(err){_setLoginError(_firebaseAuthMsg(err));});
+});
+
+/* ── Cerrar sesión ── */
 document.getElementById('btn-logout').addEventListener('click',function(){_auth.signOut();});
-_auth.getRedirectResult().then(function(r){if(r&&r.user)_currentUser=r.user;}).catch(function(err){if(err.code&&err.code!=='auth/no-current-user')document.getElementById('login-error').textContent=err.message;});
-_auth.onAuthStateChanged(function(user){_currentUser=user;_updateAuthBar(user);/* login es opcional — no bloquear app */});
+document.getElementById('status-logout').addEventListener('click',function(){_auth.signOut();});
+
+/* ── Pantallas de estado ── */
+function _showPending(msg){
+  _showLoginOverlay(false);
+  document.getElementById('status-icon').textContent='⏳';
+  document.getElementById('status-title').textContent='Cuenta pendiente de aprobación';
+  document.getElementById('status-msg').textContent=msg||'Tu cuenta fue creada. El administrador debe habilitar tu acceso antes de que puedas ingresar.';
+  _showStatusOverlay(true);
+}
+function _showExpired(){
+  _showLoginOverlay(false);
+  document.getElementById('status-icon').textContent='⛔';
+  document.getElementById('status-title').textContent='Acceso expirado';
+  document.getElementById('status-msg').textContent='Tu acceso ha caducado. Contacta al administrador para renovar tu plazo.';
+  _showStatusOverlay(true);
+}
+
+/* ── Aplicar permisos a las pestañas de modo ── */
+function _applyPermsToTabs(){
+  var p=_userPerms||{mapaRiesgo:true,planoEmerg:true};
+  var tabR=document.getElementById('modetab-riesgos'),tabE=document.getElementById('modetab-evacuacion');
+  tabR.style.display=p.mapaRiesgo?'':'none';
+  tabE.style.display=p.planoEmerg?'':'none';
+  if(!p.mapaRiesgo&&p.planoEmerg){if(_appMode!=='evacuacion')switchMode('evacuacion');}
+  else if(p.mapaRiesgo&&!p.planoEmerg){if(_appMode!=='riesgos')switchMode('riesgos');}
+}
+
+/* ── Estado de autenticación ── */
+function _grantAccess(){
+  _showStatusOverlay(false);
+  _showLoginOverlay(false);
+  _updateAuthBar(_currentUser);
+  _applyPermsToTabs();
+}
+
+_auth.onAuthStateChanged(function(user){
+  _currentUser=user;
+  if(!user){
+    _userPerms=null;
+    _showStatusOverlay(false);
+    _showLoginOverlay(true);
+    _updateAuthBar(null);
+    return;
+  }
+  _showLoginOverlay(false);
+  /* Admin: acceso total sin importar permisos */
+  if(_isAdminEmail(user.email)){
+    _userPerms={mapaRiesgo:true,planoEmerg:true,admin:true};
+    _grantAccess();
+    return;
+  }
+  /* Usuario normal: verificar permisos y caducidad en Firestore */
+  _db.collection('users').doc(user.uid).get().then(function(doc){
+    var d=doc.exists?doc.data():null;
+    if(!d){_showPending();return;}
+    if(d.expDate){
+      var today=new Date();today.setHours(0,0,0,0);
+      var exp=new Date(d.expDate+'T23:59:59');
+      if(exp<today){_showExpired();return;}
+    }
+    if(!d.mapaRiesgo&&!d.planoEmerg){_showPending();return;}
+    _userPerms={mapaRiesgo:!!d.mapaRiesgo,planoEmerg:!!d.planoEmerg,admin:false};
+    _grantAccess();
+  }).catch(function(e){
+    _setLoginError('Error al verificar tu cuenta: '+e.message);
+    _showLoginOverlay(true);
+  });
+});
 
 /* ══════════════════════════════════════════════════════════
    SERIALIZACIÓN (solo markers del modo actual)
