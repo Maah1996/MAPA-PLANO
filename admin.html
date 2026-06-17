@@ -228,7 +228,7 @@ function renderTable(){
       +'<td><input type="date" class="exp-input" value="'+_esc(u.expDate||'')+'"></td>'
       +'<td><div class="act">'
         +'<button class="btn-sm btn-save">Guardar</button>'
-        +'<button class="btn-sm btn-view">Guardados</button>'
+        +'<button class="btn-sm btn-view">Planos</button>'
         +'<button class="btn-sm btn-del">Eliminar</button>'
       +'</div></td>'
       +'</tr>';
@@ -271,8 +271,8 @@ function _wireRows(){
 }
 
 function _deleteUser(id){
-  /* borrar subcolección saves primero, luego el doc */
-  var col=_db.collection('users').doc(id).collection('saves');
+  /* borrar subcolección plans primero, luego el doc */
+  var col=_db.collection('users').doc(id).collection('plans');
   col.get().then(function(snap){
     var batch=_db.batch();
     snap.forEach(function(d){batch.delete(d.ref);});
@@ -286,37 +286,37 @@ function _deleteUser(id){
   }).catch(function(e){_toast('Error al eliminar: '+e.message,true);});
 }
 
+function _fmtMs(ms){if(!ms)return '';var d=new Date(ms);return d.toLocaleDateString('es-CL')+' '+d.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});}
+
 function _toggleSaves(tr,id){
   var next=tr.nextElementSibling;
   if(next&&next.classList.contains('saves-row')){next.remove();return;}
   var cols=tr.children.length;
   var sr=document.createElement('tr');
   sr.className='saves-row';
-  sr.innerHTML='<td colspan="'+cols+'"><div class="saves-inner"><h4>Guardados del usuario</h4><div class="save-list"><div class="save-empty">Cargando...</div></div></div></td>';
+  sr.innerHTML='<td colspan="'+cols+'"><div class="saves-inner"><h4>Planos del usuario</h4><div class="save-list"><div class="save-empty">Cargando...</div></div></div></td>';
   tr.parentNode.insertBefore(sr,tr.nextSibling);
   var box=sr.querySelector('.save-list');
-  _db.collection('users').doc(id).collection('saves').get().then(function(snap){
-    var saves=[];snap.forEach(function(d){var v=d.data();v._docId=d.id;saves.push(v);});
-    saves.sort(function(a,b){return(b.tsMs||0)-(a.tsMs||0);});
-    if(!saves.length){box.innerHTML='<div class="save-empty">Este usuario no tiene guardados.</div>';return;}
+  _db.collection('users').doc(id).collection('plans').get().then(function(snap){
+    var plans=[];snap.forEach(function(d){var v=d.data();v._docId=d.id;plans.push(v);});
+    plans.sort(function(a,b){return(b.updatedAt||b.createdAt||0)-(a.updatedAt||a.createdAt||0);});
+    if(!plans.length){box.innerHTML='<div class="save-empty">Este usuario no tiene planos.</div>';return;}
     box.innerHTML='';
-    saves.forEach(function(s){
+    plans.forEach(function(s){
       var n=s.markers?s.markers.length:0;
-      var modeLbl=s.mode==='evacuacion'?'Plano Evacuación':'Mapa Riesgos';
-      var planLbl=s.plan===2?'Nivel 2':'Nivel 1';
       var item=document.createElement('div');item.className='save-item';
-      item.innerHTML='<div style="flex:1;min-width:0"><div class="si-name">'+_esc(s.name||'Sin nombre')+'</div>'
-        +'<div class="si-meta"><span>'+_esc(s.ts||'')+'</span><span>'+modeLbl+'</span><span>'+planLbl+'</span><span>'+n+' elemento'+(n!==1?'s':'')+'</span></div></div>'
+      item.innerHTML='<div style="flex:1;min-width:0"><div class="si-name">'+_esc(s.name||'Sin nombre')+(s.builtin?' <span style="opacity:.6">(demo)</span>':'')+'</div>'
+        +'<div class="si-meta"><span>Editado: '+_esc(_fmtMs(s.updatedAt))+'</span><span>'+n+' elemento'+(n!==1?'s':'')+'</span></div></div>'
         +'<button class="btn-sm btn-view si-edit">Abrir / editar</button>'
         +'<button class="btn-sm btn-del si-del">Borrar</button>';
       item.querySelector('.si-edit').addEventListener('click',function(){
-        window.open('index.html?au='+encodeURIComponent(id)+'&as='+encodeURIComponent(s._docId),'_blank');
+        window.open('index.html?au='+encodeURIComponent(id)+'&ap='+encodeURIComponent(s._docId),'_blank');
       });
       item.querySelector('.si-del').addEventListener('click',function(){
-        if(!confirm('¿Borrar el guardado "'+(s.name||'')+'"?'))return;
-        _db.collection('users').doc(id).collection('saves').doc(s._docId).delete().then(function(){
-          item.remove();_toast('Guardado borrado');
-          if(!box.querySelector('.save-item'))box.innerHTML='<div class="save-empty">Este usuario no tiene guardados.</div>';
+        if(!confirm('¿Borrar el plano "'+(s.name||'')+'" de este usuario?'))return;
+        _db.collection('users').doc(id).collection('plans').doc(s._docId).delete().then(function(){
+          item.remove();_toast('Plano borrado');
+          if(!box.querySelector('.save-item'))box.innerHTML='<div class="save-empty">Este usuario no tiene planos.</div>';
         }).catch(function(e){_toast('Error: '+e.message,true);});
       });
       box.appendChild(item);
