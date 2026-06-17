@@ -1,0 +1,252 @@
+</head>
+<body>
+
+<!-- Barra de edición admin (visible solo cuando el admin abre el trabajo de un usuario) -->
+<div id="edit-banner" style="display:none">
+  <span id="edit-banner-txt"></span>
+  <span style="flex:1"></span>
+  <button id="edit-save" type="button">💾 Guardar cambios</button>
+  <button id="edit-exit" type="button">Salir de edición</button>
+</div>
+
+<div id="auth-bar">
+  <span id="auth-user-info" style="display:none">
+    <span id="auth-name"></span>
+    <a id="admin-link" href="admin.html" style="display:none">⚙ Panel admin</a>
+    <button id="btn-logout">Salir</button>
+  </span>
+</div>
+
+<!-- Portada / Landing (primera pantalla para visitantes) -->
+<div id="landing-overlay">
+  <div id="lp-dots"></div>
+  <div class="lp-content">
+    <nav class="lp-nav">
+      <div class="lp-logo">
+        <svg class="lp-logo-ic" viewBox="0 0 100 100" width="26" height="26"><path d="M50 7 L84 19 V46 C84 69 69 86 50 93 C31 86 16 69 16 46 V19 Z" fill="none" stroke="#f0a829" stroke-width="6" stroke-linejoin="round"/><path d="M35 50 L46 61 L67 38" fill="none" stroke="#f0a829" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        PrevenRiesgo
+      </div>
+      <div class="lp-nav-r">
+        <button id="lp-login" class="lp-nav-btn ghost" type="button">Iniciar sesión</button>
+        <button id="lp-register" class="lp-nav-btn solid" type="button">Crear cuenta</button>
+      </div>
+    </nav>
+    <div class="lp-hero">
+      <div class="lp-hero-left">
+        <span class="lp-badge">⛑ PLATAFORMA DE SEGURIDAD LABORAL</span>
+        <h1 class="lp-h1">Tu seguridad,<br><span>nuestra prioridad</span></h1>
+        <p class="lp-sub">Crea mapas de riesgo y planos de evacuación profesionales. Gestiona el acceso de tu equipo de forma simple y segura, desde cualquier computador.</p>
+        <div class="lp-cta-row">
+          <button id="lp-cta-start" class="lp-cta solid" type="button">Comenzar gratis →</button>
+          <button id="lp-cta-have" class="lp-cta ghost" type="button">Ya tengo cuenta</button>
+        </div>
+        <div class="lp-stats">
+          <div class="lp-stat"><div class="n">100%</div><div class="t">Según normativa</div></div>
+          <div class="lp-stat"><div class="n">2</div><div class="t">Módulos</div></div>
+          <div class="lp-stat"><div class="n">24/7</div><div class="t">En la nube</div></div>
+        </div>
+      </div>
+      <div class="lp-hero-art">
+        <svg viewBox="0 0 200 200" width="200" height="200">
+          <circle cx="100" cy="100" r="92" fill="none" stroke="rgba(240,168,41,.18)" stroke-width="2"/>
+          <circle cx="100" cy="100" r="70" fill="none" stroke="rgba(240,168,41,.12)" stroke-width="2" stroke-dasharray="4 7"/>
+          <path d="M100 32 L150 50 V92 C150 126 128 152 100 164 C72 152 50 126 50 92 V50 Z" fill="rgba(240,168,41,.10)" stroke="#f0a829" stroke-width="5" stroke-linejoin="round"/>
+          <path d="M78 98 L94 114 L126 78" fill="none" stroke="#f0a829" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="lp-art-chip c1">⚠️</span>
+        <span class="lp-art-chip c2">🗺️</span>
+        <span class="lp-art-chip c3">🚪</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Overlay de Login / Registro (oculto hasta que el visitante elige una acción) -->
+<div id="login-overlay" style="display:none">
+  <div class="login-card">
+    <button id="login-back" class="login-back" type="button">← Volver a la portada</button>
+    <h2>Prevención de Riesgos</h2>
+
+    <div class="login-tabs">
+      <button class="login-tab active" id="tab-login" type="button">Iniciar sesión</button>
+      <button class="login-tab" id="tab-register" type="button">Crear cuenta</button>
+    </div>
+
+    <form id="form-login" class="login-form">
+      <input type="email" id="li-email" placeholder="Correo electrónico" autocomplete="email" required>
+      <div class="pw-wrap"><input type="password" id="li-pass" placeholder="Contraseña" autocomplete="current-password" required><button type="button" class="pw-toggle" aria-label="Mostrar contraseña">👁</button></div>
+      <button type="submit" class="login-submit">Ingresar</button>
+      <button type="button" id="li-forgot" class="login-link">¿Olvidaste tu contraseña?</button>
+    </form>
+
+    <form id="form-register" class="login-form" style="display:none">
+      <input type="text" id="re-name" placeholder="Nombre completo" autocomplete="name" required>
+      <input type="email" id="re-email" placeholder="Correo electrónico" autocomplete="email" required>
+      <div class="pw-wrap"><input type="password" id="re-pass" placeholder="Contraseña (mín. 6 caracteres)" autocomplete="new-password" required><button type="button" class="pw-toggle" aria-label="Mostrar contraseña">👁</button></div>
+      <div class="pw-wrap"><input type="password" id="re-pass2" placeholder="Repetir contraseña" autocomplete="new-password" required><button type="button" class="pw-toggle" aria-label="Mostrar contraseña">👁</button></div>
+      <button type="submit" class="login-submit">Crear cuenta</button>
+    </form>
+
+    <p id="login-error"></p>
+    <p id="login-info"></p>
+  </div>
+</div>
+
+<!-- Overlay de estado: cuenta pendiente o expirada -->
+<div id="status-overlay" style="display:none">
+  <div class="status-card">
+    <div id="status-icon">⏳</div>
+    <h2 id="status-title">Cuenta pendiente</h2>
+    <p id="status-msg"></p>
+    <button id="status-logout" type="button">Cerrar sesión</button>
+  </div>
+</div>
+
+<!-- Pantalla "Mis planos" -->
+<div id="plans-overlay" style="display:none">
+  <div class="plans-wrap">
+    <div class="plans-head">
+      <div>
+        <h2>Mis planos</h2>
+        <p class="plans-hint">Sube la imagen de tu plano (JPG o PNG). Luego dibujas el mapa de riesgos y el plano de evacuación sobre él.</p>
+      </div>
+      <div class="plans-actions">
+        <button id="plans-resume" class="plans-resume" type="button" style="display:none">&#8592; Volver al editor</button>
+        <button id="plans-create-btn" class="plans-new secondary" type="button">✏ Crear plano</button>
+        <button id="plans-upload-btn" class="plans-new" type="button">+ Subir plano</button>
+      </div>
+    </div>
+    <input type="file" id="plans-file" accept="image/png,image/jpeg,image/webp" style="display:none">
+    <div id="plans-grid"><div class="plans-loading">Cargando tus planos…</div></div>
+  </div>
+</div>
+
+<!-- ══════════ EDITOR CAD ══════════ -->
+<div id="cad-overlay" style="display:none;position:fixed;inset:0;z-index:50000;display:none;flex-direction:column">
+
+  <!-- Toolbar superior -->
+  <div id="cad-toolbar" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-bottom:1px solid #334155;flex-shrink:0;flex-wrap:wrap">
+
+    <button id="cad-back" type="button" style="padding:6px 13px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid;font-family:inherit">← Volver</button>
+
+    <div style="width:1px;height:28px;background:#334155;margin:0 4px"></div>
+
+    <!-- Herramientas -->
+    <button class="cad-tb" data-cad-tool="wall"   type="button" title="Pared (W)">🧱 Pared</button>
+    <button class="cad-tb" data-cad-tool="room"   type="button" title="Habitación (R)">⬜ Habitación</button>
+    <button class="cad-tb" data-cad-tool="window" type="button" title="Ventana (V)">🪟 Ventana</button>
+    <button class="cad-tb" data-cad-tool="door"   type="button" title="Puerta (D)">🚪 Puerta</button>
+    <button class="cad-tb" data-cad-tool="text"   type="button" title="Texto (T)">T Texto</button>
+    <button class="cad-tb" data-cad-tool="erase"  type="button" title="Borrar elemento (E)">🗑 Borrar</button>
+
+    <div style="width:1px;height:28px;background:#334155;margin:0 4px"></div>
+
+    <!-- Color -->
+    <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600">
+      Color
+      <input type="color" id="cad-color" value="#64b5f6" style="width:32px;height:26px;border:none;border-radius:5px;cursor:pointer;padding:2px">
+    </label>
+
+    <!-- Grosor -->
+    <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600">
+      Grosor
+      <input type="range" id="cad-lw" min="1" max="10" value="3" style="width:70px;cursor:pointer">
+      <span id="cad-lw-val" style="min-width:24px;font-size:11px">3px</span>
+    </label>
+
+    <div style="width:1px;height:28px;background:#334155;margin:0 4px"></div>
+
+    <!-- Snap -->
+    <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;cursor:pointer">
+      <input type="checkbox" id="cad-snap-chk" checked style="width:14px;height:14px;cursor:pointer"> Snap
+    </label>
+
+    <!-- Escala -->
+    <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600">
+      1 cuadro =
+      <input type="number" id="cad-scale-inp" value="1" min="0.1" max="100" step="0.1"
+        style="width:52px;padding:3px 6px;border-radius:5px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;font-family:inherit"> m
+    </label>
+
+    <div style="width:1px;height:28px;background:#334155;margin:0 4px"></div>
+
+    <button id="cad-undo"  type="button" style="padding:6px 12px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid;font-family:inherit">↩ Deshacer</button>
+    <button id="cad-clear" type="button" style="padding:6px 12px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid;font-family:inherit">🗑 Limpiar todo</button>
+
+    <button id="cad-theme-btn" type="button" style="padding:6px 12px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid;font-family:inherit;margin-left:auto">☀ Claro</button>
+
+    <div style="width:1px;height:28px;background:#334155;margin:0 4px"></div>
+
+    <!-- Nombre + guardar -->
+    <input type="text" id="cad-plan-name" placeholder="Nombre del plano"
+      style="padding:6px 10px;border-radius:7px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;width:160px;font-family:inherit">
+    <button id="cad-save-plan" type="button" style="padding:6px 14px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;border:none;background:#f0a829;color:#1a1000;font-family:inherit">💾 Guardar plano</button>
+  </div>
+
+  <!-- Canvas de dibujo -->
+  <div id="cad-stage" style="flex:1;position:relative;overflow:hidden">
+    <canvas id="cad-canvas" style="display:block;width:100%;height:100%;cursor:crosshair"></canvas>
+    <!-- Medida en tiempo real (flotante) -->
+    <div id="cad-dim-info" style="display:none;position:absolute;top:14px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.75);color:#fcd34d;font-size:14px;font-weight:700;padding:6px 18px;border-radius:20px;pointer-events:none;letter-spacing:.3px"></div>
+  </div>
+
+  <!-- Status bar inferior -->
+  <div id="cad-statusbar" style="display:flex;align-items:center;gap:18px;padding:5px 16px;border-top:1px solid #334155;font-size:11.5px;flex-shrink:0">
+    <span id="cad-status">X: 0 m  Y: 0 m</span>
+    <span style="margin-left:auto;opacity:.5">W=Pared · R=Habitación · V=Ventana · D=Puerta · T=Texto · E=Borrar · Ctrl+Z=Deshacer</span>
+  </div>
+</div>
+
+<header>
+  <h1>PrevenRiesgo — Editor</h1>
+  <p>Mapas de riesgo y planos de evacuación según la Guía DS N°44/2024. Arrastra los íconos sobre tu plano.</p>
+</header>
+
+<div class="mode-tabs">
+  <button class="mode-tab active"   id="modetab-riesgos"    onclick="switchMode('riesgos')">Mapa de Riesgos</button>
+  <button class="mode-tab inactive" id="modetab-evacuacion" onclick="switchMode('evacuacion')">Plano de Evacuación</button>
+</div>
+
+<div class="wrap">
+  <aside class="palette">
+    <div id="riesgos-palette">
+      <h2>1 · Nivel de riesgo</h2>
+      <div class="levels" id="levels"></div>
+      <h2>2 · Arrastra el riesgo</h2>
+      <div class="icons" id="icons"></div>
+    </div>
+    <div id="evac-palette" style="display:none">
+      <h2 style="color:#86efac;border-color:#166531">Arrastra el elemento</h2>
+      <div id="evac-icons" style="display:grid;grid-template-columns:1fr 1fr;gap:5px"></div>
+    </div>
+  </aside>
+
+  <main class="stage">
+    <div class="toolbar">
+      <input type="text" id="titleInput" placeholder="Título del mapa" value="Mapa de Riesgos">
+      <button class="btn ghost" id="toggleLegend">Ocultar leyenda</button>
+      <button class="btn ghost" id="clearBtn">Limpiar</button>
+      <button class="btn primary" id="exportBtn">Exportar PNG</button>
+      <button class="btn pdf-btn" id="pdfBtn">Exportar PDF</button>
+    </div>
+    <div id="plan-controls">
+      <div id="plan-info">
+        <button class="btn ghost" id="btnMisPlanos">&#8592; Mis planos</button>
+        <span id="current-plan-name"></span>
+      </div>
+      <div class="zoom-controls">
+        <button class="zoom-btn" onclick="zoomIn()">+</button>
+        <span id="zoom-pct">100%</span>
+        <button class="zoom-btn" onclick="zoomReset()" title="Resetear zoom">&#8635;</button>
+        <button class="zoom-btn" onclick="zoomOut()">&minus;</button>
+        <span class="zoom-hint">Ctrl+rueda</span>
+      </div>
+    </div>
+    <div id="zoom-wrap">
+      <div id="markerLayer">
+        <img id="planImg" class="plan" src="" alt="Plano">
+        <div class="legend" id="legend"></div>
+      </div>
+    </div>
+  </main>
+</div>

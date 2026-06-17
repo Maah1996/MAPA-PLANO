@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel Administrador</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<style>
+:root{--bg:#0f1923;--surf:#162030;--surf2:#1e2d40;--brd:#2a3d54;--acc:#c8a84b;--txt:#e8e4d8;--txt2:#8fa3b8;--verde:#217a47;--rojo:#c0392b}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
+
+/* Topbar */
+.topbar{display:flex;align-items:center;gap:14px;padding:12px 20px;background:var(--surf);border-bottom:2px solid var(--acc)}
+.topbar h1{font-size:18px;color:var(--acc);font-weight:700;flex:1}
+.topbar .who{font-size:13px;color:var(--txt2)}
+.topbar a,.topbar button{font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:6px;cursor:pointer;border:1px solid var(--brd);background:var(--surf2);color:var(--txt);text-decoration:none}
+.topbar a:hover,.topbar button:hover{background:var(--brd)}
+
+/* Login */
+#login-wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.login-card{background:var(--surf);border:1px solid var(--brd);border-top:3px solid var(--acc);border-radius:14px;padding:30px 32px;width:min(380px,94vw);box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.login-card h2{font-size:20px;color:var(--acc);text-align:center;margin-bottom:4px}
+.login-card .sub{text-align:center;opacity:.6;font-size:12px;letter-spacing:2px;text-transform:uppercase;margin-bottom:22px}
+.login-card input{width:100%;padding:11px 13px;margin-bottom:11px;background:var(--bg);border:1px solid var(--brd);border-radius:7px;color:var(--txt);font-size:14px;outline:none;font-family:inherit}
+.login-card input:focus{border-color:var(--acc)}
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:42px!important}
+.pw-toggle{position:absolute;right:4px;top:21px;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;line-height:1;padding:6px 8px;opacity:.55;filter:grayscale(1)}
+.pw-toggle:hover{opacity:.9}
+.pw-toggle.on{opacity:1;filter:none}
+.login-card button{width:100%;padding:12px;background:var(--acc);color:var(--bg);border:none;border-radius:7px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+.login-card button:hover{filter:brightness(1.08)}
+#login-err{color:#f87171;font-size:13px;text-align:center;margin-top:12px;line-height:1.4}
+
+/* Main */
+#main{display:none;padding:22px 20px;max-width:1180px;margin:0 auto}
+.bar{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.bar h2{font-size:16px;color:var(--acc);flex:1}
+.bar .count{font-size:13px;color:var(--txt2)}
+.search{padding:8px 12px;background:var(--surf2);border:1px solid var(--brd);border-radius:7px;color:var(--txt);font-size:13px;outline:none;min-width:220px;font-family:inherit}
+.search:focus{border-color:var(--acc)}
+
+/* Table */
+.tbl{width:100%;border-collapse:collapse;background:var(--surf);border:1px solid var(--brd);border-radius:10px;overflow:hidden;font-size:13px}
+.tbl th{text-align:left;padding:11px 12px;background:var(--surf2);color:var(--txt2);font-size:11px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--brd);white-space:nowrap}
+.tbl td{padding:10px 12px;border-bottom:1px solid var(--brd);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:rgba(255,255,255,.02)}
+.u-name{font-weight:600;color:var(--txt)}
+.u-email{font-size:12px;color:var(--txt2)}
+.u-date{font-size:12px;color:var(--txt2);white-space:nowrap}
+
+/* Status badge */
+.badge{display:inline-block;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+.badge.active{background:#14532d;color:#86efac}
+.badge.pending{background:#422006;color:#fcd34d}
+.badge.expired{background:#4a1010;color:#fca5a5}
+
+/* Checkbox cells */
+.chk{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--txt2);cursor:pointer;user-select:none;white-space:nowrap}
+.chk input{width:16px;height:16px;accent-color:var(--acc);cursor:pointer}
+
+/* exp date input */
+.exp-input{padding:5px 7px;background:var(--surf2);border:1px solid var(--brd);border-radius:5px;color:var(--txt);font-size:12px;outline:none;font-family:inherit;width:140px}
+.exp-input:focus{border-color:var(--acc)}
+
+/* Action buttons */
+.act{display:flex;gap:5px;flex-wrap:wrap}
+.btn-sm{padding:5px 10px;border-radius:5px;font-size:11.5px;font-weight:600;cursor:pointer;border:1px solid var(--brd);background:var(--surf2);color:var(--txt);font-family:inherit;white-space:nowrap}
+.btn-sm:hover{background:var(--brd)}
+.btn-save{background:#14532d;color:#86efac;border-color:rgba(22,101,49,.5)}
+.btn-save:hover{background:#166534}
+.btn-del{background:transparent;color:#f87171;border-color:rgba(248,113,113,.4)}
+.btn-del:hover{background:#4a1010}
+.btn-view{background:#1e3a5f;color:#93c5fd;border-color:rgba(30,64,175,.5)}
+.btn-view:hover{background:#1e40af;color:#fff}
+
+/* Saves sub-row */
+.saves-row td{background:#0a111a;padding:0}
+.saves-inner{padding:12px 16px}
+.saves-inner h4{font-size:12px;color:var(--acc);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+.save-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--brd);border-radius:7px;background:var(--surf2);margin-bottom:6px}
+.save-item .si-name{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.save-item .si-meta{font-size:11px;color:var(--txt2)}
+.save-item .si-meta span{margin-right:10px}
+.save-empty{font-size:12px;color:var(--txt2);opacity:.7;padding:6px 0}
+
+.loading{text-align:center;padding:40px;color:var(--txt2)}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);padding:10px 22px;border-radius:8px;font-size:13.5px;font-weight:600;z-index:9999;pointer-events:none;transition:opacity .4s;opacity:0;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.dirty{outline:2px solid var(--acc);outline-offset:-2px}
+@media(max-width:720px){.tbl{font-size:12px}.tbl th,.tbl td{padding:8px 7px}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-wrap">
+  <div class="login-card">
+    <h2>Panel Administrador</h2>
+    <div class="sub">Gestión de acceso</div>
+    <form id="adm-form">
+      <input type="email" id="adm-email" placeholder="Correo de administrador" autocomplete="email" required>
+      <div class="pw-wrap"><input type="password" id="adm-pass" placeholder="Contraseña" autocomplete="current-password" required><button type="button" class="pw-toggle" aria-label="Mostrar contraseña">👁</button></div>
+      <button type="submit">Ingresar</button>
+    </form>
+    <p id="login-err"></p>
+  </div>
+</div>
+
+<!-- TOPBAR -->
+<div class="topbar" id="topbar" style="display:none">
+  <h1>⚙ Panel Administrador</h1>
+  <span class="who" id="who"></span>
+  <a href="index.html">← Volver al editor</a>
+  <button id="btn-logout">Cerrar sesión</button>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <div class="bar">
+    <h2>Usuarios registrados</h2>
+    <span class="count" id="user-count"></span>
+    <input type="text" class="search" id="search" placeholder="Buscar por nombre o correo...">
+    <button class="btn-sm" id="btn-reload">↻ Recargar</button>
+  </div>
+  <div id="table-wrap">
+    <div class="loading">Cargando usuarios...</div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+var firebaseConfig={
+  apiKey:'AIzaSyDi6CPHzqfAvRbofkB4cW4bFRWb9VcU9kQ',
+  authDomain:'mapa-plano-montichef.firebaseapp.com',
+  projectId:'mapa-plano-montichef',
+  storageBucket:'mapa-plano-montichef.firebasestorage.app',
+  messagingSenderId:'18469178569',
+  appId:'1:18469178569:web:92d72ee3e0e0e399619118'
+};
+if(!firebase.apps.length){firebase.initializeApp(firebaseConfig);}
+var _db=firebase.firestore(),_auth=firebase.auth();
+var ADMIN_EMAIL='marcoaraya1973@gmail.com';
+var _users=[];
+
+function _toast(msg,err){var t=document.getElementById('toast');t.textContent=msg;t.style.background=err?'#7f1d1d':'#14532d';t.style.color='#fff';t.style.opacity='1';clearTimeout(t._to);t._to=setTimeout(function(){t.style.opacity='0';},2800);}
+function _esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function _authMsg(err){switch(err.code||''){case 'auth/invalid-email':return 'Correo inválido.';case 'auth/user-not-found':case 'auth/wrong-password':case 'auth/invalid-credential':case 'auth/invalid-login-credentials':return 'Correo o contraseña incorrectos.';case 'auth/too-many-requests':return 'Demasiados intentos. Espera un momento.';case 'auth/operation-not-allowed':return 'Acceso por correo/contraseña no habilitado en Firebase.';default:return err.message||'Error.';}}
+
+/* ── Login ── */
+document.getElementById('adm-form').addEventListener('submit',function(e){
+  e.preventDefault();document.getElementById('login-err').textContent='';
+  var em=document.getElementById('adm-email').value.trim(),pw=document.getElementById('adm-pass').value;
+  _auth.signInWithEmailAndPassword(em,pw).catch(function(err){document.getElementById('login-err').textContent=_authMsg(err);});
+});
+document.getElementById('btn-logout').addEventListener('click',function(){_auth.signOut();});
+
+/* ── Mostrar/ocultar contraseña (ojo) ── */
+document.querySelectorAll('.pw-toggle').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    var inp=btn.parentNode.querySelector('input');if(!inp)return;
+    var show=inp.type==='password';
+    inp.type=show?'text':'password';
+    btn.classList.toggle('on',show);
+    btn.setAttribute('aria-label',show?'Ocultar contraseña':'Mostrar contraseña');
+  });
+});
+
+_auth.onAuthStateChanged(function(user){
+  if(user&&(user.email||'').toLowerCase()===ADMIN_EMAIL){
+    document.getElementById('login-wrap').style.display='none';
+    document.getElementById('topbar').style.display='flex';
+    document.getElementById('main').style.display='block';
+    document.getElementById('who').textContent=user.email;
+    loadUsers();
+  }else if(user){
+    /* logueado pero NO es admin */
+    document.getElementById('login-err').textContent='Esta cuenta no tiene permisos de administrador.';
+    _auth.signOut();
+  }else{
+    document.getElementById('login-wrap').style.display='flex';
+    document.getElementById('topbar').style.display='none';
+    document.getElementById('main').style.display='none';
+  }
+});
+
+/* ── Cargar usuarios ── */
+function loadUsers(){
+  document.getElementById('table-wrap').innerHTML='<div class="loading">Cargando usuarios...</div>';
+  _db.collection('users').get().then(function(snap){
+    _users=[];
+    snap.forEach(function(d){var v=d.data();v._id=d.id;_users.push(v);});
+    _users.sort(function(a,b){return(b.createdAt||0)-(a.createdAt||0);});
+    renderTable();
+  }).catch(function(e){
+    document.getElementById('table-wrap').innerHTML='<div class="loading" style="color:#f87171">Error al cargar: '+_esc(e.message)+'</div>';
+  });
+}
+document.getElementById('btn-reload').addEventListener('click',loadUsers);
+document.getElementById('search').addEventListener('input',renderTable);
+
+function _statusOf(u){
+  if(u.expDate){var t=new Date();t.setHours(0,0,0,0);if(new Date(u.expDate+'T23:59:59')<t)return 'expired';}
+  if(u.mapaRiesgo||u.planoEmerg)return 'active';
+  return 'pending';
+}
+function _fmtDate(ms){if(!ms)return '—';var d=new Date(ms);return d.toLocaleDateString('es-CL')+' '+d.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});}
+
+function renderTable(){
+  var q=document.getElementById('search').value.trim().toLowerCase();
+  var list=_users.filter(function(u){return!q||(u.name||'').toLowerCase().indexOf(q)>=0||(u.email||'').toLowerCase().indexOf(q)>=0;});
+  document.getElementById('user-count').textContent=_users.length+' usuario'+(_users.length!==1?'s':'');
+  if(!list.length){document.getElementById('table-wrap').innerHTML='<div class="loading">No hay usuarios'+(q?' que coincidan con la búsqueda':' registrados aún')+'.</div>';return;}
+  var html='<table class="tbl"><thead><tr><th>Usuario</th><th>Registro</th><th>Estado</th><th>Mapa Riesgo</th><th>Plano Emerg.</th><th>Caducidad</th><th>Acciones</th></tr></thead><tbody>';
+  list.forEach(function(u){
+    var st=_statusOf(u);
+    var stLabel=st==='active'?'Activo':st==='pending'?'Pendiente':'Expirado';
+    html+='<tr data-id="'+u._id+'">'
+      +'<td><div class="u-name">'+_esc(u.name||'(sin nombre)')+'</div><div class="u-email">'+_esc(u.email)+'</div></td>'
+      +'<td class="u-date">'+_fmtDate(u.createdAt)+'</td>'
+      +'<td><span class="badge '+st+'">'+stLabel+'</span></td>'
+      +'<td><label class="chk"><input type="checkbox" class="ck-mapa" '+(u.mapaRiesgo?'checked':'')+'> Habilitado</label></td>'
+      +'<td><label class="chk"><input type="checkbox" class="ck-plano" '+(u.planoEmerg?'checked':'')+'> Habilitado</label></td>'
+      +'<td><input type="date" class="exp-input" value="'+_esc(u.expDate||'')+'"></td>'
+      +'<td><div class="act">'
+        +'<button class="btn-sm btn-save">Guardar</button>'
+        +'<button class="btn-sm btn-view">Planos</button>'
+        +'<button class="btn-sm btn-del">Eliminar</button>'
+      +'</div></td>'
+      +'</tr>';
+  });
+  html+='</tbody></table>';
+  document.getElementById('table-wrap').innerHTML=html;
+  _wireRows();
+}
+
+function _wireRows(){
+  document.querySelectorAll('.tbl tbody tr[data-id]').forEach(function(tr){
+    var id=tr.getAttribute('data-id');
+    var ckMapa=tr.querySelector('.ck-mapa'),ckPlano=tr.querySelector('.ck-plano'),expIn=tr.querySelector('.exp-input');
+    function markDirty(){tr.classList.add('dirty');}
+    ckMapa.addEventListener('change',markDirty);
+    ckPlano.addEventListener('change',markDirty);
+    expIn.addEventListener('change',markDirty);
+
+    tr.querySelector('.btn-save').addEventListener('click',function(){
+      var upd={mapaRiesgo:ckMapa.checked,planoEmerg:ckPlano.checked,expDate:expIn.value||null};
+      _db.collection('users').doc(id).update(upd).then(function(){
+        var u=_users.filter(function(x){return x._id===id;})[0];
+        if(u){u.mapaRiesgo=upd.mapaRiesgo;u.planoEmerg=upd.planoEmerg;u.expDate=upd.expDate;}
+        tr.classList.remove('dirty');
+        _toast('Cambios guardados');
+        renderTable();
+      }).catch(function(e){_toast('Error: '+e.message,true);});
+    });
+
+    tr.querySelector('.btn-del').addEventListener('click',function(){
+      var u=_users.filter(function(x){return x._id===id;})[0];
+      if(!confirm('¿Eliminar al usuario "'+(u?u.name:'')+'" ('+(u?u.email:'')+')?\n\nEsto borra su perfil y todos sus guardados. La acción no se puede deshacer.\n\nNota: la cuenta de acceso (Authentication) debes borrarla manualmente desde la consola de Firebase.'))return;
+      _deleteUser(id);
+    });
+
+    tr.querySelector('.btn-view').addEventListener('click',function(){
+      _toggleSaves(tr,id);
+    });
+  });
+}
+
+function _deleteUser(id){
+  /* borrar subcolección plans primero, luego el doc */
+  var col=_db.collection('users').doc(id).collection('plans');
+  col.get().then(function(snap){
+    var batch=_db.batch();
+    snap.forEach(function(d){batch.delete(d.ref);});
+    return batch.commit();
+  }).then(function(){
+    return _db.collection('users').doc(id).delete();
+  }).then(function(){
+    _users=_users.filter(function(x){return x._id!==id;});
+    renderTable();
+    _toast('Usuario eliminado');
+  }).catch(function(e){_toast('Error al eliminar: '+e.message,true);});
+}
+
+function _fmtMs(ms){if(!ms)return '';var d=new Date(ms);return d.toLocaleDateString('es-CL')+' '+d.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});}
+
+function _toggleSaves(tr,id){
+  var next=tr.nextElementSibling;
+  if(next&&next.classList.contains('saves-row')){next.remove();return;}
+  var cols=tr.children.length;
+  var sr=document.createElement('tr');
+  sr.className='saves-row';
+  sr.innerHTML='<td colspan="'+cols+'"><div class="saves-inner"><h4>Planos del usuario</h4><div class="save-list"><div class="save-empty">Cargando...</div></div></div></td>';
+  tr.parentNode.insertBefore(sr,tr.nextSibling);
+  var box=sr.querySelector('.save-list');
+  _db.collection('users').doc(id).collection('plans').get().then(function(snap){
+    var plans=[];snap.forEach(function(d){var v=d.data();v._docId=d.id;plans.push(v);});
+    plans.sort(function(a,b){return(b.updatedAt||b.createdAt||0)-(a.updatedAt||a.createdAt||0);});
+    if(!plans.length){box.innerHTML='<div class="save-empty">Este usuario no tiene planos.</div>';return;}
+    box.innerHTML='';
+    plans.forEach(function(s){
+      var n=s.markers?s.markers.length:0;
+      var item=document.createElement('div');item.className='save-item';
+      item.innerHTML='<div style="flex:1;min-width:0"><div class="si-name">'+_esc(s.name||'Sin nombre')+(s.builtin?' <span style="opacity:.6">(demo)</span>':'')+'</div>'
+        +'<div class="si-meta"><span>Editado: '+_esc(_fmtMs(s.updatedAt))+'</span><span>'+n+' elemento'+(n!==1?'s':'')+'</span></div></div>'
+        +'<button class="btn-sm btn-view si-edit">Abrir / editar</button>'
+        +'<button class="btn-sm btn-del si-del">Borrar</button>';
+      item.querySelector('.si-edit').addEventListener('click',function(){
+        window.open('index.html?au='+encodeURIComponent(id)+'&ap='+encodeURIComponent(s._docId),'_blank');
+      });
+      item.querySelector('.si-del').addEventListener('click',function(){
+        if(!confirm('¿Borrar el plano "'+(s.name||'')+'" de este usuario?'))return;
+        _db.collection('users').doc(id).collection('plans').doc(s._docId).delete().then(function(){
+          item.remove();_toast('Plano borrado');
+          if(!box.querySelector('.save-item'))box.innerHTML='<div class="save-empty">Este usuario no tiene planos.</div>';
+        }).catch(function(e){_toast('Error: '+e.message,true);});
+      });
+      box.appendChild(item);
+    });
+  }).catch(function(e){box.innerHTML='<div class="save-empty" style="color:#f87171">Error: '+_esc(e.message)+'</div>';});
+}
+</script>
+</body>
+</html>
