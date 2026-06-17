@@ -251,8 +251,11 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 .plans-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:4px}
 .plans-head h2{font-size:22px;color:var(--acc);font-weight:700}
 .plans-hint{font-size:13px;color:var(--txt2);margin-top:6px;max-width:560px;line-height:1.5}
-.plans-new{background:#f0a829;color:#3a2400;border:none;border-radius:9px;padding:11px 18px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
+.plans-actions{display:flex;gap:10px;flex-shrink:0}
+.plans-new{background:#f0a829;color:#3a2400;border:none;border-radius:9px;padding:11px 18px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
 .plans-new:hover{filter:brightness(1.08)}
+.plans-resume{background:var(--surf2);color:var(--txt);border:1px solid var(--brd);border-radius:9px;padding:11px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.plans-resume:hover{background:var(--brd)}
 #plans-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px;margin-top:22px}
 .plans-loading,.plans-empty{grid-column:1/-1;text-align:center;color:var(--txt2);padding:50px 0;font-size:14px;line-height:1.7}
 .plans-empty b{color:var(--acc)}
@@ -430,7 +433,10 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
         <h2>Mis planos</h2>
         <p class="plans-hint">Sube la imagen de tu plano (JPG o PNG). Luego dibujas el mapa de riesgos y el plano de evacuación sobre él.</p>
       </div>
-      <button id="plans-upload-btn" class="plans-new" type="button">+ Subir plano</button>
+      <div class="plans-actions">
+        <button id="plans-resume" class="plans-resume" type="button" style="display:none">&#8592; Volver al editor</button>
+        <button id="plans-upload-btn" class="plans-new" type="button">+ Subir plano</button>
+      </div>
     </div>
     <input type="file" id="plans-file" accept="image/png,image/jpeg,image/webp" style="display:none">
     <div id="plans-grid"><div class="plans-loading">Cargando tus planos…</div></div>
@@ -1184,6 +1190,8 @@ var _planOwnerUid=null;       /* dueño de los planos en uso (null = usuario act
 var _planMeta=null;           /* {id,name,builtin} del plano abierto */
 var _planLoaded=false;        /* hay un plano abierto y listo para autoguardar */
 var _planSaveTimer=null;
+var _lastOpenedPlanId=null;   /* para "Volver al editor" */
+function _updateResumeBtn(){var b=document.getElementById('plans-resume');if(b)b.style.display=_lastOpenedPlanId?'':'none';}
 function _ownerUid(){return _planOwnerUid||(_currentUser&&_currentUser.uid);}
 function _plansCol(){return _db.collection('users').doc(_ownerUid()).collection('plans');}
 
@@ -1293,6 +1301,7 @@ function _openPlan(planId){
     _planLoaded=false;
     _restorePlanMarkers(data.markers||[]);
     _planLoaded=true;
+    _lastOpenedPlanId=planId;
     _showPlansOverlay(false);
   }).catch(function(e){_showToast('Error al abrir el plano: '+e.message,true);});
 }
@@ -1348,6 +1357,7 @@ function _backToPlans(){
   document.querySelectorAll('.marker').forEach(function(m){m.remove();});
   document.getElementById('planImg').src='';
   _showPlansOverlay(true);
+  _updateResumeBtn();
   _loadUserPlans();
 }
 function _renamePlan(id,cur){
@@ -1361,6 +1371,7 @@ function _deletePlan(id,name){
 }
 
 /* ── Wiring botones de planos ── */
+document.getElementById('plans-resume').addEventListener('click',function(){if(_lastOpenedPlanId)_openPlan(_lastOpenedPlanId);});
 document.getElementById('plans-upload-btn').addEventListener('click',function(){document.getElementById('plans-file').click();});
 document.getElementById('plans-file').addEventListener('change',function(){var f=this.files&&this.files[0];if(f)_uploadPlanFile(f);this.value='';});
 document.getElementById('btnMisPlanos').addEventListener('click',_backToPlans);
@@ -1401,6 +1412,7 @@ function _enterApp(){
   var ec=_parseEditParams();
   if(ec&&_isAdminEmail(_currentUser.email)){setTimeout(function(){_enterAdminEdit(ec);},150);return;}
   _showPlansOverlay(true);
+  _updateResumeBtn();
   _loadUserPlans();
 }
 
