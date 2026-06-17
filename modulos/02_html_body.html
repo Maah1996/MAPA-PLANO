@@ -122,78 +122,52 @@
 </div>
 
 <!-- ══════════ EDITOR CAD ══════════ -->
-<div id="cad-overlay" style="display:none;position:fixed;inset:0;z-index:50000;display:none;flex-direction:column">
+<div id="cad-overlay" style="display:none;position:fixed;inset:0;z-index:50000;flex-direction:column">
 
-  <!-- Toolbar superior -->
-  <div id="cad-toolbar" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-bottom:1px solid #334155;flex-shrink:0;flex-wrap:wrap">
-
-    <button id="cad-back" type="button" style="padding:6px 13px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid;font-family:inherit">← Volver</button>
-
-    <div style="width:1px;height:28px;background:#334155;margin:0 4px"></div>
-
-    <!-- Herramientas -->
-    <button class="cad-tb" data-cad-tool="wall"   type="button" title="Pared (W)">🧱 Pared</button>
-    <button class="cad-tb" data-cad-tool="room"   type="button" title="Habitación (R)">⬜ Habitación</button>
-    <button class="cad-tb" data-cad-tool="window" type="button" title="Ventana (V)">🪟 Ventana</button>
-    <button class="cad-tb" data-cad-tool="door"   type="button" title="Puerta (D)">🚪 Puerta</button>
-    <button class="cad-tb" data-cad-tool="text"   type="button" title="Texto (T)">T Texto</button>
-    <button class="cad-tb" data-cad-tool="erase"  type="button" title="Borrar elemento (E)">🗑 Borrar</button>
-
-    <div style="width:1px;height:28px;background:#334155;margin:0 4px"></div>
-
-    <!-- Color -->
-    <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600">
-      Color
-      <input type="color" id="cad-color" value="#64b5f6" style="width:32px;height:26px;border:none;border-radius:5px;cursor:pointer;padding:2px">
-    </label>
-
-    <!-- Grosor -->
-    <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600">
-      Grosor
-      <input type="range" id="cad-lw" min="1" max="10" value="3" style="width:70px;cursor:pointer">
-      <span id="cad-lw-val" style="min-width:24px;font-size:11px">3px</span>
-    </label>
-
-    <div style="width:1px;height:28px;background:#334155;margin:0 4px"></div>
-
-    <!-- Snap -->
-    <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;cursor:pointer">
-      <input type="checkbox" id="cad-snap-chk" checked style="width:14px;height:14px;cursor:pointer"> Snap
-    </label>
-
-    <!-- Escala -->
-    <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600">
-      1 cuadro =
-      <input type="number" id="cad-scale-inp" value="1" min="0.1" max="100" step="0.1"
-        style="width:52px;padding:3px 6px;border-radius:5px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;font-family:inherit"> m
-    </label>
-
-    <div style="width:1px;height:28px;background:#334155;margin:0 4px"></div>
-
-    <button id="cad-undo"  type="button" style="padding:6px 12px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid;font-family:inherit">↩ Deshacer</button>
-    <button id="cad-clear" type="button" style="padding:6px 12px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid;font-family:inherit">🗑 Limpiar todo</button>
-
-    <button id="cad-theme-btn" type="button" style="padding:6px 12px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid;font-family:inherit;margin-left:auto">☀ Claro</button>
-
-    <div style="width:1px;height:28px;background:#334155;margin:0 4px"></div>
-
-    <!-- Nombre + guardar -->
-    <input type="text" id="cad-plan-name" placeholder="Nombre del plano"
-      style="padding:6px 10px;border-radius:7px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;width:160px;font-family:inherit">
-    <button id="cad-save-plan" type="button" style="padding:6px 14px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;border:none;background:#f0a829;color:#1a1000;font-family:inherit">💾 Guardar plano</button>
+  <!-- Barra superior delgada -->
+  <div id="cad-toolbar" style="display:flex;align-items:center;gap:8px;padding:5px 12px;border-bottom:1px solid #1e293b;flex-shrink:0;min-height:44px;overflow-x:auto">
+    <button id="cad-back" class="cad-sm-btn" type="button" title="Volver a Mis planos">← Mis planos</button>
+    <span class="cad-sep"></span>
+    <label class="cad-lbl">Color <input type="color" id="cad-color" value="#64b5f6" class="cad-color-inp"></label>
+    <label class="cad-lbl">Grosor <input type="range" id="cad-lw" min="1" max="10" value="3" style="width:64px;cursor:pointer;accent-color:#f0a829"> <span id="cad-lw-val" style="min-width:20px;font-size:10px">3px</span></label>
+    <span class="cad-sep"></span>
+    <label class="cad-lbl" title="Ajustar al grid"><input type="checkbox" id="cad-snap-chk" checked style="cursor:pointer"> Snap</label>
+    <label class="cad-lbl" title="Metros reales por cuadro">1▦= <input type="number" id="cad-scale-inp" value="1" min="0.1" max="100" step="0.1" style="width:44px;padding:2px 5px;border-radius:5px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:11px;font-family:inherit"> m</label>
+    <span class="cad-sep"></span>
+    <button id="cad-undo"  class="cad-sm-btn" type="button" title="Deshacer (Ctrl+Z)">↩</button>
+    <button id="cad-clear" class="cad-sm-btn" type="button" title="Limpiar todo">🗑</button>
+    <button id="cad-theme-btn" class="cad-sm-btn" type="button" style="margin-left:auto">☀</button>
+    <span class="cad-sep"></span>
+    <input type="text" id="cad-plan-name" placeholder="Nombre del plano" style="padding:5px 9px;border-radius:6px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;width:140px;font-family:inherit;outline:none">
+    <button id="cad-save-plan" type="button" style="padding:5px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:#f0a829;color:#1a1000;font-family:inherit;white-space:nowrap">💾 Guardar</button>
   </div>
 
-  <!-- Canvas de dibujo -->
-  <div id="cad-stage" style="flex:1;position:relative;overflow:hidden">
-    <canvas id="cad-canvas" style="display:block;width:100%;height:100%;cursor:crosshair"></canvas>
-    <!-- Medida en tiempo real (flotante) -->
-    <div id="cad-dim-info" style="display:none;position:absolute;top:14px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.75);color:#fcd34d;font-size:14px;font-weight:700;padding:6px 18px;border-radius:20px;pointer-events:none;letter-spacing:.3px"></div>
+  <!-- Zona principal: sidebar izquierdo + canvas -->
+  <div style="display:flex;flex:1;overflow:hidden">
+
+    <!-- Panel izquierdo de herramientas -->
+    <div id="cad-sidebar" style="display:flex;flex-direction:column;gap:4px;padding:10px 7px;border-right:1px solid #1e293b;flex-shrink:0;align-items:center;width:64px">
+      <button class="cad-tb cad-tool-ic" data-cad-tool="wall"   type="button" title="Pared (W)">🧱<span>Pared</span></button>
+      <button class="cad-tb cad-tool-ic" data-cad-tool="room"   type="button" title="Habitación (R)">⬜<span>Hab.</span></button>
+      <button class="cad-tb cad-tool-ic" data-cad-tool="window" type="button" title="Ventana (V)">🪟<span>Vent.</span></button>
+      <button class="cad-tb cad-tool-ic" data-cad-tool="door"   type="button" title="Puerta (D)">🚪<span>Puerta</span></button>
+      <button class="cad-tb cad-tool-ic" data-cad-tool="text"   type="button" title="Texto (T)">𝗧<span>Texto</span></button>
+      <div style="flex:1"></div>
+      <button class="cad-tb cad-tool-ic" data-cad-tool="erase"  type="button" title="Borrar elemento (E)" style="border-color:rgba(248,113,113,.4)">✕<span>Borrar</span></button>
+    </div>
+
+    <!-- Canvas -->
+    <div id="cad-stage" style="flex:1;position:relative;overflow:hidden">
+      <canvas id="cad-canvas" style="display:block;width:100%;height:100%;cursor:crosshair"></canvas>
+      <!-- Medida flotante en tiempo real -->
+      <div id="cad-dim-info" style="display:none;position:absolute;top:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.78);color:#fcd34d;font-size:14px;font-weight:700;padding:5px 18px;border-radius:20px;pointer-events:none;letter-spacing:.3px"></div>
+    </div>
   </div>
 
   <!-- Status bar inferior -->
-  <div id="cad-statusbar" style="display:flex;align-items:center;gap:18px;padding:5px 16px;border-top:1px solid #334155;font-size:11.5px;flex-shrink:0">
+  <div id="cad-statusbar" style="display:flex;align-items:center;gap:14px;padding:3px 12px;border-top:1px solid #1e293b;font-size:11px;flex-shrink:0;min-height:24px">
     <span id="cad-status">X: 0 m  Y: 0 m</span>
-    <span style="margin-left:auto;opacity:.5">W=Pared · R=Habitación · V=Ventana · D=Puerta · T=Texto · E=Borrar · Ctrl+Z=Deshacer</span>
+    <span style="margin-left:auto;opacity:.4">W=Pared · R=Hab. · V=Vent. · D=Puerta · T=Texto · E=Borrar · Ctrl+Z=Deshacer</span>
   </div>
 </div>
 

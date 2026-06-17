@@ -346,23 +346,18 @@ function _cadSavePlan(){
 
 /* ── Aplicar tema visual ── */
 function _cadApplyTheme(){
-  var ov=document.getElementById('cad-overlay');
-  if(!ov)return;
   var th=_th();
-  ov.style.background=th.toolbarBg;
-  var tb=document.getElementById('cad-toolbar');
-  if(tb){tb.style.background=th.toolbarBg;tb.style.borderBottomColor=th.toolbarBrd;}
-  var sb=document.getElementById('cad-statusbar');
-  if(sb){sb.style.background=th.toolbarBg;sb.style.borderTopColor=th.toolbarBrd;sb.style.color=th.btnTxt;}
-  var stg=document.getElementById('cad-stage');
-  if(stg)stg.style.background=th.bg;
-  var thBtn=document.getElementById('cad-theme-btn');
-  if(thBtn)thBtn.textContent=_cadDark?'☀ Claro':'🌙 Oscuro';
-  /* sincronizar color de herramienta activa en botones */
+  var el=function(id){return document.getElementById(id);};
+  var ov=el('cad-overlay');if(ov)ov.style.background=th.toolbarBg;
+  var tb=el('cad-toolbar');if(tb){tb.style.background=th.toolbarBg;tb.style.borderBottomColor=th.toolbarBrd;}
+  var side=el('cad-sidebar');if(side){side.style.background=_cadDark?'#0e1923':'#d8e2ee';side.style.borderRightColor=th.toolbarBrd;}
+  var sbar=el('cad-statusbar');if(sbar){sbar.style.background=th.toolbarBg;sbar.style.color=th.btnTxt;}
+  var stg=el('cad-stage');if(stg)stg.style.background=th.bg;
+  var thBtn=el('cad-theme-btn');if(thBtn)thBtn.textContent=_cadDark?'☀':'🌙';
+  var scaleInp=el('cad-scale-inp');if(scaleInp){scaleInp.style.background=_cadDark?'#0f172a':'#fff';scaleInp.style.color=th.txt;}
+  var nameInp=el('cad-plan-name');if(nameInp){nameInp.style.background=_cadDark?'#0f172a':'#fff';nameInp.style.color=th.txt;}
   document.querySelectorAll('.cad-tb').forEach(function(b){
-    b.style.background=b.dataset.cadTool===_cadTool?th.activeBg:th.toolbarBg;
-    b.style.color=b.dataset.cadTool===_cadTool?th.activeTxt:th.btnTxt;
-    b.style.borderColor=b.dataset.cadTool===_cadTool?th.activeBg:th.toolbarBrd;
+    b.classList.toggle('active',b.dataset.cadTool===_cadTool);
   });
   _cadRender();
 }
