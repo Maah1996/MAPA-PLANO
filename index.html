@@ -29,6 +29,53 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 #admin-link{color:var(--acc);text-decoration:none;font-weight:700;font-size:12px;padding:4px 10px;border:1px solid rgba(200,168,75,.45);border-radius:5px}
 #admin-link:hover{background:rgba(200,168,75,.15)}
 
+/* ═══ Portada / Landing ═══ */
+#landing-overlay{position:fixed;inset:0;z-index:99998;background:#0e1622;color:#eaf0f7;overflow:auto}
+#lp-dots{position:absolute;inset:0;z-index:1;pointer-events:none}
+.lp-dot{position:absolute;border-radius:50%;background:#f0a829;animation:lp-tw 4s ease-in-out infinite,lp-dr 9s ease-in-out infinite}
+@keyframes lp-tw{0%,100%{opacity:.12}50%{opacity:.8}}
+@keyframes lp-dr{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}
+.lp-content{position:relative;z-index:2;max-width:1120px;margin:0 auto;padding:22px 34px;min-height:100%;display:flex;flex-direction:column}
+.lp-nav{display:flex;align-items:center;justify-content:space-between;padding:6px 0 0}
+.lp-logo{display:flex;align-items:center;gap:9px;font-size:20px;font-weight:800;color:#fff;letter-spacing:-.3px}
+.lp-logo-ic{flex-shrink:0}
+.lp-nav-r{display:flex;gap:10px}
+.lp-nav-btn{padding:9px 17px;border-radius:9px;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s}
+.lp-nav-btn.ghost{background:transparent;color:#eaf0f7;border:1px solid rgba(255,255,255,.22)}
+.lp-nav-btn.ghost:hover{background:rgba(255,255,255,.08)}
+.lp-nav-btn.solid{background:#f0a829;color:#0c1118;border:none}
+.lp-nav-btn.solid:hover{filter:brightness(1.08)}
+.lp-hero{flex:1;display:flex;align-items:center;gap:40px;padding:30px 0}
+.lp-hero-left{flex:1;max-width:560px}
+.lp-badge{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:1.3px;padding:7px 15px;border-radius:22px;margin-bottom:22px;background:rgba(240,168,41,.13);color:#f0a829;border:1px solid rgba(240,168,41,.35)}
+.lp-h1{font-size:clamp(34px,5vw,54px);line-height:1.05;font-weight:800;letter-spacing:-1.2px;color:#fff;margin-bottom:18px}
+.lp-h1 span{color:#f0a829}
+.lp-sub{font-size:16px;line-height:1.6;color:rgba(234,240,247,.72);max-width:480px;margin-bottom:28px}
+.lp-cta-row{display:flex;gap:13px;flex-wrap:wrap;margin-bottom:38px}
+.lp-cta{padding:14px 26px;border-radius:11px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s}
+.lp-cta.solid{background:#f0a829;color:#0c1118;border:none;box-shadow:0 8px 28px rgba(240,168,41,.28)}
+.lp-cta.solid:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.lp-cta.ghost{background:rgba(255,255,255,.04);color:#eaf0f7;border:1px solid rgba(255,255,255,.2)}
+.lp-cta.ghost:hover{background:rgba(255,255,255,.1)}
+.lp-stats{display:flex;gap:42px;padding-top:24px;border-top:1px solid rgba(255,255,255,.1)}
+.lp-stat .n{font-size:26px;font-weight:800;color:#f0a829}
+.lp-stat .t{font-size:11px;letter-spacing:.8px;color:rgba(234,240,247,.55);text-transform:uppercase;margin-top:2px}
+.lp-hero-art{position:relative;flex-shrink:0;width:200px;height:200px}
+.lp-art-chip{position:absolute;font-size:26px;background:#162533;border:1px solid rgba(240,168,41,.3);border-radius:12px;width:48px;height:48px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+.lp-art-chip.c1{top:-6px;right:-8px;animation:lp-dr 6s ease-in-out infinite}
+.lp-art-chip.c2{bottom:24px;left:-22px;animation:lp-dr 7.5s ease-in-out infinite}
+.lp-art-chip.c3{bottom:-8px;right:14px;animation:lp-dr 8.5s ease-in-out infinite}
+@media(max-width:760px){
+  .lp-hero{flex-direction:column-reverse;text-align:center;gap:20px}
+  .lp-hero-art{width:150px;height:150px}.lp-hero-art svg{width:150px;height:150px}
+  .lp-stats{justify-content:center;gap:28px}.lp-cta-row{justify-content:center}
+  .lp-sub{margin-left:auto;margin-right:auto}.lp-content{padding:18px 20px}
+}
+
+/* Botón volver en la tarjeta de login */
+.login-back{background:none;border:none;color:var(--txt2);font-size:12.5px;cursor:pointer;font-family:inherit;padding:0 0 14px;display:block}
+.login-back:hover{color:var(--acc)}
+
 /* Login Overlay */
 #login-overlay{position:fixed;inset:0;z-index:99999;background:rgba(10,17,26,.97);display:flex;align-items:center;justify-content:center;color:var(--txt);padding:20px}
 .login-card{background:var(--surf);border:1px solid var(--brd);border-top:3px solid var(--acc);border-radius:14px;padding:30px 32px 26px;width:min(390px,94vw);box-shadow:0 20px 60px rgba(0,0,0,.6)}
@@ -244,9 +291,54 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
   </span>
 </div>
 
-<!-- Overlay de Login / Registro (visible por defecto hasta autenticar) -->
-<div id="login-overlay">
+<!-- Portada / Landing (primera pantalla para visitantes) -->
+<div id="landing-overlay">
+  <div id="lp-dots"></div>
+  <div class="lp-content">
+    <nav class="lp-nav">
+      <div class="lp-logo">
+        <svg class="lp-logo-ic" viewBox="0 0 100 100" width="26" height="26"><path d="M50 7 L84 19 V46 C84 69 69 86 50 93 C31 86 16 69 16 46 V19 Z" fill="none" stroke="#f0a829" stroke-width="6" stroke-linejoin="round"/><path d="M35 50 L46 61 L67 38" fill="none" stroke="#f0a829" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        PrevenRiesgo
+      </div>
+      <div class="lp-nav-r">
+        <button id="lp-login" class="lp-nav-btn ghost" type="button">Iniciar sesión</button>
+        <button id="lp-register" class="lp-nav-btn solid" type="button">Crear cuenta</button>
+      </div>
+    </nav>
+    <div class="lp-hero">
+      <div class="lp-hero-left">
+        <span class="lp-badge">⛑ PLATAFORMA DE SEGURIDAD LABORAL</span>
+        <h1 class="lp-h1">Tu seguridad,<br><span>nuestra prioridad</span></h1>
+        <p class="lp-sub">Crea mapas de riesgo y planos de evacuación profesionales. Gestiona el acceso de tu equipo de forma simple y segura, desde cualquier computador.</p>
+        <div class="lp-cta-row">
+          <button id="lp-cta-start" class="lp-cta solid" type="button">Comenzar gratis →</button>
+          <button id="lp-cta-have" class="lp-cta ghost" type="button">Ya tengo cuenta</button>
+        </div>
+        <div class="lp-stats">
+          <div class="lp-stat"><div class="n">100%</div><div class="t">Según normativa</div></div>
+          <div class="lp-stat"><div class="n">2</div><div class="t">Módulos</div></div>
+          <div class="lp-stat"><div class="n">24/7</div><div class="t">En la nube</div></div>
+        </div>
+      </div>
+      <div class="lp-hero-art">
+        <svg viewBox="0 0 200 200" width="200" height="200">
+          <circle cx="100" cy="100" r="92" fill="none" stroke="rgba(240,168,41,.18)" stroke-width="2"/>
+          <circle cx="100" cy="100" r="70" fill="none" stroke="rgba(240,168,41,.12)" stroke-width="2" stroke-dasharray="4 7"/>
+          <path d="M100 32 L150 50 V92 C150 126 128 152 100 164 C72 152 50 126 50 92 V50 Z" fill="rgba(240,168,41,.10)" stroke="#f0a829" stroke-width="5" stroke-linejoin="round"/>
+          <path d="M78 98 L94 114 L126 78" fill="none" stroke="#f0a829" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="lp-art-chip c1">⚠️</span>
+        <span class="lp-art-chip c2">🗺️</span>
+        <span class="lp-art-chip c3">🚪</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Overlay de Login / Registro (oculto hasta que el visitante elige una acción) -->
+<div id="login-overlay" style="display:none">
   <div class="login-card">
+    <button id="login-back" class="login-back" type="button">← Volver a la portada</button>
     <h2>Prevención de Riesgos</h2>
 
     <div class="login-tabs">
@@ -907,6 +999,7 @@ var _LS_LEGACY='mapaRiesgos_v2';
 var _LS_KEY='mapaRiesgos_v3';
 
 /* ── Overlays y mensajes ── */
+function _showLanding(show){document.getElementById('landing-overlay').style.display=show?'':'none';}
 function _showLoginOverlay(show){document.getElementById('login-overlay').style.display=show?'':'none';}
 function _showStatusOverlay(show){document.getElementById('status-overlay').style.display=show?'':'none';}
 function _setLoginError(msg){document.getElementById('login-error').textContent=msg||'';}
@@ -944,6 +1037,28 @@ function _showLoginTab(which){
 }
 document.getElementById('tab-login').addEventListener('click',function(){_showLoginTab('login');});
 document.getElementById('tab-register').addEventListener('click',function(){_showLoginTab('register');});
+
+/* ── Portada → abrir formulario ── */
+function _openAuth(tab){_showLanding(false);_showLoginOverlay(true);_showLoginTab(tab);}
+document.getElementById('lp-login').addEventListener('click',function(){_openAuth('login');});
+document.getElementById('lp-register').addEventListener('click',function(){_openAuth('register');});
+document.getElementById('lp-cta-have').addEventListener('click',function(){_openAuth('login');});
+document.getElementById('lp-cta-start').addEventListener('click',function(){_openAuth('register');});
+document.getElementById('login-back').addEventListener('click',function(){_showLoginOverlay(false);_setLoginError('');_setLoginInfo('');_showLanding(true);});
+
+/* ── Puntos animados de la portada ── */
+(function _initLandingDots(){
+  var box=document.getElementById('lp-dots');if(!box)return;
+  var w=window.innerWidth,h=window.innerHeight,n=44;
+  for(var i=0;i<n;i++){
+    var d=document.createElement('span');d.className='lp-dot';
+    var s=Math.random()*3+1.5;
+    d.style.width=s+'px';d.style.height=s+'px';
+    d.style.left=(Math.random()*w)+'px';d.style.top=(Math.random()*h)+'px';
+    d.style.animationDelay=(Math.random()*4)+'s,'+(Math.random()*9)+'s';
+    box.appendChild(d);
+  }
+})();
 
 /* ── Iniciar sesión ── */
 document.getElementById('form-login').addEventListener('submit',function(e){
@@ -987,6 +1102,7 @@ document.getElementById('status-logout').addEventListener('click',function(){_au
 
 /* ── Pantallas de estado ── */
 function _showPending(msg){
+  _showLanding(false);
   _showLoginOverlay(false);
   document.getElementById('status-icon').textContent='⏳';
   document.getElementById('status-title').textContent='Cuenta pendiente de aprobación';
@@ -994,6 +1110,7 @@ function _showPending(msg){
   _showStatusOverlay(true);
 }
 function _showExpired(){
+  _showLanding(false);
   _showLoginOverlay(false);
   document.getElementById('status-icon').textContent='⛔';
   document.getElementById('status-title').textContent='Acceso expirado';
@@ -1027,6 +1144,7 @@ document.querySelectorAll('.pw-toggle').forEach(function(btn){
 function _grantAccess(){
   _showStatusOverlay(false);
   _showLoginOverlay(false);
+  _showLanding(false);
   _updateAuthBar(_currentUser);
   _applyPermsToTabs();
 }
@@ -1036,7 +1154,8 @@ _auth.onAuthStateChanged(function(user){
   if(!user){
     _userPerms=null;
     _showStatusOverlay(false);
-    _showLoginOverlay(true);
+    _showLoginOverlay(false);
+    _showLanding(true);
     _updateAuthBar(null);
     return;
   }
