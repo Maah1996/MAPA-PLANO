@@ -298,8 +298,9 @@ function zoomReset(){_zw=100;_applyZoom();}
 
 /* ── Rotación del plano completo ── */
 var _planRot=0;
-/* Cada modo (riesgos / evacuacion) conserva su propia rotación */
+/* Cada modo (riesgos / evacuacion) conserva su propia vista: rotación y zoom */
 var _planRotByMode={riesgos:0,evacuacion:0};
+var _zwByMode={riesgos:100,evacuacion:100};
 
 /* Centra el plan en el viewport: marginLeft cuando es más angosto que la pantalla,
    scrollLeft/scrollTop para centrar el contenido visual rotado */
@@ -373,7 +374,8 @@ function showPlan(n){
 /* ── switchMode ── */
 var _savedTitle={};
 function switchMode(mode){
-  _planRotByMode[_appMode]=_planRot;   /* guardar rotación del modo que dejamos */
+  /* guardar la vista (rotación + zoom) del modo que dejamos */
+  _planRotByMode[_appMode]=_planRot; _zwByMode[_appMode]=_zw;
   _appMode=mode;var isR=mode==='riesgos';
   var ti=document.getElementById('titleInput');
   _savedTitle[isR?'evacuacion':'riesgos']=ti.value;
@@ -389,9 +391,10 @@ function switchMode(mode){
     var planOk=String(m.dataset.plan)===String(_currentPlan);
     m.style.visibility=(modeOk&&planOk)?'visible':'hidden';
   });
-  /* Restaurar la rotación propia del modo al que entramos */
+  /* Restaurar la vista propia (rotación + zoom) del modo al que entramos */
   _planRot=_planRotByMode[mode]||0;
-  _applyPlanRotation();
+  _zw=_zwByMode[mode]||100;
+  _applyZoom();
   _renderLegendSummary();
 }
 
