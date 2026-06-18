@@ -893,13 +893,10 @@ function _applyZoom(){
   ml.style.width=_zw+'%';
   _activeImg().style.width='100%';
   document.getElementById('zoom-pct').textContent=Math.round(_zw)+'%';
-  /* Solo aplicar marginTop negativo cuando no hay rotación 90/270 (evita que el plano se corte) */
-  if(_planRot===0||_planRot===180){
-    ml.style.marginTop=(-380*_zw/100)+'px';
-  }
+  if(_planRot===0){ml.style.marginTop=(-380*_zw/100)+'px';ml.style.marginBottom='0';}
   _scaleMarkers();_scaleArrows();
-  /* Re-aplicar rotación y centrar cuando hay rotación activa */
-  if(_planRot!==0){_applyPlanRotation();}else{setTimeout(_centerView,0);}
+  if(_planRot!==0)_applyPlanRotation();
+  setTimeout(_centerView,0);
 }
 function zoomIn(){_zw=Math.min(500,_zw+25);_applyZoom();}
 function zoomOut(){_zw=Math.max(30,_zw-25);_applyZoom();}
@@ -908,17 +905,25 @@ function zoomReset(){_zw=100;_applyZoom();}
 /* ── Rotación del plano completo ── */
 var _planRot=0;
 
-/* Centra el plan en el viewport del zoom-wrap (funciona con cualquier ángulo y zoom) */
+/* Centra el plan en el viewport: marginLeft cuando es más angosto que la pantalla,
+   scrollLeft/scrollTop para centrar el contenido visual rotado */
 function _centerView(){
   var ml=document.getElementById('markerLayer');
   var wrap=document.getElementById('zoom-wrap');
-  var mt=parseFloat(ml.style.marginTop)||0;
-  /* Centro del contenido visual = siempre el centro del markerLayer */
-  var cx=ml.offsetWidth/2;
-  var cy=mt+ml.offsetHeight/2;
-  /* Scroll para que ese centro quede en el centro del viewport */
-  wrap.scrollLeft=Math.max(0,cx-wrap.clientWidth/2);
-  wrap.scrollTop=Math.max(0,cy-wrap.clientHeight/2);
+  var mlW=ml.offsetWidth,mlH=ml.offsetHeight;
+  /* Centrado horizontal: si el plano es más angosto que el viewport, agregar margen izq */
+  var hGap=Math.max(0,Math.floor((wrap.clientWidth-mlW)/2));
+  ml.style.marginLeft=hGap+'px';
+  /* Centro visual del contenido en coordenadas del zoom-wrap */
+  var cx=hGap+mlW/2;
+  var cy;
+  if(_planRot===90||_planRot===270){
+    cy=mlW/2; /* altura visual = mlW (ancho original); top visual = 0 */
+  }else{
+    cy=(parseFloat(ml.style.marginTop)||0)+mlH/2;
+  }
+  wrap.scrollLeft=Math.max(0,Math.round(cx-wrap.clientWidth/2));
+  wrap.scrollTop=Math.max(0,Math.round(cy-wrap.clientHeight/2));
 }
 
 function _applyPlanRotation(){
@@ -927,12 +932,17 @@ function _applyPlanRotation(){
   ml.style.transformOrigin='center center';
   if(_planRot===90||_planRot===270){
     var mlW=ml.offsetWidth,mlH=ml.offsetHeight;
-    ml.style.marginTop=Math.max(0,(mlW-mlH)/2)+'px';
-  } else {
-    ml.style.marginTop=(_planRot===0?-380:0)*_zw/100+'px';
+    var ov=Math.max(0,Math.round((mlW-mlH)/2));
+    /* marginTop empuja el layout hacia abajo para que el borde visual superior quede en y=0
+       marginBottom extiende el área scrolleable para que el borde visual inferior sea alcanzable */
+    ml.style.marginTop=ov+'px';
+    ml.style.marginBottom=ov+'px';
+  }else{
+    /* 0°: ocultar espacio en blanco del tope. 180°: margen 0 (blanco queda abajo) */
+    ml.style.marginTop=(_planRot===0?Math.round(-380*_zw/100):0)+'px';
+    ml.style.marginBottom='0';
   }
   document.getElementById('rot-deg').textContent=_planRot+'°';
-  /* Centrar después del reflow */
   setTimeout(_centerView,0);
 }
 document.getElementById('btnRotL').onclick=function(){_planRot=(_planRot-90+360)%360;_applyPlanRotation();};
