@@ -172,6 +172,26 @@
   </div>
 </div>
 
+<!-- ══════════ PANEL GUARDAR / CARGAR ══════════ -->
+<div id="sl-overlay" style="display:none;position:fixed;inset:0;z-index:30000;background:rgba(5,10,18,.82);align-items:center;justify-content:center">
+  <div id="sl-panel">
+    <div id="sl-header">
+      <span id="sl-title">Guardados del plano</span>
+      <span id="sl-plan-badge" style="font-size:11px;color:#94a3b8;font-weight:600"></span>
+      <span style="flex:1"></span>
+      <button id="sl-close" type="button">✕</button>
+    </div>
+    <div id="sl-new">
+      <input type="text" id="sl-name-input" placeholder="Nombre del guardado (ej: versión con extintores)" maxlength="60">
+      <button id="sl-save-new" type="button">💾 Guardar ahora</button>
+    </div>
+    <div id="sl-body">
+      <div id="sl-empty" style="display:none">No hay guardados para este plano.<br>Usa <b>Guardar ahora</b> para crear el primero.</div>
+      <div id="sl-list"></div>
+    </div>
+  </div>
+</div>
+
 <header>
   <h1>PrevenRiesgo — Editor</h1>
   <p>Mapas de riesgo y planos de evacuación según la Guía DS N°44/2024. Arrastra los íconos sobre tu plano.</p>
@@ -208,7 +228,8 @@
       <div id="plan-info">
         <button class="btn ghost" id="btnMisPlanos">&#8592; Mis planos</button>
         <span id="current-plan-name"></span>
-        <button class="btn save-now-btn" id="btnSaveNow" style="display:none" title="Guardar cambios ahora">💾 Guardar</button>
+        <button class="btn save-now-btn" id="btnSaveNow" style="display:none">💾 Guardar</button>
+        <button class="btn ghost" id="btnLoadPanel" style="display:none">📂 Cargar</button>
         <span id="save-status"></span>
       </div>
       <div class="zoom-controls">

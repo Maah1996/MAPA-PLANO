@@ -163,6 +163,100 @@ document.querySelectorAll('.pw-toggle').forEach(function(btn){
   });
 });
 
+/* ══════════════════════════════════════════════════════════
+   PANEL GUARDAR / CARGAR (versiones nombradas por plano)
+   Colección: users/{uid}/plans/{planId}/saves/{saveId}
+══════════════════════════════════════════════════════════ */
+function _savesCol(){
+  if(!_planMeta||!_planMeta.id)return null;
+  return _plansCol().doc(_planMeta.id).collection('saves');
+}
+
+function _fmtDate(ms){
+  if(!ms)return '';
+  var d=new Date(ms);
+  return d.toLocaleDateString('es-CL')+' '+d.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+}
+
+function _openSlPanel(){
+  if(!_planMeta){_showToast('Abre un plano primero.',true);return;}
+  document.getElementById('sl-overlay').style.display='flex';
+  document.getElementById('sl-plan-badge').textContent=_planMeta.name||'';
+  document.getElementById('sl-name-input').value='';
+  _loadSavesList();
+}
+
+function _closeSlPanel(){
+  document.getElementById('sl-overlay').style.display='none';
+}
+
+function _loadSavesList(){
+  var sc=_savesCol();if(!sc)return;
+  var list=document.getElementById('sl-list'),empty=document.getElementById('sl-empty');
+  list.innerHTML='<div style="padding:16px;color:#8fa3b8;font-size:13px">Cargando…</div>';
+  sc.orderBy('createdAt','desc').limit(30).get().then(function(snap){
+    list.innerHTML='';
+    if(snap.empty){empty.style.display='';return;}
+    empty.style.display='none';
+    snap.forEach(function(d){
+      var v=d.data(),id=d.id;
+      var row=document.createElement('div');row.className='sl-row';
+      row.innerHTML='<div class="sl-row-info">'
+        +'<div class="sl-row-name">'+_escHtml(v.name||'Sin nombre')+'</div>'
+        +'<div class="sl-row-meta"><span>'+_fmtDate(v.createdAt)+'</span>'
+        +'<span>'+(v.markerCount||0)+' elementos</span></div>'
+        +'</div>'
+        +'<div class="sl-row-actions">'
+        +'<button class="sl-btn-load" data-id="'+id+'" type="button">📂 Cargar</button>'
+        +'<button class="sl-btn-del" data-id="'+id+'" type="button">🗑</button>'
+        +'</div>';
+      row.querySelector('.sl-btn-load').addEventListener('click',function(){_loadSave(id,v.name);});
+      row.querySelector('.sl-btn-del').addEventListener('click',function(){_deleteSave(id,v.name);});
+      list.appendChild(row);
+    });
+  }).catch(function(e){list.innerHTML='<div style="color:#f87171;padding:12px">Error: '+_escHtml(e.message)+'</div>';});
+}
+
+function _createSave(){
+  var sc=_savesCol();if(!sc){_showToast('Abre un plano primero.',true);return;}
+  var name=document.getElementById('sl-name-input').value.trim()||'Guardado '+_fmtDate(Date.now());
+  var markers=_serializeMarkers();
+  sc.add({
+    name:name,
+    markers:markers,
+    markerCount:markers.length,
+    zw:_zw,
+    title:(document.getElementById('titleInput')||{}).value||'',
+    createdAt:Date.now()
+  }).then(function(){
+    _showToast('Guardado: '+name);
+    document.getElementById('sl-name-input').value='';
+    _loadSavesList();
+  }).catch(function(e){_showToast('Error al guardar: '+e.message,true);});
+}
+
+function _loadSave(id,name){
+  var sc=_savesCol();if(!sc)return;
+  if(!confirm('¿Cargar "'+( name||'este guardado')+'"? Se reemplazará el estado actual del plano.'))return;
+  sc.doc(id).get().then(function(doc){
+    if(!doc.exists){_showToast('Guardado no encontrado.',true);return;}
+    var v=doc.data();
+    _planLoaded=false;
+    _restorePlanMarkers(v.markers||[]);
+    _planLoaded=true;
+    if(v.title&&document.getElementById('titleInput'))document.getElementById('titleInput').value=v.title;
+    _closeSlPanel();
+    _showToast('Cargado: '+(name||'guardado'));
+    _setSaveStatus('✓ Cargado desde: '+(name||'guardado'),true);
+  }).catch(function(e){_showToast('Error al cargar: '+e.message,true);});
+}
+
+function _deleteSave(id,name){
+  if(!confirm('¿Eliminar el guardado "'+(name||'')+'"?'))return;
+  var sc=_savesCol();if(!sc)return;
+  sc.doc(id).delete().then(function(){_loadSavesList();}).catch(function(e){_showToast('Error: '+e.message,true);});
+}
+
 /* ── Toast ── */
 function _showToast(msg,isError){var t=document.getElementById('_toast');if(!t){t=document.createElement('div');t.id='_toast';document.body.appendChild(t);}t.textContent=msg;t.style.background=isError?'#7f1d1d':'#14532d';t.style.color='#fff';t.style.opacity='1';clearTimeout(t._to);t._to=setTimeout(function(){t.style.opacity='0';},2800);}
 
@@ -284,8 +378,9 @@ function _openPlan(planId){
     var zw=document.getElementById('zoom-wrap');
     if(zw)zw.style.background=data.cad?'#f1f5f9':'';
     document.getElementById('current-plan-name').textContent=data.name||'Plano';
-    /* Mostrar botón Guardar e indicador */
-    var sb=document.getElementById('btnSaveNow');if(sb&&!isB)sb.style.display='';
+    /* Mostrar botones Guardar / Cargar e indicador */
+    var sb=document.getElementById('btnSaveNow');if(sb)sb.style.display=isB?'none':'';
+    var lb=document.getElementById('btnLoadPanel');if(lb)lb.style.display='';
     _setSaveStatus('',null);
     if(document.getElementById('titleInput'))document.getElementById('titleInput').value=data.title||data.name||'';
     _planLoaded=false;
@@ -378,6 +473,10 @@ document.getElementById('plans-file').addEventListener('change',function(){var f
 document.getElementById('btnMisPlanos').addEventListener('click',_backToPlans);
 document.getElementById('btn-mis-planos').addEventListener('click',_backToPlans);
 document.getElementById('btnSaveNow').addEventListener('click',function(){_savePlanNow(function(){_showToast('Plano guardado');});});
+document.getElementById('btnLoadPanel').addEventListener('click',_openSlPanel);
+document.getElementById('sl-close').addEventListener('click',_closeSlPanel);
+document.getElementById('sl-save-new').addEventListener('click',_createSave);
+document.getElementById('sl-overlay').addEventListener('click',function(e){if(e.target===this)_closeSlPanel();});
 
 /* ══════════════════════════════════════════════════════════
    MODO EDICIÓN ADMIN — index.html?au=<uid>&ap=<planId>
