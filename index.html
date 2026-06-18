@@ -2227,21 +2227,16 @@ async function _capturePlan(scaleFactor){
     m.style.transformOrigin='50% 50%';
   });
 
-  /* 4. Ajustar posición de la leyenda al zoom 100% antes de captura
-        La leyenda está en px absolutos dentro de markerLayer (que está zoomed).
-        Al resetear a 100% hay que escalar la posición por factor 100/_zw */
+  /* 4. Fijar posición de leyenda en % para que no se mueva al resetear zoom.
+        Convertimos px → % del markerLayer ANTES de cambiar el ancho,
+        así la posición relativa se preserva exactamente donde el usuario la dejó. */
   var legEl=document.getElementById('legend');
   var _legOL=legEl.style.left,_legOT=legEl.style.top,_legOB=legEl.style.bottom,_legOR=legEl.style.right;
-  var _factor=100/_zw;
   if(_legOL&&_legOL!=='auto'&&_legOL!==''){
-    legEl.style.left=(parseFloat(_legOL)*_factor)+'px';
-    legEl.style.top=(parseFloat(_legOT||0)*_factor)+'px';
+    var _mlW=ml.offsetWidth||800,_mlH=ml.offsetHeight||600;
+    legEl.style.left=(parseFloat(_legOL)/_mlW*100)+'%';
+    legEl.style.top=(parseFloat(_legOT||0)/_mlH*100)+'%';
     legEl.style.bottom='auto';legEl.style.right='auto';
-  } else if(_legOB&&_legOB!=='auto'&&_legOB!==''){
-    /* posición inicial CSS: left:10px bottom:10px */
-    legEl.style.left=(10*_factor)+'px';
-    legEl.style.top='auto';
-    legEl.style.bottom=(parseFloat(_legOB)*_factor)+'px';
   }
 
   /* 5. Resetear zoom del markerLayer a 100% para captura completa del plano */
