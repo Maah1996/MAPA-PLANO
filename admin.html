@@ -28,9 +28,9 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .login-card input:focus{border-color:var(--acc)}
 .pw-wrap{position:relative}
 .pw-wrap input{padding-right:42px!important}
-.pw-toggle{position:absolute;right:4px;top:21px;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;line-height:1;padding:6px 8px;opacity:.55;filter:grayscale(1)}
-.pw-toggle:hover{opacity:.9}
-.pw-toggle.on{opacity:1;filter:none}
+.login-card .pw-toggle{position:absolute;right:4px;top:21px;transform:translateY(-50%);width:auto;background:none;border:none;cursor:pointer;font-size:16px;line-height:1;padding:6px 8px;opacity:.55;filter:grayscale(1)}
+.login-card .pw-toggle:hover{opacity:.9;filter:grayscale(1);background:none}
+.login-card .pw-toggle.on{opacity:1;filter:none}
 .login-card button{width:100%;padding:12px;background:var(--acc);color:var(--bg);border:none;border-radius:7px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
 .login-card button:hover{filter:brightness(1.08)}
 #login-err{color:#f87171;font-size:13px;text-align:center;margin-top:12px;line-height:1.4}
