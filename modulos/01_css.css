@@ -261,7 +261,10 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 .pc-btn:hover{background:var(--brd);color:var(--txt)}
 .pc-del:hover{background:#4a1010;color:#fca5a5;border-color:rgba(248,113,113,.4)}
 .plan-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#f0a829;background:rgba(240,168,41,.13);border:1px solid rgba(240,168,41,.3);border-radius:12px;padding:3px 9px}
-#plan-info{display:flex;align-items:center;gap:12px}
+#plan-info{display:flex;align-items:center;gap:10px}
+.save-now-btn{background:#14532d!important;color:#86efac!important;border-color:rgba(22,101,49,.5)!important;font-weight:700}
+.save-now-btn:hover{background:#166534!important}
+#save-status{font-size:11.5px;color:#8fa3b8;min-width:110px}
 #current-plan-name{font-size:13px;font-weight:700;color:var(--acc)}
 
 /* ═══════════════════════════════════════════

@@ -284,6 +284,9 @@ function _openPlan(planId){
     var zw=document.getElementById('zoom-wrap');
     if(zw)zw.style.background=data.cad?'#f1f5f9':'';
     document.getElementById('current-plan-name').textContent=data.name||'Plano';
+    /* Mostrar botón Guardar e indicador */
+    var sb=document.getElementById('btnSaveNow');if(sb&&!isB)sb.style.display='';
+    _setSaveStatus('',null);
     if(document.getElementById('titleInput'))document.getElementById('titleInput').value=data.title||data.name||'';
     _planLoaded=false;
     _restorePlanMarkers(data.markers||[]);
@@ -330,12 +333,23 @@ function _serializeMarkers(){
   });
   return markers;
 }
+function _setSaveStatus(msg,ok){
+  var el=document.getElementById('save-status');
+  if(el){el.textContent=msg;el.style.color=ok===false?'#f87171':ok?'#86efac':'#8fa3b8';}
+}
+
 function _savePlanNow(cb){
   if(!_planLoaded||!_planMeta){if(cb)cb();return;}
+  _setSaveStatus('Guardando…',null);
   var upd={markers:_serializeMarkers(),zw:_zw,title:(document.getElementById('titleInput')||{}).value||'',updatedAt:Date.now()};
-  _plansCol().doc(_planMeta.id).set(upd,{merge:true}).then(function(){if(cb)cb();}).catch(function(e){_showToast('Error al guardar: '+e.message,true);});
+  _plansCol().doc(_planMeta.id).set(upd,{merge:true}).then(function(){
+    var h=new Date();
+    var t=h.getHours().toString().padStart(2,'0')+':'+h.getMinutes().toString().padStart(2,'0')+':'+h.getSeconds().toString().padStart(2,'0');
+    _setSaveStatus('✓ Guardado '+t,true);
+    if(cb)cb();
+  }).catch(function(e){_setSaveStatus('✗ Error al guardar',false);_showToast('Error al guardar: '+e.message,true);});
 }
-function _schedulePlanSave(){if(!_planLoaded)return;clearTimeout(_planSaveTimer);_planSaveTimer=setTimeout(function(){_savePlanNow();},1200);}
+function _schedulePlanSave(){if(!_planLoaded)return;_setSaveStatus('Cambios pendientes…',null);clearTimeout(_planSaveTimer);_planSaveTimer=setTimeout(function(){_savePlanNow();},1200);}
 
 /* ── Volver a "Mis planos" ── */
 function _backToPlans(){
@@ -363,6 +377,7 @@ document.getElementById('plans-upload-btn').addEventListener('click',function(){
 document.getElementById('plans-file').addEventListener('change',function(){var f=this.files&&this.files[0];if(f)_uploadPlanFile(f);this.value='';});
 document.getElementById('btnMisPlanos').addEventListener('click',_backToPlans);
 document.getElementById('btn-mis-planos').addEventListener('click',_backToPlans);
+document.getElementById('btnSaveNow').addEventListener('click',function(){_savePlanNow(function(){_showToast('Plano guardado');});});
 
 /* ══════════════════════════════════════════════════════════
    MODO EDICIÓN ADMIN — index.html?au=<uid>&ap=<planId>
