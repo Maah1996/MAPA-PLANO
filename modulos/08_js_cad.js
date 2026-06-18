@@ -8,7 +8,7 @@
 /* ── Estado global del CAD ── */
 var _cadOpen=false,_cadDark=true,_cadTool='wall',_cadSnapEnabled=true;
 var _cadGridPx=20,_cadScaleM=1; /* 1 cuadro = 1 metro */
-var _cadStrokeColor='#64b5f6',_cadLineW=3;
+var _cadStrokeColor='#1e40af',_cadLineW=3;
 var _cadShapes=[],_cadUndoStack=[];
 var _cadDrawing=false,_cadStart=null,_cadMouse=null;
 var _cCanvas=null,_cCtx=null;

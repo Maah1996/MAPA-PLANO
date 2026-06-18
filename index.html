@@ -474,7 +474,7 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
   <div id="cad-toolbar" style="display:flex;align-items:center;gap:8px;padding:5px 12px;border-bottom:1px solid #1e293b;flex-shrink:0;min-height:44px;overflow-x:auto">
     <button id="cad-back" class="cad-sm-btn" type="button" title="Volver a Mis planos">← Mis planos</button>
     <span class="cad-sep"></span>
-    <label class="cad-lbl">Color <input type="color" id="cad-color" value="#64b5f6" class="cad-color-inp"></label>
+    <label class="cad-lbl">Color <input type="color" id="cad-color" value="#1e40af" class="cad-color-inp"></label>
     <label class="cad-lbl">Grosor <input type="range" id="cad-lw" min="1" max="10" value="3" style="width:64px;cursor:pointer;accent-color:#f0a829"> <span id="cad-lw-val" style="min-width:20px;font-size:10px">3px</span></label>
     <span class="cad-sep"></span>
     <label class="cad-lbl" title="Ajustar al grid"><input type="checkbox" id="cad-snap-chk" checked style="cursor:pointer"> Snap</label>
@@ -1370,6 +1370,9 @@ function _openPlan(planId){
     _currentPlan=planId;
     window._currentPlanName=data.name||'Plano';
     document.getElementById('planImg').src=img;
+    /* Fondo blanco para planos CAD (imagen clara), oscuro para el resto */
+    var zw=document.getElementById('zoom-wrap');
+    if(zw)zw.style.background=data.cad?'#f1f5f9':'';
     document.getElementById('current-plan-name').textContent=data.name||'Plano';
     if(document.getElementById('titleInput'))document.getElementById('titleInput').value=data.title||data.name||'';
     _planLoaded=false;
@@ -1545,7 +1548,7 @@ window.addEventListener('beforeunload',function(){if(_planLoaded)_savePlanNow();
 /* ── Estado global del CAD ── */
 var _cadOpen=false,_cadDark=true,_cadTool='wall',_cadSnapEnabled=true;
 var _cadGridPx=20,_cadScaleM=1; /* 1 cuadro = 1 metro */
-var _cadStrokeColor='#64b5f6',_cadLineW=3;
+var _cadStrokeColor='#1e40af',_cadLineW=3;
 var _cadShapes=[],_cadUndoStack=[];
 var _cadDrawing=false,_cadStart=null,_cadMouse=null;
 var _cCanvas=null,_cCtx=null;
