@@ -288,7 +288,6 @@ function _applyZoom(){
   ml.style.width=_zw+'%';
   _activeImg().style.width='100%';
   document.getElementById('zoom-pct').textContent=Math.round(_zw)+'%';
-  if(_planRot===0){ml.style.marginTop=(-380*_zw/100)+'px';ml.style.marginBottom='0';}
   _scaleMarkers();_scaleArrows();
   if(_planRot!==0)_applyPlanRotation();
   setTimeout(_centerView,0);
@@ -305,39 +304,34 @@ var _planRot=0;
 function _centerView(){
   var ml=document.getElementById('markerLayer');
   var wrap=document.getElementById('zoom-wrap');
-  var mlW=ml.offsetWidth,mlH=ml.offsetHeight;
-  /* Centrado horizontal: si el plano es más angosto que el viewport, agregar margen izq */
-  var hGap=Math.max(0,Math.floor((wrap.clientWidth-mlW)/2));
-  ml.style.marginLeft=hGap+'px';
-  /* Centro visual del contenido en coordenadas del zoom-wrap */
-  var cx=hGap+mlW/2;
-  var cy;
-  if(_planRot===90||_planRot===270){
-    cy=mlW/2; /* altura visual = mlW (ancho original); top visual = 0 */
-  }else{
-    cy=(parseFloat(ml.style.marginTop)||0)+mlH/2;
-  }
-  wrap.scrollLeft=Math.max(0,Math.round(cx-wrap.clientWidth/2));
-  wrap.scrollTop=Math.max(0,Math.round(cy-wrap.clientHeight/2));
+  /* ── Márgenes que hacen alcanzable TODO el plano (incluido el rotado) ──
+     Con transformOrigin:center, el plano rotado se centra sobre su caja. Si el
+     ancho/alto visual excede la caja, agregamos margen simétrico para que el
+     scroll llegue a esos bordes. Si es más chico que el viewport, lo centramos. */
+  var _mw=ml.offsetWidth,_mh=ml.offsetHeight;
+  var _rot=(_planRot===90||_planRot===270);
+  var _vw=_rot?_mh:_mw, _vh=_rot?_mw:_mh;
+  var _ovX=Math.max(0,Math.round((_vw-_mw)/2));
+  var _ovY=Math.max(0,Math.round((_vh-_mh)/2));
+  var _cX=Math.max(0,Math.floor((wrap.clientWidth-_vw)/2));
+  var _cY=Math.max(0,Math.floor((wrap.clientHeight-_vh)/2));
+  ml.style.marginLeft=(_ovX+_cX)+'px';
+  ml.style.marginRight=_ovX+'px';
+  ml.style.marginTop=(_ovY+_cY)+'px';
+  ml.style.marginBottom=_ovY+'px';
+  /* Centrar el scroll sobre el centro del plano */
+  var _ccx=_ovX+_cX+_mw/2, _ccy=_ovY+_cY+_mh/2;
+  wrap.scrollLeft=Math.max(0,Math.round(_ccx-wrap.clientWidth/2));
+  wrap.scrollTop=Math.max(0,Math.round(_ccy-wrap.clientHeight/2));
+  return;
 }
 
 function _applyPlanRotation(){
   var ml=document.getElementById('markerLayer');
   ml.style.transform=_planRot===0?'':'rotate('+_planRot+'deg)';
   ml.style.transformOrigin='center center';
-  if(_planRot===90||_planRot===270){
-    var mlW=ml.offsetWidth,mlH=ml.offsetHeight;
-    var ov=Math.max(0,Math.round((mlW-mlH)/2));
-    /* marginTop empuja el layout hacia abajo para que el borde visual superior quede en y=0
-       marginBottom extiende el área scrolleable para que el borde visual inferior sea alcanzable */
-    ml.style.marginTop=ov+'px';
-    ml.style.marginBottom=ov+'px';
-  }else{
-    /* 0°: ocultar espacio en blanco del tope. 180°: margen 0 (blanco queda abajo) */
-    ml.style.marginTop=(_planRot===0?Math.round(-380*_zw/100):0)+'px';
-    ml.style.marginBottom='0';
-  }
   document.getElementById('rot-deg').textContent=_planRot+'°';
+  /* Los márgenes (para alcanzar el plano rotado) los calcula _centerView */
   setTimeout(_centerView,0);
 }
 document.getElementById('btnRotL').onclick=function(){_planRot=(_planRot-90+360)%360;_applyPlanRotation();};
