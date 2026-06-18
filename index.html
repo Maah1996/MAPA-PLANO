@@ -595,6 +595,10 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
         <button class="zoom-btn" onclick="zoomReset()" title="Resetear zoom">&#8635;</button>
         <button class="zoom-btn" onclick="zoomOut()">&minus;</button>
         <span class="zoom-hint">Ctrl+rueda</span>
+        <span style="width:1px;height:18px;background:rgba(255,255,255,.18);display:inline-block;margin:0 4px;vertical-align:middle"></span>
+        <button class="zoom-btn" id="btnRotL" title="Girar plano izquierda (−90°)">↺</button>
+        <span id="rot-deg" style="font-size:11px;opacity:.7;min-width:28px;text-align:center">0°</span>
+        <button class="zoom-btn" id="btnRotR" title="Girar plano derecha (+90°)">↻</button>
       </div>
     </div>
     <div id="zoom-wrap">
@@ -860,6 +864,19 @@ function _applyZoom(){var ml=document.getElementById('markerLayer');ml.style.wid
 function zoomIn(){_zw=Math.min(500,_zw+25);_applyZoom();}
 function zoomOut(){_zw=Math.max(30,_zw-25);_applyZoom();}
 function zoomReset(){_zw=100;_applyZoom();}
+
+/* ── Rotación del plano (imagen + marcadores giran juntos) ── */
+var _planRot=0; /* 0, 90, 180, 270 */
+function _applyPlanRotation(){
+  var ml=document.getElementById('markerLayer');
+  var rot=_planRot;
+  ml.style.transform='rotate('+rot+'deg)';
+  ml.style.transformOrigin='center center';
+  document.getElementById('rot-deg').textContent=rot+'°';
+}
+document.getElementById('btnRotL').onclick=function(){_planRot=(_planRot-90+360)%360;_applyPlanRotation();};
+document.getElementById('btnRotR').onclick=function(){_planRot=(_planRot+90)%360;_applyPlanRotation();};
+
 document.getElementById('zoom-wrap').addEventListener('wheel',function(e){if(e.ctrlKey){e.preventDefault();e.stopPropagation();_zw=Math.min(500,Math.max(30,_zw+(e.deltaY<0?25:-25)));_applyZoom();}else{e.preventDefault();e.stopPropagation();this.scrollTop+=e.deltaY;this.scrollLeft+=e.deltaX;}},{passive:false,capture:true});
 (function(){var wrap=document.getElementById('zoom-wrap'),drag=false,sx=0,sy=0,sl=0,st=0;wrap.addEventListener('mousedown',function(e){if(e.button!==0)return;if(e.target.closest&&e.target.closest('.marker'))return;drag=true;sx=e.clientX;sy=e.clientY;sl=wrap.scrollLeft;st=wrap.scrollTop;wrap.style.cursor='grabbing';});document.addEventListener('mousemove',function(e){if(!drag)return;wrap.scrollLeft=sl-(e.clientX-sx);wrap.scrollTop=st-(e.clientY-sy);});document.addEventListener('mouseup',function(){if(drag){drag=false;wrap.style.cursor='grab';}});})();
 
