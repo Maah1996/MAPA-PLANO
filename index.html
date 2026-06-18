@@ -898,8 +898,8 @@ function _applyZoom(){
     ml.style.marginTop=(-380*_zw/100)+'px';
   }
   _scaleMarkers();_scaleArrows();
-  /* Re-aplicar rotación para recalcular marginTop con el nuevo tamaño */
-  if(_planRot!==0)_applyPlanRotation();
+  /* Re-aplicar rotación y centrar cuando hay rotación activa */
+  if(_planRot!==0){_applyPlanRotation();}else{setTimeout(_centerView,0);}
 }
 function zoomIn(){_zw=Math.min(500,_zw+25);_applyZoom();}
 function zoomOut(){_zw=Math.max(30,_zw-25);_applyZoom();}
@@ -907,22 +907,33 @@ function zoomReset(){_zw=100;_applyZoom();}
 
 /* ── Rotación del plano completo ── */
 var _planRot=0;
-function _applyPlanRotation(){
+
+/* Centra el plan en el viewport del zoom-wrap (funciona con cualquier ángulo y zoom) */
+function _centerView(){
   var ml=document.getElementById('markerLayer');
   var wrap=document.getElementById('zoom-wrap');
+  var mt=parseFloat(ml.style.marginTop)||0;
+  /* Centro del contenido visual = siempre el centro del markerLayer */
+  var cx=ml.offsetWidth/2;
+  var cy=mt+ml.offsetHeight/2;
+  /* Scroll para que ese centro quede en el centro del viewport */
+  wrap.scrollLeft=Math.max(0,cx-wrap.clientWidth/2);
+  wrap.scrollTop=Math.max(0,cy-wrap.clientHeight/2);
+}
+
+function _applyPlanRotation(){
+  var ml=document.getElementById('markerLayer');
   ml.style.transform=_planRot===0?'':'rotate('+_planRot+'deg)';
   ml.style.transformOrigin='center center';
   if(_planRot===90||_planRot===270){
     var mlW=ml.offsetWidth,mlH=ml.offsetHeight;
-    /* Empujar hacia abajo para que el borde superior visual quede visible */
     ml.style.marginTop=Math.max(0,(mlW-mlH)/2)+'px';
-    /* Scroll para centrar horizontalmente el contenido rotado */
-    setTimeout(function(){wrap.scrollLeft=Math.max(0,(mlW-mlH)/2);},0);
   } else {
     ml.style.marginTop=(_planRot===0?-380:0)*_zw/100+'px';
-    setTimeout(function(){wrap.scrollLeft=0;},0);
   }
   document.getElementById('rot-deg').textContent=_planRot+'°';
+  /* Centrar después del reflow */
+  setTimeout(_centerView,0);
 }
 document.getElementById('btnRotL').onclick=function(){_planRot=(_planRot-90+360)%360;_applyPlanRotation();};
 document.getElementById('btnRotR').onclick=function(){_planRot=(_planRot+90)%360;_applyPlanRotation();};
