@@ -1061,15 +1061,15 @@ function _initArrowFloatPanel(){
 
   /* Largo − + */
   p.querySelector('.afp-len-m').addEventListener('mousedown',function(e){e.stopPropagation();});
-  p.querySelector('.afp-len-m').addEventListener('click',function(){if(!_s)return;_setW(_s,(_s.offsetWidth||140)-20);});
+  p.querySelector('.afp-len-m').addEventListener('click',function(){if(!_s)return;_setW(_s,(_s.offsetWidth||140)-1);});
   p.querySelector('.afp-len-p').addEventListener('mousedown',function(e){e.stopPropagation();});
-  p.querySelector('.afp-len-p').addEventListener('click',function(){if(!_s)return;_setW(_s,(_s.offsetWidth||140)+20);});
+  p.querySelector('.afp-len-p').addEventListener('click',function(){if(!_s)return;_setW(_s,(_s.offsetWidth||140)+1);});
 
   /* Ancho − + */
   p.querySelector('.afp-wid-m').addEventListener('mousedown',function(e){e.stopPropagation();});
-  p.querySelector('.afp-wid-m').addEventListener('click',function(){if(!_s)return;_setH(_s,(_s.offsetHeight||18)-2);});
+  p.querySelector('.afp-wid-m').addEventListener('click',function(){if(!_s)return;_setH(_s,(_s.offsetHeight||18)-1);});
   p.querySelector('.afp-wid-p').addEventListener('mousedown',function(e){e.stopPropagation();});
-  p.querySelector('.afp-wid-p').addEventListener('click',function(){if(!_s)return;_setH(_s,(_s.offsetHeight||18)+2);});
+  p.querySelector('.afp-wid-p').addEventListener('click',function(){if(!_s)return;_setH(_s,(_s.offsetHeight||18)+1);});
 
   /* Rotación */
   p.querySelectorAll('.afp-rot').forEach(function(btn){
