@@ -736,7 +736,17 @@ var _legendScale=1,_legendRot=0;
     e.preventDefault();e.stopPropagation();
     document.addEventListener('mousemove',_legMove);document.addEventListener('mouseup',_legUp);
   });
-  function _legMove(e){if(!_dragging)return;legendEl.style.left=(_elx+e.clientX-_ox)+'px';legendEl.style.top=(_ely+e.clientY-_oy)+'px';}
+  function _legMove(e){
+    if(!_dragging)return;
+    /* Convertir delta de pantalla al espacio local del markerLayer (rotado inversamente) */
+    var dx=e.clientX-_ox,dy=e.clientY-_oy,lx,ly;
+    if(_planRot===90){lx=dy;ly=-dx;}
+    else if(_planRot===180){lx=-dx;ly=-dy;}
+    else if(_planRot===270){lx=-dy;ly=dx;}
+    else{lx=dx;ly=dy;}
+    legendEl.style.left=(_elx+lx)+'px';
+    legendEl.style.top=(_ely+ly)+'px';
+  }
   function _legUp(){_dragging=false;document.removeEventListener('mousemove',_legMove);document.removeEventListener('mouseup',_legUp);}
 })();
 
