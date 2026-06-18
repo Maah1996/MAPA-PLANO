@@ -265,6 +265,14 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 .save-now-btn{background:#14532d!important;color:#86efac!important;border-color:rgba(22,101,49,.5)!important;font-weight:700}
 .save-now-btn:hover{background:#166534!important}
 #save-status{font-size:11.5px;color:#8fa3b8;min-width:110px}
+
+/* Tabs de navegación rápida entre planos */
+#plan-tabs-bar{display:flex;gap:4px;align-items:center;flex-wrap:nowrap;overflow-x:auto;max-width:600px}
+#plan-tabs-bar::-webkit-scrollbar{height:3px}
+#plan-tabs-bar::-webkit-scrollbar-thumb{background:var(--brd)}
+.plan-tab-btn{padding:4px 13px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--brd);background:var(--surf2);color:var(--txt2);font-family:inherit;white-space:nowrap;transition:.12s;max-width:180px;overflow:hidden;text-overflow:ellipsis}
+.plan-tab-btn:hover{background:var(--brd);color:var(--txt)}
+.plan-tab-btn.active{background:var(--acc);color:var(--bg);border-color:var(--acc);font-weight:700}
 #current-plan-name{font-size:13px;font-weight:700;color:var(--acc)}
 
 /* ═══════════════════════════════════════════

@@ -251,6 +251,26 @@ function _loadSave(id,name){
   }).catch(function(e){_showToast('Error al cargar: '+e.message,true);});
 }
 
+/* ── Tabs de navegación rápida entre planos ── */
+function _renderPlanTabs(activePlanId){
+  var bar=document.getElementById('plan-tabs-bar');
+  if(!bar)return;
+  bar.innerHTML='';
+  if(_allPlans.length<2){bar.style.display='none';return;}
+  bar.style.display='flex';
+  _allPlans.forEach(function(p){
+    var btn=document.createElement('button');
+    btn.className='plan-tab-btn'+(p._id===activePlanId?' active':'');
+    btn.textContent=p.name||'Plano';
+    btn.title=p.name||'';
+    btn.addEventListener('click',function(){
+      if(p._id===_currentPlan)return;
+      _savePlanNow(function(){_openPlan(p._id);});
+    });
+    bar.appendChild(btn);
+  });
+}
+
 function _deleteSave(id,name){
   if(!confirm('¿Eliminar el guardado "'+(name||'')+'"?'))return;
   var sc=_savesCol();if(!sc)return;
@@ -313,6 +333,8 @@ function _uploadPlanFile(file){
 }
 
 /* ── Listar y renderizar planos del usuario ── */
+var _allPlans=[];   /* lista completa de planos del usuario (para tabs de navegación) */
+
 function _loadUserPlans(){
   var grid=document.getElementById('plans-grid');
   grid.innerHTML='<div class="plans-loading">Cargando tus planos…</div>';
@@ -320,6 +342,14 @@ function _loadUserPlans(){
     var list=[];snap.forEach(function(d){var v=d.data();v._id=d.id;list.push(v);});
     list=list.filter(function(p){return !p.builtin && String(p._id).indexOf('montichef-')!==0;});
     list.sort(function(a,b){return(b.updatedAt||b.createdAt||0)-(a.updatedAt||a.createdAt||0);});
+    /* guardar para tabs de navegación */
+    var isAdmin=_currentUser&&_isAdminEmail(_currentUser.email)&&!_planOwnerUid;
+    _allPlans=[];
+    if(isAdmin){
+      _allPlans.push({_id:'montichef-1',name:'MONTICHEF — Nivel 1'});
+      _allPlans.push({_id:'montichef-2',name:'MONTICHEF — Nivel 2'});
+    }
+    list.forEach(function(p){_allPlans.push(p);});
     _renderPlansGrid(list);
   }).catch(function(e){grid.innerHTML='<div class="plans-loading" style="color:#f87171">Error al cargar: '+_escHtml(e.message)+'</div>';});
 }
@@ -382,6 +412,8 @@ function _openPlan(planId){
     var sb=document.getElementById('btnSaveNow');if(sb)sb.style.display=isB?'none':'';
     var lb=document.getElementById('btnLoadPanel');if(lb)lb.style.display='';
     _setSaveStatus('',null);
+    /* Tabs de planos */
+    _renderPlanTabs(planId);
     if(document.getElementById('titleInput'))document.getElementById('titleInput').value=data.title||data.name||'';
     _planLoaded=false;
     _restorePlanMarkers(data.markers||[]);

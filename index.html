@@ -276,6 +276,14 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 .save-now-btn{background:#14532d!important;color:#86efac!important;border-color:rgba(22,101,49,.5)!important;font-weight:700}
 .save-now-btn:hover{background:#166534!important}
 #save-status{font-size:11.5px;color:#8fa3b8;min-width:110px}
+
+/* Tabs de navegación rápida entre planos */
+#plan-tabs-bar{display:flex;gap:4px;align-items:center;flex-wrap:nowrap;overflow-x:auto;max-width:600px}
+#plan-tabs-bar::-webkit-scrollbar{height:3px}
+#plan-tabs-bar::-webkit-scrollbar-thumb{background:var(--brd)}
+.plan-tab-btn{padding:4px 13px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--brd);background:var(--surf2);color:var(--txt2);font-family:inherit;white-space:nowrap;transition:.12s;max-width:180px;overflow:hidden;text-overflow:ellipsis}
+.plan-tab-btn:hover{background:var(--brd);color:var(--txt)}
+.plan-tab-btn.active{background:var(--acc);color:var(--bg);border-color:var(--acc);font-weight:700}
 #current-plan-name{font-size:13px;font-weight:700;color:var(--acc)}
 
 /* ═══════════════════════════════════════════
@@ -576,7 +584,7 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
     <div id="plan-controls">
       <div id="plan-info">
         <button class="btn ghost" id="btnMisPlanos">&#8592; Mis planos</button>
-        <span id="current-plan-name"></span>
+        <div id="plan-tabs-bar" style="display:none"></div>
         <button class="btn save-now-btn" id="btnSaveNow" style="display:none">💾 Guardar</button>
         <button class="btn ghost" id="btnLoadPanel" style="display:none">📂 Cargar</button>
         <span id="save-status"></span>
@@ -1376,6 +1384,26 @@ function _loadSave(id,name){
   }).catch(function(e){_showToast('Error al cargar: '+e.message,true);});
 }
 
+/* ── Tabs de navegación rápida entre planos ── */
+function _renderPlanTabs(activePlanId){
+  var bar=document.getElementById('plan-tabs-bar');
+  if(!bar)return;
+  bar.innerHTML='';
+  if(_allPlans.length<2){bar.style.display='none';return;}
+  bar.style.display='flex';
+  _allPlans.forEach(function(p){
+    var btn=document.createElement('button');
+    btn.className='plan-tab-btn'+(p._id===activePlanId?' active':'');
+    btn.textContent=p.name||'Plano';
+    btn.title=p.name||'';
+    btn.addEventListener('click',function(){
+      if(p._id===_currentPlan)return;
+      _savePlanNow(function(){_openPlan(p._id);});
+    });
+    bar.appendChild(btn);
+  });
+}
+
 function _deleteSave(id,name){
   if(!confirm('¿Eliminar el guardado "'+(name||'')+'"?'))return;
   var sc=_savesCol();if(!sc)return;
@@ -1438,6 +1466,8 @@ function _uploadPlanFile(file){
 }
 
 /* ── Listar y renderizar planos del usuario ── */
+var _allPlans=[];   /* lista completa de planos del usuario (para tabs de navegación) */
+
 function _loadUserPlans(){
   var grid=document.getElementById('plans-grid');
   grid.innerHTML='<div class="plans-loading">Cargando tus planos…</div>';
@@ -1445,6 +1475,14 @@ function _loadUserPlans(){
     var list=[];snap.forEach(function(d){var v=d.data();v._id=d.id;list.push(v);});
     list=list.filter(function(p){return !p.builtin && String(p._id).indexOf('montichef-')!==0;});
     list.sort(function(a,b){return(b.updatedAt||b.createdAt||0)-(a.updatedAt||a.createdAt||0);});
+    /* guardar para tabs de navegación */
+    var isAdmin=_currentUser&&_isAdminEmail(_currentUser.email)&&!_planOwnerUid;
+    _allPlans=[];
+    if(isAdmin){
+      _allPlans.push({_id:'montichef-1',name:'MONTICHEF — Nivel 1'});
+      _allPlans.push({_id:'montichef-2',name:'MONTICHEF — Nivel 2'});
+    }
+    list.forEach(function(p){_allPlans.push(p);});
     _renderPlansGrid(list);
   }).catch(function(e){grid.innerHTML='<div class="plans-loading" style="color:#f87171">Error al cargar: '+_escHtml(e.message)+'</div>';});
 }
@@ -1507,6 +1545,8 @@ function _openPlan(planId){
     var sb=document.getElementById('btnSaveNow');if(sb)sb.style.display=isB?'none':'';
     var lb=document.getElementById('btnLoadPanel');if(lb)lb.style.display='';
     _setSaveStatus('',null);
+    /* Tabs de planos */
+    _renderPlanTabs(planId);
     if(document.getElementById('titleInput'))document.getElementById('titleInput').value=data.title||data.name||'';
     _planLoaded=false;
     _restorePlanMarkers(data.markers||[]);
