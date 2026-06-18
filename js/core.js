@@ -103,7 +103,7 @@ function _renderLegendSummary(){
 /* ── Drag + resize + girar leyenda ── */
 var _legendScale=1,_legendRot=0;
 (function(){
-  var _dragging=false,_offPxX=0,_offPxY=0;
+  var _dragging=false,_startX=0,_startY=0,_startL=0,_startT=0,_scale=1;
 
   legendEl.addEventListener('mousedown',function(e){
     var rotBtn=e.target.closest&&e.target.closest('.leg-rot');
@@ -116,20 +116,19 @@ var _legendScale=1,_legendRot=0;
     var curL=parseFloat(legendEl.style.left)||0,curT=parseFloat(legendEl.style.top)||0;
     if(!legendEl.style.left||legendEl.style.left==='auto'){curL=legendEl.offsetLeft;curT=legendEl.offsetTop;}
     legendEl.style.left=curL+'px';legendEl.style.top=curT+'px';legendEl.style.bottom='auto';legendEl.style.right='auto';
-    /* Calcular dónde dentro de la leyenda hizo click (en espacio local del markerLayer) */
-    var ml=document.getElementById('markerLayer'),mlW=ml.offsetWidth,mlH=ml.offsetHeight;
-    var pos=_toLocalPct(e.clientX,e.clientY);
-    _offPxX=pos.x/100*mlW-curL;
-    _offPxY=pos.y/100*mlH-curT;
+    /* Arrastre por desplazamiento real del mouse: el panel sigue al cursor 1:1,
+       ajustado por la escala del zoom. Robusto, sin saltos por recorte/rotación. */
+    var ml=document.getElementById('markerLayer'),r=ml.getBoundingClientRect();
+    _scale=(r.width/ml.offsetWidth)||1;
+    _startX=e.clientX;_startY=e.clientY;_startL=curL;_startT=curT;
     e.preventDefault();e.stopPropagation();
     document.addEventListener('mousemove',_legMove);document.addEventListener('mouseup',_legUp);
   });
   function _legMove(e){
     if(!_dragging)return;
-    var ml=document.getElementById('markerLayer'),mlW=ml.offsetWidth,mlH=ml.offsetHeight;
-    var pos=_toLocalPct(e.clientX,e.clientY);
-    legendEl.style.left=(pos.x/100*mlW-_offPxX)+'px';
-    legendEl.style.top=(pos.y/100*mlH-_offPxY)+'px';
+    var dx=(e.clientX-_startX)/_scale,dy=(e.clientY-_startY)/_scale;
+    legendEl.style.left=(_startL+dx)+'px';
+    legendEl.style.top=(_startT+dy)+'px';
   }
   function _legUp(){_dragging=false;document.removeEventListener('mousemove',_legMove);document.removeEventListener('mouseup',_legUp);}
 })();
