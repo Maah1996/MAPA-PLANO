@@ -728,8 +728,10 @@ var _legendScale=1,_legendRot=0;
     /* Drag solo desde el handle */
     if(!e.target.closest||!e.target.closest('.legend-drag'))return;
     _dragging=true;
-    var ml=document.getElementById('markerLayer'),mr=ml.getBoundingClientRect(),lr=legendEl.getBoundingClientRect();
-    _elx=lr.left-mr.left;_ely=lr.top-mr.top;_ox=e.clientX;_oy=e.clientY;
+    /* offsetLeft/offsetTop dan la posición en coordenadas del markerLayer
+       sin verse afectados por transform:scale de la leyenda → no hay salto */
+    _elx=legendEl.offsetLeft;_ely=legendEl.offsetTop;
+    _ox=e.clientX;_oy=e.clientY;
     legendEl.style.left=_elx+'px';legendEl.style.top=_ely+'px';legendEl.style.bottom='auto';legendEl.style.right='auto';
     e.preventDefault();e.stopPropagation();
     document.addEventListener('mousemove',_legMove);document.addEventListener('mouseup',_legUp);
