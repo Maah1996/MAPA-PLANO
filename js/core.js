@@ -107,9 +107,9 @@ var _legendScale=1,_legendRot=0;
 
   legendEl.addEventListener('mousedown',function(e){
     var rotBtn=e.target.closest&&e.target.closest('.leg-rot');
-    if(rotBtn){e.stopPropagation();_legendRot=(_legendRot+90)%360;legendEl.style.transform='scale('+_legendScale+') rotate('+_legendRot+'deg)';legendEl.style.transformOrigin='top left';return;}
+    if(rotBtn){e.stopPropagation();_legendRot=(_legendRot+90)%360;legendEl.style.transform='scale('+_legendScale+') rotate('+_legendRot+'deg)';legendEl.style.transformOrigin='center center';return;}
     var btn=e.target.closest&&e.target.closest('.leg-sz');
-    if(btn){e.stopPropagation();_legendScale=Math.min(2,Math.max(0.6,_legendScale+parseInt(btn.dataset.d)*0.1));legendEl.style.transform='scale('+_legendScale+') rotate('+_legendRot+'deg)';legendEl.style.transformOrigin='top left';return;}
+    if(btn){e.stopPropagation();_legendScale=Math.min(2,Math.max(0.6,_legendScale+parseInt(btn.dataset.d)*0.1));legendEl.style.transform='scale('+_legendScale+') rotate('+_legendRot+'deg)';legendEl.style.transformOrigin='center center';return;}
     if(!e.target.closest||!e.target.closest('.legend-drag'))return;
     _dragging=true;
     /* Fijar left/top en px (desde bottom/right si es primera vez) */
