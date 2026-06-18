@@ -25,8 +25,16 @@ function _escHtml(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/
 
 function _updateAuthBar(user){
   var info=document.getElementById('auth-user-info'),nm=document.getElementById('auth-name'),adminLink=document.getElementById('admin-link');
-  if(user){info.style.display='flex';nm.textContent=user.displayName||user.email;adminLink.style.display=_isAdminEmail(user.email)?'':'none';}
-  else{info.style.display='none';}
+  var mpBtn=document.getElementById('btn-mis-planos');
+  if(user){
+    info.style.display='flex';
+    nm.textContent=user.displayName||user.email;
+    adminLink.style.display=_isAdminEmail(user.email)?'':'none';
+    if(mpBtn)mpBtn.style.display='';
+  }else{
+    info.style.display='none';
+    if(mpBtn)mpBtn.style.display='none';
+  }
 }
 
 /* ── Traducción de errores Firebase ── */
@@ -354,6 +362,7 @@ document.getElementById('plans-resume').addEventListener('click',function(){if(_
 document.getElementById('plans-upload-btn').addEventListener('click',function(){document.getElementById('plans-file').click();});
 document.getElementById('plans-file').addEventListener('change',function(){var f=this.files&&this.files[0];if(f)_uploadPlanFile(f);this.value='';});
 document.getElementById('btnMisPlanos').addEventListener('click',_backToPlans);
+document.getElementById('btn-mis-planos').addEventListener('click',_backToPlans);
 
 /* ══════════════════════════════════════════════════════════
    MODO EDICIÓN ADMIN — index.html?au=<uid>&ap=<planId>
