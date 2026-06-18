@@ -167,6 +167,13 @@ function _initMkrPanel(){
     +'<span class="afp-num mkp-num" style="min-width:36px;text-align:center">1.0×</span>'
     +'<button class="afp-btn afp-pm mkp-plus">+</button></div>'
     +'<div class="afp-div"></div>'
+    +'<div class="afp-section" style="gap:4px">'
+    +'<button class="afp-btn afp-btn-rot mkp-rot" data-d="-15">↺</button>'
+    +'<span class="afp-num mkp-rot-num" style="min-width:38px;text-align:center">0°</span>'
+    +'<button class="afp-btn afp-btn-rot mkp-rot" data-d="15">↻</button>'
+    +'<button class="afp-btn afp-btn-rot mkp-rot180">⇄</button>'
+    +'</div>'
+    +'<div class="afp-div"></div>'
     +'<div class="afp-section"><button class="afp-btn mkp-reset">Reset</button></div>'
     +'<div class="afp-div"></div>'
     +'<div class="afp-section" style="gap:5px">'
@@ -190,15 +197,24 @@ function _initMkrPanel(){
 
   var _m=null;
   function _upd(sc){if(!_m)return;sc=Math.max(0.3,Math.min(3,sc));_m.dataset.markerScale=sc.toFixed(2);p.querySelector('.mkp-num').textContent=sc.toFixed(1)+'×';_scaleMarkers();}
-  p._set=function(mkr){_m=mkr;if(!mkr)return;var sc=parseFloat(mkr.dataset.markerScale||1);p.querySelector('.mkp-num').textContent=sc.toFixed(1)+'×';};
+  function _updRot(delta){if(!_m)return;var r=(parseFloat(_m.dataset.markerRot||0)+delta+360)%360;_m.dataset.markerRot=r;p.querySelector('.mkp-rot-num').textContent=r+'°';_scaleMarkers();}
+  p._set=function(mkr){_m=mkr;if(!mkr)return;var sc=parseFloat(mkr.dataset.markerScale||1);p.querySelector('.mkp-num').textContent=sc.toFixed(1)+'×';var r=parseFloat(mkr.dataset.markerRot||0);p.querySelector('.mkp-rot-num').textContent=r+'°';};
 
   function _sp(el){el.addEventListener('mousedown',function(e){e.stopPropagation();});}
   _sp(p.querySelector('.mkp-minus'));
   p.querySelector('.mkp-minus').addEventListener('click',function(){if(!_m)return;_upd(parseFloat(_m.dataset.markerScale||1)-0.1);});
   _sp(p.querySelector('.mkp-plus'));
   p.querySelector('.mkp-plus').addEventListener('click',function(){if(!_m)return;_upd(parseFloat(_m.dataset.markerScale||1)+0.1);});
+  /* Rotación */
+  p.querySelectorAll('.mkp-rot').forEach(function(btn){
+    _sp(btn);
+    btn.addEventListener('click',function(){_updRot(parseInt(this.dataset.d));});
+  });
+  _sp(p.querySelector('.mkp-rot180'));
+  p.querySelector('.mkp-rot180').addEventListener('click',function(){_updRot(180);});
+
   _sp(p.querySelector('.mkp-reset'));
-  p.querySelector('.mkp-reset').addEventListener('click',function(){_upd(1);});
+  p.querySelector('.mkp-reset').addEventListener('click',function(){_upd(1);if(_m){_m.dataset.markerRot=0;p.querySelector('.mkp-rot-num').textContent='0°';_scaleMarkers();}});
 
   /* Copiar */
   _sp(p.querySelector('.mkp-copy'));

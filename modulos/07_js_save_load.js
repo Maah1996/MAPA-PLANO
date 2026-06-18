@@ -407,7 +407,7 @@ function _openPlan(planId){
     /* Fondo blanco para planos CAD (imagen clara), oscuro para el resto */
     var zw=document.getElementById('zoom-wrap');
     if(zw)zw.style.background=data.cad?'#f1f5f9':'';
-    document.getElementById('current-plan-name').textContent=data.name||'Plano';
+    var cnp=document.getElementById('current-plan-name');if(cnp)cnp.textContent=data.name||'Plano';
     /* Mostrar botones Guardar / Cargar e indicador */
     var sb=document.getElementById('btnSaveNow');if(sb)sb.style.display=isB?'none':'';
     var lb=document.getElementById('btnLoadPanel');if(lb)lb.style.display='';
@@ -441,7 +441,7 @@ function _restorePlanMarkers(arr){
         if(entry.itemId==='estoy_aqui')risk=_EA_ITEM;
         else if(entry.isEvac)EVAC_ITEMS.forEach(function(it){if(it.id===entry.itemId)risk=Object.assign({},it,{_isEvac:true});});
         else RISKS.forEach(function(it){if(it.id===entry.itemId)risk=it;});
-        if(risk){addMarker(risk,color,xPct,yPct);var last=document.getElementById('markerLayer').querySelector('.marker:not(.evac-arrow):last-child');if(last){if(entry.label){var lbl=last.querySelector('.mlabel');if(lbl)lbl.innerText=entry.label;}if(entry.markerScale)last.dataset.markerScale=entry.markerScale;}}
+        if(risk){addMarker(risk,color,xPct,yPct);var last=document.getElementById('markerLayer').querySelector('.marker:not(.evac-arrow):last-child');if(last){if(entry.label){var lbl=last.querySelector('.mlabel');if(lbl)lbl.innerText=entry.label;}if(entry.markerScale)last.dataset.markerScale=entry.markerScale;if(entry.markerRot)last.dataset.markerRot=entry.markerRot;}}
       }
     }catch(err){console.warn('restore marker',err);}
   });
@@ -456,7 +456,7 @@ function _restorePlanMarkers(arr){
 function _serializeMarkers(){
   var markers=[];
   document.querySelectorAll('.marker').forEach(function(m){
-    markers.push({left:m.style.left,top:m.style.top,mode:m.dataset.mode||'riesgos',isArrow:m.dataset.isArrow==='1',itemId:m.dataset.itemId||'',itemColor:m.dataset.itemColor||'',isEvac:m.dataset.itemIsEvac==='1',label:(m.querySelector('.mlabel')||{}).innerText||'',angle:m.dataset.angle||'0',wpct:m.dataset.wpct||'0',hpct:m.dataset.hpct||'0',width:m.style.width,height:m.style.height,markerScale:m.dataset.markerScale||'1'});
+    markers.push({left:m.style.left,top:m.style.top,mode:m.dataset.mode||'riesgos',isArrow:m.dataset.isArrow==='1',itemId:m.dataset.itemId||'',itemColor:m.dataset.itemColor||'',isEvac:m.dataset.itemIsEvac==='1',label:(m.querySelector('.mlabel')||{}).innerText||'',angle:m.dataset.angle||'0',wpct:m.dataset.wpct||'0',hpct:m.dataset.hpct||'0',width:m.style.width,height:m.style.height,markerScale:m.dataset.markerScale||'1',markerRot:m.dataset.markerRot||'0'});
   });
   return markers;
 }
