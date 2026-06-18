@@ -298,6 +298,8 @@ function zoomReset(){_zw=100;_applyZoom();}
 
 /* ── Rotación del plano completo ── */
 var _planRot=0;
+/* Cada modo (riesgos / evacuacion) conserva su propia rotación */
+var _planRotByMode={riesgos:0,evacuacion:0};
 
 /* Centra el plan en el viewport: marginLeft cuando es más angosto que la pantalla,
    scrollLeft/scrollTop para centrar el contenido visual rotado */
@@ -334,8 +336,8 @@ function _applyPlanRotation(){
   /* Los márgenes (para alcanzar el plano rotado) los calcula _centerView */
   setTimeout(_centerView,0);
 }
-document.getElementById('btnRotL').onclick=function(){_planRot=(_planRot-90+360)%360;_applyPlanRotation();};
-document.getElementById('btnRotR').onclick=function(){_planRot=(_planRot+90)%360;_applyPlanRotation();};
+document.getElementById('btnRotL').onclick=function(){_planRot=(_planRot-90+360)%360;_planRotByMode[_appMode]=_planRot;_applyPlanRotation();};
+document.getElementById('btnRotR').onclick=function(){_planRot=(_planRot+90)%360;_planRotByMode[_appMode]=_planRot;_applyPlanRotation();};
 
 /* ── Conversión de coordenadas de pantalla a % locales del markerLayer (considera rotación) ── */
 function _toLocalPct(clientX,clientY){
@@ -371,6 +373,7 @@ function showPlan(n){
 /* ── switchMode ── */
 var _savedTitle={};
 function switchMode(mode){
+  _planRotByMode[_appMode]=_planRot;   /* guardar rotación del modo que dejamos */
   _appMode=mode;var isR=mode==='riesgos';
   var ti=document.getElementById('titleInput');
   _savedTitle[isR?'evacuacion':'riesgos']=ti.value;
@@ -386,6 +389,9 @@ function switchMode(mode){
     var planOk=String(m.dataset.plan)===String(_currentPlan);
     m.style.visibility=(modeOk&&planOk)?'visible':'hidden';
   });
+  /* Restaurar la rotación propia del modo al que entramos */
+  _planRot=_planRotByMode[mode]||0;
+  _applyPlanRotation();
   _renderLegendSummary();
 }
 
