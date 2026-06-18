@@ -106,7 +106,11 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
       <div class="pw-wrap"><input type="password" id="adm-pass" placeholder="Contraseña" autocomplete="current-password" required><button type="button" class="pw-toggle" aria-label="Mostrar contraseña">👁</button></div>
       <button type="submit">Ingresar</button>
     </form>
+    <p style="text-align:center;margin-top:12px">
+      <a href="#" id="adm-forgot" style="color:var(--txt2);font-size:13px;text-decoration:underline;cursor:pointer">¿Olvidaste tu contraseña?</a>
+    </p>
     <p id="login-err"></p>
+    <p id="login-info" style="color:var(--verde);font-size:13px;text-align:center;margin-top:8px;line-height:1.4"></p>
   </div>
 </div>
 
@@ -158,6 +162,18 @@ document.getElementById('adm-form').addEventListener('submit',function(e){
   _auth.signInWithEmailAndPassword(em,pw).catch(function(err){document.getElementById('login-err').textContent=_authMsg(err);});
 });
 document.getElementById('btn-logout').addEventListener('click',function(){_auth.signOut();});
+
+/* ── Recuperar contraseña ── */
+document.getElementById('adm-forgot').addEventListener('click',function(e){
+  e.preventDefault();
+  var errEl=document.getElementById('login-err'),infoEl=document.getElementById('login-info');
+  errEl.textContent='';infoEl.textContent='';
+  var em=document.getElementById('adm-email').value.trim();
+  if(!em){errEl.textContent='Escribe tu correo y vuelve a tocar "¿Olvidaste tu contraseña?".';return;}
+  _auth.sendPasswordResetEmail(em).then(function(){
+    infoEl.textContent='✓ Te enviamos un correo a '+em+' para restablecer tu contraseña. Revisa tu bandeja (y la carpeta de spam).';
+  }).catch(function(err){errEl.textContent=_authMsg(err);});
+});
 
 /* ── Mostrar/ocultar contraseña (ojo) ── */
 document.querySelectorAll('.pw-toggle').forEach(function(btn){
