@@ -56,7 +56,7 @@ function _renderLegendSummary(){
   var allM=[].slice.call(document.querySelectorAll('.marker:not(.evac-arrow)'));
   var curr=allM.filter(function(m){return(m.dataset.mode||'riesgos')===_appMode&&String(m.dataset.plan||1)===String(_currentPlan);});
   var title=isR?'Mapa de riesgos':'Plano de evacuación';
-  var html='<div class="legend-drag"><span class="drag-grip">⠿</span><span style="flex:1">'+title+'</span><button class="leg-sz" data-d="-1" title="Achicar">−</button><button class="leg-sz" data-d="1" title="Agrandar">+</button></div>';
+  var html='<div class="legend-drag"><span class="drag-grip">⠿</span><span style="flex:1">'+title+'</span><button class="leg-sz" data-d="-1" title="Achicar">−</button><button class="leg-sz" data-d="1" title="Agrandar">+</button><button class="leg-sz leg-rot" data-rot="1" title="Girar leyenda">↻</button></div>';
 
   if(isR){
     var byLvl={},eaCnt=0;
@@ -100,15 +100,18 @@ function _renderLegendSummary(){
   legendEl.innerHTML=html;
 }
 
-/* ── Drag + resize leyenda ── */
-var _legendScale=1; /* escala actual: 0.6 – 2.0 */
+/* ── Drag + resize + girar leyenda ── */
+var _legendScale=1,_legendRot=0;
 (function(){
   var _dragging=false,_ox=0,_oy=0,_elx=0,_ely=0;
 
   legendEl.addEventListener('mousedown',function(e){
+    /* Botón girar */
+    var rotBtn=e.target.closest&&e.target.closest('.leg-rot');
+    if(rotBtn){e.stopPropagation();_legendRot=(_legendRot+90)%360;legendEl.style.transform='scale('+_legendScale+') rotate('+_legendRot+'deg)';legendEl.style.transformOrigin='top left';return;}
     /* Botones tamaño */
     var btn=e.target.closest&&e.target.closest('.leg-sz');
-    if(btn){e.stopPropagation();_legendScale=Math.min(2,Math.max(0.6,_legendScale+parseInt(btn.dataset.d)*0.1));legendEl.style.transform='scale('+_legendScale+')';legendEl.style.transformOrigin='top left';return;}
+    if(btn){e.stopPropagation();_legendScale=Math.min(2,Math.max(0.6,_legendScale+parseInt(btn.dataset.d)*0.1));legendEl.style.transform='scale('+_legendScale+') rotate('+_legendRot+'deg)';legendEl.style.transformOrigin='top left';return;}
     /* Drag solo desde el handle */
     if(!e.target.closest||!e.target.closest('.legend-drag'))return;
     _dragging=true;
@@ -293,14 +296,18 @@ function zoomReset(){_zw=100;_applyZoom();}
 var _planRot=0;
 function _applyPlanRotation(){
   var ml=document.getElementById('markerLayer');
+  var wrap=document.getElementById('zoom-wrap');
   ml.style.transform=_planRot===0?'':'rotate('+_planRot+'deg)';
   ml.style.transformOrigin='center center';
-  /* Para 90°/270° compensar el desbordamiento arriba: empujar hacia abajo (mlW-mlH)/2 */
   if(_planRot===90||_planRot===270){
     var mlW=ml.offsetWidth,mlH=ml.offsetHeight;
+    /* Empujar hacia abajo para que el borde superior visual quede visible */
     ml.style.marginTop=Math.max(0,(mlW-mlH)/2)+'px';
+    /* Scroll para centrar horizontalmente el contenido rotado */
+    setTimeout(function(){wrap.scrollLeft=Math.max(0,(mlW-mlH)/2);},0);
   } else {
     ml.style.marginTop=(_planRot===0?-380:0)*_zw/100+'px';
+    setTimeout(function(){wrap.scrollLeft=0;},0);
   }
   document.getElementById('rot-deg').textContent=_planRot+'°';
 }
