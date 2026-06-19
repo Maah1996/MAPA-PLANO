@@ -17,16 +17,18 @@ async function _capturePlan(scaleFactor){
     m.style.visibility=(modeOk&&planOk)?'visible':'hidden';
   });
 
-  /* 3. Escala de íconos: como en la captura el markerLayer se resetea a 100%
-        de ancho (se agranda), los íconos deben usar SOLO markerScale (ms),
-        no _zw/100*ms — si no quedan proporcionalmente chicos. También se
-        preserva la rotación individual (markerRot) para que no salgan al revés. */
+  /* 3. Escala de íconos: usar el MISMO zoom que en pantalla (_zw/100 * markerScale)
+        para que los íconos salgan tan grandes como se ven en el programa.
+        Las flechas mantienen su tamaño en px (que ya sigue el zoom vía _scaleArrows),
+        así íconos y flechas quedan consistentes. Se preserva la rotación individual
+        (markerRot) para que no salgan al revés. */
+  var zoomRatio=_zw/100;
   document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){
     m._origTr=m.style.transform;
     m._origOrg=m.style.transformOrigin;
     var ms=parseFloat(m.dataset.markerScale||1);
     var mr=parseFloat(m.dataset.markerRot||0);
-    m.style.transform='translate(-50%,-50%) scale('+ms+') rotate('+mr+'deg)';
+    m.style.transform='translate(-50%,-50%) scale('+(zoomRatio*ms)+') rotate('+mr+'deg)';
     m.style.transformOrigin='50% 50%';
   });
 
