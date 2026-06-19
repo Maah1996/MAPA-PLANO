@@ -17,15 +17,16 @@ async function _capturePlan(scaleFactor){
     m.style.visibility=(modeOk&&planOk)?'visible':'hidden';
   });
 
-  /* 3. Escala de íconos: usar la misma que en pantalla (_zw/100 * markerScale)
-        así si el usuario tiene zoom 150%, los íconos aparecen igual de grandes
-        en el export que en pantalla */
-  var zoomRatio=_zw/100;
+  /* 3. Escala de íconos: como en la captura el markerLayer se resetea a 100%
+        de ancho (se agranda), los íconos deben usar SOLO markerScale (ms),
+        no _zw/100*ms — si no quedan proporcionalmente chicos. También se
+        preserva la rotación individual (markerRot) para que no salgan al revés. */
   document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){
     m._origTr=m.style.transform;
     m._origOrg=m.style.transformOrigin;
     var ms=parseFloat(m.dataset.markerScale||1);
-    m.style.transform='translate(-50%,-50%) scale('+(zoomRatio*ms)+')';
+    var mr=parseFloat(m.dataset.markerRot||0);
+    m.style.transform='translate(-50%,-50%) scale('+ms+') rotate('+mr+'deg)';
     m.style.transformOrigin='50% 50%';
   });
 
@@ -41,9 +42,15 @@ async function _capturePlan(scaleFactor){
     legEl.style.bottom='auto';legEl.style.right='auto';
   }
 
-  /* 5. Resetear zoom del markerLayer a 100% para captura completa del plano */
+  /* 5. Resetear zoom Y rotación del markerLayer para captura limpia.
+        Capturamos el plano en su orientación NATURAL (sin rotar) y luego,
+        si el usuario lo tenía girado, rotamos el canvas resultante. Así
+        html2canvas no se confunde con el transform:rotate del elemento. */
   var origW=ml.style.width,origMT=ml.style.marginTop;
+  var origTr=ml.style.transform,origMB=ml.style.marginBottom,origML=ml.style.marginLeft;
+  var capRot=(typeof _planRot!=='undefined')?_planRot:0;
   ml.style.width='100%';ml.style.marginTop='0px';
+  ml.style.transform='';ml.style.marginBottom='0px';ml.style.marginLeft='0px';
   _activeImg().style.width='100%';
 
   var planCanvas;
@@ -57,6 +64,7 @@ async function _capturePlan(scaleFactor){
   }finally{
     /* Restaurar estado original */
     ml.style.width=origW;ml.style.marginTop=origMT;
+    ml.style.transform=origTr;ml.style.marginBottom=origMB;ml.style.marginLeft=origML;
     _activeImg().style.width='100%';
     legEl.style.left=_legOL;legEl.style.top=_legOT;legEl.style.bottom=_legOB;legEl.style.right=_legOR;
     document.querySelectorAll('.del,.arr-del,.arr-resize').forEach(function(d){d.style.display='';});
@@ -90,6 +98,21 @@ async function _capturePlan(scaleFactor){
   crop.width=planCanvas.width;
   crop.height=Math.max(1,planCanvas.height-blankRows);
   crop.getContext('2d').drawImage(planCanvas,0,-blankRows);
+
+  /* 5b. Si el plano estaba girado en pantalla, rotar el canvas para que el PNG
+        salga en la MISMA orientación que el usuario veía. */
+  if(capRot===90||capRot===180||capRot===270){
+    var rot=document.createElement('canvas');
+    var swap=(capRot===90||capRot===270);
+    rot.width=swap?crop.height:crop.width;
+    rot.height=swap?crop.width:crop.height;
+    var rctx=rot.getContext('2d');
+    rctx.fillStyle='#ffffff';rctx.fillRect(0,0,rot.width,rot.height);
+    rctx.translate(rot.width/2,rot.height/2);
+    rctx.rotate(capRot*Math.PI/180);
+    rctx.drawImage(crop,-crop.width/2,-crop.height/2);
+    crop=rot;
+  }
 
   /* 6. Agregar franja de título */
   var pad=Math.round(6*scaleFactor),titleH=Math.round(54*scaleFactor),gap=Math.round(2*scaleFactor);
