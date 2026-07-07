@@ -362,8 +362,8 @@ function _applyPlanRotation(){
   /* Los márgenes (para alcanzar el plano rotado) los calcula _centerView */
   setTimeout(_centerView,0);
 }
-document.getElementById('btnRotL').onclick=function(){_planRot=(_planRot-90+360)%360;_planRotByMode[_appMode]=_planRot;_applyPlanRotation();};
-document.getElementById('btnRotR').onclick=function(){_planRot=(_planRot+90)%360;_planRotByMode[_appMode]=_planRot;_applyPlanRotation();};
+document.getElementById('btnRotL').onclick=function(){_planRot=(_planRot-90+360)%360;_planRotByMode[_appMode]=_planRot;_applyPlanRotation();if(typeof _saveAppState==='function')_saveAppState();};
+document.getElementById('btnRotR').onclick=function(){_planRot=(_planRot+90)%360;_planRotByMode[_appMode]=_planRot;_applyPlanRotation();if(typeof _saveAppState==='function')_saveAppState();};
 
 /* ── Conversión de coordenadas de pantalla a % locales del markerLayer (considera rotación) ── */
 function _toLocalPct(clientX,clientY){

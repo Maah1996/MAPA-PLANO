@@ -18,7 +18,8 @@ _db.enablePersistence({synchronizeTabs:true}).catch(function(){});
 var ADMIN_EMAIL='marcoaraya1973@gmail.com';
 
 /* ── Overlays y mensajes ── */
-function _showLanding(show){document.getElementById('landing-overlay').style.display=show?'':'none';}
+function _hideBootLoading(){var b=document.getElementById('boot-loading');if(b)b.style.display='none';}
+function _showLanding(show){_hideBootLoading();document.getElementById('landing-overlay').style.display=show?'':'none';}
 function _showLoginOverlay(show){document.getElementById('login-overlay').style.display=show?'':'none';}
 function _showStatusOverlay(show){document.getElementById('status-overlay').style.display=show?'':'none';}
 function _showPlansOverlay(show){document.getElementById('plans-overlay').style.display=show?'':'none';}
@@ -396,7 +397,7 @@ function _planCard(p,builtin){
 }
 
 /* ── Abrir un plano en el editor ── */
-function _openPlan(planId,_retriesLeft){
+function _openPlan(planId,_retriesLeft,_onDone){
   if(_retriesLeft===undefined)_retriesLeft=2;
   _plansCol().doc(planId).get().then(function(doc){
     var builtinIdx=-1;
@@ -430,13 +431,14 @@ function _openPlan(planId,_retriesLeft){
     _planLoaded=true;
     _lastOpenedPlanId=planId;
     _showPlansOverlay(false);
+    if(_onDone)_onDone();
     _saveAppState();
   }).catch(function(e){
     /* "client is offline" suele ser transitorio justo al iniciar sesión,
        mientras Firestore todavía está estableciendo la conexión: reintentar
        un par de veces antes de darlo por error real. */
     if(_retriesLeft>0&&/offline/i.test(e.message||'')){
-      setTimeout(function(){_openPlan(planId,_retriesLeft-1);},1200);
+      setTimeout(function(){_openPlan(planId,_retriesLeft-1,_onDone);},1200);
       return;
     }
     _showToast('Error al abrir el plano: '+e.message,true);
@@ -504,7 +506,14 @@ function _schedulePlanSave(){if(!_planLoaded)return;_setSaveStatus('Cambios pend
 function _appStateKey(){return '_mapaAppState_'+(_ownerUid()||'anon');}
 function _saveAppState(){
   if(_editCtx)return; /* no persistir mientras un admin edita el plano de otra cuenta */
-  try{if(_planLoaded&&_planMeta)localStorage.setItem(_appStateKey(),JSON.stringify({planId:_planMeta.id,mode:_appMode}));}catch(e){}
+  try{
+    if(_planLoaded&&_planMeta)localStorage.setItem(_appStateKey(),JSON.stringify({
+      planId:_planMeta.id,mode:_appMode,
+      /* Orientación del plano (horizontal/vertical) por modo, para que al
+         recargar quede exactamente como lo dejó, no siempre en vertical. */
+      planRotByMode:(typeof _planRotByMode!=='undefined')?_planRotByMode:null
+    }));
+  }catch(e){}
 }
 function _loadAppState(){
   try{var raw=localStorage.getItem(_appStateKey());return raw?JSON.parse(raw):null;}catch(e){return null;}
@@ -586,7 +595,17 @@ function _enterApp(){
   var saved=_loadAppState();
   if(saved&&saved.planId){
     if(saved.mode)_appMode=saved.mode;
-    _openPlan(saved.planId);
+    /* Capturar la rotación guardada del modo actual ANTES de abrir el plano:
+       switchMode() (llamado dentro de _openPlan) pisa _planRotByMode[modo]
+       con el _planRot "viejo" (0, recién inicializado) si el modo no cambia
+       realmente, así que no sirve releer _planRotByMode después. */
+    var restoredRot=(saved.planRotByMode&&saved.planRotByMode[_appMode])||0;
+    if(saved.planRotByMode&&typeof _planRotByMode!=='undefined')Object.assign(_planRotByMode,saved.planRotByMode);
+    _openPlan(saved.planId,undefined,function(){
+      _planRotByMode[_appMode]=restoredRot;
+      _planRot=restoredRot;
+      _applyPlanRotation();
+    });
   }else{
     _showPlansOverlay(true);
   }
@@ -594,6 +613,7 @@ function _enterApp(){
 
 _auth.onAuthStateChanged(function(user){
   _currentUser=user;
+  _hideBootLoading();
   if(!user){
     _userPerms=null;
     _showStatusOverlay(false);_showLoginOverlay(false);_showPlansOverlay(false);

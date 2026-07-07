@@ -8,7 +8,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-<link rel="stylesheet" href="css/estilos.css?v=8">
+<link rel="stylesheet" href="css/estilos.css?v=9">
 </head>
 <body>
 
@@ -29,8 +29,15 @@
   </span>
 </div>
 
+<!-- Pantalla de carga: se ve primero mientras se verifica la sesión, para no
+     mostrar de golpe la portada o el editor y después "saltar" a donde
+     corresponda. -->
+<div id="boot-loading">
+  <div class="boot-spinner"></div>
+</div>
+
 <!-- Portada / Landing (primera pantalla para visitantes) -->
-<div id="landing-overlay">
+<div id="landing-overlay" style="display:none">
   <div id="lp-dots"></div>
   <div class="lp-content">
     <nav class="lp-nav">
@@ -264,10 +271,10 @@
     </div>
   </main>
 </div>
-<script src="js/core.js?v=12"></script>
+<script src="js/core.js?v=13"></script>
 <script src="js/evac_items.js?v=6"></script>
 <script src="js/evac_arrows.js?v=7"></script>
-<script src="js/save_load.js?v=9"></script>
+<script src="js/save_load.js?v=12"></script>
 <script src="js/cad.js?v=6"></script>
 <script src="js/capture.js?v=10"></script>
 <script src="js/version_check.js?v=1"></script>

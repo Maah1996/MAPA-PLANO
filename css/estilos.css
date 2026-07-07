@@ -27,6 +27,11 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 #admin-link{color:var(--acc);text-decoration:none;font-weight:700;font-size:12px;padding:4px 10px;border:1px solid rgba(200,168,75,.45);border-radius:5px}
 #admin-link:hover{background:rgba(200,168,75,.15)}
 
+/* ═══ Pantalla de carga inicial (mientras se verifica sesión) ═══ */
+#boot-loading{position:fixed;inset:0;z-index:100000;background:#0e1622;display:flex;align-items:center;justify-content:center}
+.boot-spinner{width:34px;height:34px;border-radius:50%;border:3px solid rgba(240,168,41,.25);border-top-color:#f0a829;animation:boot-spin .8s linear infinite}
+@keyframes boot-spin{to{transform:rotate(360deg)}}
+
 /* ═══ Portada / Landing ═══ */
 #landing-overlay{position:fixed;inset:0;z-index:99998;background:#0e1622;color:#eaf0f7;overflow:auto}
 #lp-dots{position:absolute;inset:0;z-index:1;pointer-events:none}
@@ -184,7 +189,7 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 .marker:hover .del{display:block}
 
 /* Legend */
-.legend{position:absolute;left:10px;bottom:10px;background:rgba(15,25,35,.95);border:1px solid rgba(200,168,75,.5);border-radius:6px;padding:6px 10px 8px;font-size:10.5px;z-index:8;width:190px;min-width:150px;min-height:60px;max-width:420px;max-height:70vh;overflow:auto;resize:both;box-shadow:0 4px 16px rgba(0,0,0,.5);font-family:inherit;user-select:none;cursor:grab}
+.legend{position:absolute;left:10px;bottom:10px;background:rgba(15,25,35,.95);border:1px solid rgba(200,168,75,.5);border-radius:6px;padding:6px 10px 8px;font-size:10.5px;z-index:8;width:190px;min-width:150px;min-height:60px;max-width:420px;height:auto;overflow:auto;resize:both;box-shadow:0 4px 16px rgba(0,0,0,.5);font-family:inherit;user-select:none;cursor:grab}
 .legend:active{cursor:grabbing}
 .legend-drag{display:flex;align-items:center;gap:6px;color:var(--acc);font-size:11px;font-weight:700;padding:4px 2px 8px;border-bottom:1px solid rgba(200,168,75,.3);margin-bottom:5px}
 .legend-drag .leg-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
