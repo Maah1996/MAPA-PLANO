@@ -116,17 +116,20 @@ var _legendScale=1,_legendRot=0;
     var curL=parseFloat(legendEl.style.left)||0,curT=parseFloat(legendEl.style.top)||0;
     if(!legendEl.style.left||legendEl.style.left==='auto'){curL=legendEl.offsetLeft;curT=legendEl.offsetTop;}
     legendEl.style.left=curL+'px';legendEl.style.top=curT+'px';legendEl.style.bottom='auto';legendEl.style.right='auto';
-    /* Arrastre por desplazamiento real del mouse: el panel sigue al cursor 1:1,
-       ajustado por la escala del zoom. Robusto, sin saltos por recorte/rotación. */
-    var ml=document.getElementById('markerLayer'),r=ml.getBoundingClientRect();
-    _scale=(r.width/ml.offsetWidth)||1;
+    /* Arrastre por desplazamiento real del mouse. El zoom es por ancho (no
+       transform), así que 1px de pantalla = 1px local. Solo hay que compensar
+       la ROTACIÓN del plano, porque la leyenda gira con el markerLayer. */
     _startX=e.clientX;_startY=e.clientY;_startL=curL;_startT=curT;
     e.preventDefault();e.stopPropagation();
     document.addEventListener('mousemove',_legMove);document.addEventListener('mouseup',_legUp);
   });
   function _legMove(e){
     if(!_dragging)return;
-    var dx=(e.clientX-_startX)/_scale,dy=(e.clientY-_startY)/_scale;
+    var sdx=e.clientX-_startX, sdy=e.clientY-_startY;
+    /* Convertir el delta de pantalla al eje local del plano rotado (rotar −θ) */
+    var rad=(typeof _planRot==='number'?_planRot:0)*Math.PI/180;
+    var cos=Math.cos(rad), sin=Math.sin(rad);
+    var dx=cos*sdx+sin*sdy, dy=-sin*sdx+cos*sdy;
     legendEl.style.left=(_startL+dx)+'px';
     legendEl.style.top=(_startT+dy)+'px';
   }
