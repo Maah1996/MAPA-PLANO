@@ -119,9 +119,12 @@ var _legendScale=1,_legendRot=0;
      %,% de su centro, y la deja anclada así de ahí en más. */
   function _ensureLegPosPct(){
     if(legendEl.style.left&&legendEl.style.left.indexOf('%')!==-1)return;
-    var ml=document.getElementById('markerLayer'),r=ml.getBoundingClientRect(),lr=legendEl.getBoundingClientRect();
-    var cx=lr.left+lr.width/2-r.left,cy=lr.top+lr.height/2-r.top;
-    legendEl.style.left=(cx/r.width*100)+'%';legendEl.style.top=(cy/r.height*100)+'%';
+    /* Usar _toLocalPct (mismo helper que iconos/flechas) en vez de un cálculo
+       propio: así queda correcto también cuando el plano está rotado, donde
+       el bounding box de ml ya viene con ancho/alto intercambiados. */
+    var lr=legendEl.getBoundingClientRect();
+    var pos=_toLocalPct(lr.left+lr.width/2,lr.top+lr.height/2);
+    legendEl.style.left=pos.x+'%';legendEl.style.top=pos.y+'%';
     legendEl.style.bottom='auto';legendEl.style.right='auto';
     _applyLegTransform();
   }
@@ -411,6 +414,7 @@ function switchMode(mode){
   _zw=_zwByMode[mode]||100;
   _applyZoom();
   _renderLegendSummary();
+  if(typeof _saveAppState==='function')_saveAppState();
 }
 
 /* ── Toolbar ── */

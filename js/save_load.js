@@ -352,6 +352,10 @@ function _loadUserPlans(){
     }
     list.forEach(function(p){_allPlans.push(p);});
     _renderPlansGrid(list);
+    /* Si ya hay un plano abierto (p.ej. reabierto automaticamente al recargar
+       antes de que esta lista terminara de llegar), refrescar sus tabs ahora
+       que _allPlans esta completo. */
+    if(_planLoaded&&_planMeta)_renderPlanTabs(_currentPlan);
   }).catch(function(e){grid.innerHTML='<div class="plans-loading" style="color:#f87171">Error al cargar: '+_escHtml(e.message)+'</div>';});
 }
 
@@ -421,6 +425,7 @@ function _openPlan(planId){
     _planLoaded=true;
     _lastOpenedPlanId=planId;
     _showPlansOverlay(false);
+    _saveAppState();
   }).catch(function(e){_showToast('Error al abrir el plano: '+e.message,true);});
 }
 
@@ -479,10 +484,23 @@ function _savePlanNow(cb){
 }
 function _schedulePlanSave(){if(!_planLoaded)return;_setSaveStatus('Cambios pendientes…',null);clearTimeout(_planSaveTimer);_planSaveTimer=setTimeout(function(){_savePlanNow();},1200);}
 
+/* ── Recordar en qué pantalla/plano quedó cada usuario, para no mandarlo
+      siempre a "Mis planos" al recargar la página. ── */
+function _appStateKey(){return '_mapaAppState_'+(_ownerUid()||'anon');}
+function _saveAppState(){
+  if(_editCtx)return; /* no persistir mientras un admin edita el plano de otra cuenta */
+  try{if(_planLoaded&&_planMeta)localStorage.setItem(_appStateKey(),JSON.stringify({planId:_planMeta.id,mode:_appMode}));}catch(e){}
+}
+function _loadAppState(){
+  try{var raw=localStorage.getItem(_appStateKey());return raw?JSON.parse(raw):null;}catch(e){return null;}
+}
+function _clearAppState(){try{localStorage.removeItem(_appStateKey());}catch(e){}}
+
 /* ── Volver a "Mis planos" ── */
 function _backToPlans(){
   _savePlanNow();
   _planLoaded=false;_planMeta=null;
+  _clearAppState();
   document.querySelectorAll('.marker').forEach(function(m){m.remove();});
   document.getElementById('planImg').src='';
   _showPlansOverlay(true);
@@ -546,9 +564,17 @@ function _enterApp(){
   _grantAccess();
   var ec=_parseEditParams();
   if(ec&&_isAdminEmail(_currentUser.email)){setTimeout(function(){_enterAdminEdit(ec);},150);return;}
-  _showPlansOverlay(true);
   _updateResumeBtn();
   _loadUserPlans();
+  /* Reabrir automaticamente el plano donde el usuario se quedo, en vez de
+     mandarlo siempre a la grilla de "Mis planos" al recargar. */
+  var saved=_loadAppState();
+  if(saved&&saved.planId){
+    if(saved.mode)_appMode=saved.mode;
+    _openPlan(saved.planId);
+  }else{
+    _showPlansOverlay(true);
+  }
 }
 
 _auth.onAuthStateChanged(function(user){
