@@ -56,7 +56,7 @@ function _renderLegendSummary(){
   var allM=[].slice.call(document.querySelectorAll('.marker:not(.evac-arrow)'));
   var curr=allM.filter(function(m){return(m.dataset.mode||'riesgos')===_appMode&&String(m.dataset.plan||1)===String(_currentPlan);});
   var title=isR?'Mapa de riesgos':'Plano de evacuación';
-  var html='<div class="legend-drag"><span class="drag-grip">⠿</span><span style="flex:1">'+title+'</span><button class="leg-sz" data-d="-1" title="Achicar">−</button><button class="leg-sz" data-d="1" title="Agrandar">+</button><button class="leg-sz leg-rot" data-rot="1" title="Girar leyenda">↻</button></div>';
+  var html='<div class="legend-drag"><span class="leg-title">'+title+'</span><button class="leg-sz" data-d="-1" title="Achicar">−</button><button class="leg-sz" data-d="1" title="Agrandar">+</button><button class="leg-sz leg-rotl" title="Girar a la izquierda">↺</button><button class="leg-sz leg-rot" title="Girar a la derecha">↻</button></div>';
 
   if(isR){
     var byLvl={},eaCnt=0;
@@ -132,9 +132,16 @@ var _legendScale=1,_legendRot=0;
   legendEl.addEventListener('mousedown',function(e){
     var rotBtn=e.target.closest&&e.target.closest('.leg-rot');
     if(rotBtn){e.stopPropagation();_ensureLegPosPct();_legendRot=(_legendRot+90)%360;_applyLegTransform();return;}
+    var rotBtnL=e.target.closest&&e.target.closest('.leg-rotl');
+    if(rotBtnL){e.stopPropagation();_ensureLegPosPct();_legendRot=(_legendRot-90+360)%360;_applyLegTransform();return;}
     var btn=e.target.closest&&e.target.closest('.leg-sz');
     if(btn){e.stopPropagation();_ensureLegPosPct();_legendScale=Math.min(2,Math.max(0.6,_legendScale+parseInt(btn.dataset.d)*0.1));_applyLegTransform();return;}
-    if(!e.target.closest||!e.target.closest('.legend-drag'))return;
+    /* No interceptar el rincón inferior-derecho: ahí vive la manija nativa de
+       resize (CSS resize:both) para agrandar el panel libremente. */
+    var r=legendEl.getBoundingClientRect();
+    if((r.right-e.clientX)<16&&(r.bottom-e.clientY)<16)return;
+    /* Arrastrar desde CUALQUIER punto del panel (no solo la barra de título):
+       donde el usuario ponga la mano, desde ahí se mueve la leyenda. */
     _ensureLegPosPct();
     _dragging=true;
     var pos=_toLocalPct(e.clientX,e.clientY);
