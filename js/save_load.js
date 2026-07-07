@@ -11,6 +11,10 @@ var firebaseConfig = {
 };
 if(!firebase.apps.length){firebase.initializeApp(firebaseConfig);}
 var _db=firebase.firestore(),_auth=firebase.auth(),_currentUser=null,_userPerms=null;
+/* Cache offline: si la red está lenta o entrecortada justo al iniciar sesión,
+   los planos ya vistos antes se pueden abrir desde la caché local en vez de
+   fallar con "client is offline". */
+_db.enablePersistence({synchronizeTabs:true}).catch(function(){});
 var ADMIN_EMAIL='marcoaraya1973@gmail.com';
 
 /* ── Overlays y mensajes ── */
@@ -392,7 +396,8 @@ function _planCard(p,builtin){
 }
 
 /* ── Abrir un plano en el editor ── */
-function _openPlan(planId){
+function _openPlan(planId,_retriesLeft){
+  if(_retriesLeft===undefined)_retriesLeft=2;
   _plansCol().doc(planId).get().then(function(doc){
     var builtinIdx=-1;
     if(String(planId).indexOf('montichef-')===0)builtinIdx=parseInt(planId.split('-')[1])-1;
@@ -426,7 +431,17 @@ function _openPlan(planId){
     _lastOpenedPlanId=planId;
     _showPlansOverlay(false);
     _saveAppState();
-  }).catch(function(e){_showToast('Error al abrir el plano: '+e.message,true);});
+  }).catch(function(e){
+    /* "client is offline" suele ser transitorio justo al iniciar sesión,
+       mientras Firestore todavía está estableciendo la conexión: reintentar
+       un par de veces antes de darlo por error real. */
+    if(_retriesLeft>0&&/offline/i.test(e.message||'')){
+      setTimeout(function(){_openPlan(planId,_retriesLeft-1);},1200);
+      return;
+    }
+    _showToast('Error al abrir el plano: '+e.message,true);
+    _showPlansOverlay(true); /* no dejar al usuario colgado en una pantalla en blanco */
+  });
 }
 
 /* ── Reconstruir markers del plano ── */
