@@ -31,17 +31,9 @@ async function _capturePlan(scaleFactor){
     m.style.transformOrigin='50% 50%';
   });
 
-  /* 4. Fijar posición de leyenda en % para que no se mueva al resetear zoom.
-        Convertimos px → % del markerLayer ANTES de cambiar el ancho,
-        así la posición relativa se preserva exactamente donde el usuario la dejó. */
-  var legEl=document.getElementById('legend');
-  var _legOL=legEl.style.left,_legOT=legEl.style.top,_legOB=legEl.style.bottom,_legOR=legEl.style.right;
-  if(_legOL&&_legOL!=='auto'&&_legOL!==''){
-    var _mlW=ml.offsetWidth||800,_mlH=ml.offsetHeight||600;
-    legEl.style.left=(parseFloat(_legOL)/_mlW*100)+'%';
-    legEl.style.top=(parseFloat(_legOT||0)/_mlH*100)+'%';
-    legEl.style.bottom='auto';legEl.style.right='auto';
-  }
+  /* 4. La leyenda ya se posiciona en % de markerLayer (ver core.js), así que
+        su lugar relativo se preserva solo al resetear el ancho para capturar,
+        sin necesidad de convertir nada acá. */
 
   /* 5. Resetear zoom Y rotación del markerLayer para captura limpia.
         Capturamos el plano en su orientación NATURAL (sin rotar) y luego,
@@ -68,7 +60,6 @@ async function _capturePlan(scaleFactor){
     ml.style.width=origW;ml.style.marginTop=origMT;
     ml.style.transform=origTr;ml.style.marginBottom=origMB;ml.style.marginLeft=origML;
     _activeImg().style.width='100%';
-    legEl.style.left=_legOL;legEl.style.top=_legOT;legEl.style.bottom=_legOB;legEl.style.right=_legOR;
     document.querySelectorAll('.del,.arr-del,.arr-resize').forEach(function(d){d.style.display='';});
     document.querySelectorAll('.marker').forEach(function(m){m.style.visibility=m._origVis||'visible';});
     document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){

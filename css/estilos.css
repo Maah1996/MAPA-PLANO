@@ -177,7 +177,7 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 
 /* Markers */
 .marker{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;cursor:move;z-index:5}
-.marker .mlabel{margin-top:2px;font-size:10px;font-family:inherit;background:rgba(10,17,26,.85);color:#e8e4d8;border:1px solid var(--brd);border-radius:4px;padding:1px 5px;max-width:130px;text-align:center;line-height:1.3;outline:none;white-space:nowrap}
+.marker .mlabel{margin-top:6px;font-size:10px;font-family:inherit;background:rgba(10,17,26,.85);color:#e8e4d8;border:1px solid var(--brd);border-radius:4px;padding:1px 5px;max-width:130px;text-align:center;line-height:1.3;outline:none;white-space:nowrap}
 .marker .mlabel:empty{background:transparent;border-color:transparent;padding:0}
 .marker .mlabel:focus{background:var(--surf2);border-color:var(--acc)}
 .marker .del{position:absolute;top:-9px;right:-9px;width:18px;height:18px;border-radius:50%;background:var(--rojo);color:#fff;border:2px solid var(--bg);font-size:12px;line-height:14px;text-align:center;cursor:pointer;display:none;font-weight:bold;z-index:6}
@@ -185,9 +185,9 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 
 /* Legend */
 .legend{position:absolute;left:10px;bottom:10px;background:rgba(15,25,35,.95);border:1px solid rgba(200,168,75,.5);border-radius:6px;padding:6px 10px 8px;font-size:10.5px;z-index:8;max-width:230px;box-shadow:0 4px 16px rgba(0,0,0,.5);font-family:inherit;user-select:none}
-.legend-drag{display:flex;align-items:center;gap:5px;cursor:grab;color:var(--acc);font-size:11px;font-weight:700;padding:0 0 4px;border-bottom:1px solid rgba(200,168,75,.3);margin-bottom:5px}
+.legend-drag{display:flex;align-items:center;gap:6px;cursor:grab;color:var(--acc);font-size:11px;font-weight:700;padding:4px 2px 8px;border-bottom:1px solid rgba(200,168,75,.3);margin-bottom:5px}
 .legend-drag:active{cursor:grabbing}
-.legend-drag .drag-grip{font-size:14px;opacity:.55;line-height:1}
+.legend-drag .drag-grip{font-size:19px;opacity:.7;line-height:1}
 .leg-sz{background:rgba(255,255,255,.1);border:1px solid rgba(200,168,75,.4);color:var(--acc);border-radius:3px;width:18px;height:18px;font-size:13px;line-height:1;cursor:pointer;padding:0;flex:0 0 18px;display:flex;align-items:center;justify-content:center}
 .leg-sz:hover{background:rgba(200,168,75,.25)}
 .legend .lvl-head{font-size:0.78em;font-weight:bold;margin-top:3px;margin-bottom:1px}

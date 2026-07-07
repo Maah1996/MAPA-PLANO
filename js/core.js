@@ -100,38 +100,50 @@ function _renderLegendSummary(){
   legendEl.innerHTML=html;
 }
 
-/* ── Drag + resize + girar leyenda ── */
+/* ── Drag + resize + girar leyenda ──
+   Posición anclada a su CENTRO y guardada en % del markerLayer (igual que los
+   íconos), no en px desde una esquina: así no desaparece al hacer zoom (el %
+   escala solo con el ancho de ml) y no "salta" al girar (una caja rectangular
+   no cuadrada rotada desde una esquina cambia de sitio visualmente; anclada al
+   centro, el centro no se mueve). */
 var _legendScale=1,_legendRot=0;
 (function(){
-  var _dragging=false,_startX=0,_startY=0,_startL=0,_startT=0,_scale=1;
+  var _dragging=false,_offX=0,_offY=0;
+
+  function _applyLegTransform(){
+    legendEl.style.transform='translate(-50%,-50%) scale('+_legendScale+') rotate('+_legendRot+'deg)';
+    legendEl.style.transformOrigin='center center';
+  }
+  /* La primera vez que se toca la leyenda, convierte su posición actual
+     (por defecto CSS left/bottom, o restos de un arrastre viejo en px) a
+     %,% de su centro, y la deja anclada así de ahí en más. */
+  function _ensureLegPosPct(){
+    if(legendEl.style.left&&legendEl.style.left.indexOf('%')!==-1)return;
+    var ml=document.getElementById('markerLayer'),r=ml.getBoundingClientRect(),lr=legendEl.getBoundingClientRect();
+    var cx=lr.left+lr.width/2-r.left,cy=lr.top+lr.height/2-r.top;
+    legendEl.style.left=(cx/r.width*100)+'%';legendEl.style.top=(cy/r.height*100)+'%';
+    legendEl.style.bottom='auto';legendEl.style.right='auto';
+    _applyLegTransform();
+  }
 
   legendEl.addEventListener('mousedown',function(e){
     var rotBtn=e.target.closest&&e.target.closest('.leg-rot');
-    if(rotBtn){e.stopPropagation();_legendRot=(_legendRot+90)%360;legendEl.style.transform='scale('+_legendScale+') rotate('+_legendRot+'deg)';legendEl.style.transformOrigin='center center';return;}
+    if(rotBtn){e.stopPropagation();_ensureLegPosPct();_legendRot=(_legendRot+90)%360;_applyLegTransform();return;}
     var btn=e.target.closest&&e.target.closest('.leg-sz');
-    if(btn){e.stopPropagation();_legendScale=Math.min(2,Math.max(0.6,_legendScale+parseInt(btn.dataset.d)*0.1));legendEl.style.transform='scale('+_legendScale+') rotate('+_legendRot+'deg)';legendEl.style.transformOrigin='center center';return;}
+    if(btn){e.stopPropagation();_ensureLegPosPct();_legendScale=Math.min(2,Math.max(0.6,_legendScale+parseInt(btn.dataset.d)*0.1));_applyLegTransform();return;}
     if(!e.target.closest||!e.target.closest('.legend-drag'))return;
+    _ensureLegPosPct();
     _dragging=true;
-    /* Fijar left/top en px (desde bottom/right si es primera vez) */
-    var curL=parseFloat(legendEl.style.left)||0,curT=parseFloat(legendEl.style.top)||0;
-    if(!legendEl.style.left||legendEl.style.left==='auto'){curL=legendEl.offsetLeft;curT=legendEl.offsetTop;}
-    legendEl.style.left=curL+'px';legendEl.style.top=curT+'px';legendEl.style.bottom='auto';legendEl.style.right='auto';
-    /* Arrastre por desplazamiento real del mouse. El zoom es por ancho (no
-       transform), así que 1px de pantalla = 1px local. Solo hay que compensar
-       la ROTACIÓN del plano, porque la leyenda gira con el markerLayer. */
-    _startX=e.clientX;_startY=e.clientY;_startL=curL;_startT=curT;
+    var pos=_toLocalPct(e.clientX,e.clientY);
+    _offX=pos.x-parseFloat(legendEl.style.left);_offY=pos.y-parseFloat(legendEl.style.top);
     e.preventDefault();e.stopPropagation();
     document.addEventListener('mousemove',_legMove);document.addEventListener('mouseup',_legUp);
   });
   function _legMove(e){
     if(!_dragging)return;
-    var sdx=e.clientX-_startX, sdy=e.clientY-_startY;
-    /* Convertir el delta de pantalla al eje local del plano rotado (rotar −θ) */
-    var rad=(typeof _planRot==='number'?_planRot:0)*Math.PI/180;
-    var cos=Math.cos(rad), sin=Math.sin(rad);
-    var dx=cos*sdx+sin*sdy, dy=-sin*sdx+cos*sdy;
-    legendEl.style.left=(_startL+dx)+'px';
-    legendEl.style.top=(_startT+dy)+'px';
+    var pos=_toLocalPct(e.clientX,e.clientY);
+    legendEl.style.left=(pos.x-_offX)+'%';
+    legendEl.style.top=(pos.y-_offY)+'%';
   }
   function _legUp(){_dragging=false;document.removeEventListener('mousemove',_legMove);document.removeEventListener('mouseup',_legUp);}
 })();
