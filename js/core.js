@@ -146,7 +146,7 @@ function startDragFromPalette(e,item){
 }
 function onMove(e){
   if(ghost){ghost.style.left=e.clientX+'px';ghost.style.top=e.clientY+'px';}
-  if(movingMarker){var pos=_toLocalPct(e.clientX,e.clientY);movingMarker.style.left=pos.x+'%';movingMarker.style.top=pos.y+'%';}
+  if(movingMarker){var pos=_toLocalPct(e.clientX,e.clientY);movingMarker.style.left=(pos.x-(movingMarker._dragOffX||0))+'%';movingMarker.style.top=(pos.y-(movingMarker._dragOffY||0))+'%';}
 }
 function onUp(e){
   if(draggingNew){
@@ -169,7 +169,7 @@ function addMarker(risk,color,xPct,yPct){
   m.dataset.markerScale='1';
   var svgH=risk._isEvac?iconSVGEvac(risk,40):(risk._isSpecial?iconSVGEstoyAqui(40):iconSVG(risk.g,color,40));
   m.innerHTML=svgH+'<div class="mlabel" contenteditable="true" spellcheck="false" title="Clic para escribir etiqueta"></div><div class="del" title="Eliminar">×</div>';
-  m.addEventListener('mousedown',function(e){if(e.target.classList.contains('del')||e.target.classList.contains('mlabel'))return;e.preventDefault();var r2=document.getElementById('markerLayer').getBoundingClientRect();m._dragOffX=(e.clientX-r2.left)-parseFloat(m.style.left)/100*r2.width;m._dragOffY=(e.clientY-r2.top)-parseFloat(m.style.top)/100*r2.height;movingMarker=m;window.addEventListener('mousemove',onMove);window.addEventListener('mouseup',onUp);});
+  m.addEventListener('mousedown',function(e){if(e.target.classList.contains('del')||e.target.classList.contains('mlabel'))return;e.preventDefault();var pos=_toLocalPct(e.clientX,e.clientY);m._dragOffX=pos.x-parseFloat(m.style.left);m._dragOffY=pos.y-parseFloat(m.style.top);movingMarker=m;window.addEventListener('mousemove',onMove);window.addEventListener('mouseup',onUp);});
   m.querySelector('.del').addEventListener('click',function(e){e.stopPropagation();m.remove();_hideMkrPanel();_renderLegendSummary();});
   m.addEventListener('click',function(e){if(e.target.classList.contains('del')||e.target.classList.contains('mlabel'))return;_showMkrPanel(m);});
   ml.appendChild(m);

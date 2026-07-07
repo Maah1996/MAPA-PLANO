@@ -265,7 +265,8 @@ function _renderPlanTabs(activePlanId){
     btn.title=p.name||'';
     btn.addEventListener('click',function(){
       if(p._id===_currentPlan)return;
-      _savePlanNow(function(){_openPlan(p._id);});
+      _savePlanNow();
+      _openPlan(p._id);
     });
     bar.appendChild(btn);
   });

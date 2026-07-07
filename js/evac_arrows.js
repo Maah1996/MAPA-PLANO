@@ -42,9 +42,9 @@ function addEvacArrow(angle,xPct,yPct,initW,initH){
   arr.addEventListener('mousedown',function(ev){
     if(ev.target.classList.contains('arr-del'))return;
     ev.preventDefault();
-    var r2=ml.getBoundingClientRect();
-    arr._dragOffX=(ev.clientX-r2.left)-parseFloat(arr.style.left)/100*r2.width;
-    arr._dragOffY=(ev.clientY-r2.top)-parseFloat(arr.style.top)/100*r2.height;
+    var pos=_toLocalPct(ev.clientX,ev.clientY);
+    arr._dragOffX=pos.x-parseFloat(arr.style.left);
+    arr._dragOffY=pos.y-parseFloat(arr.style.top);
     movingMarker=arr;
     window.addEventListener('mousemove',onMove);
     window.addEventListener('mouseup',onUp);
