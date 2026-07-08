@@ -197,6 +197,8 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 .leg-sz:hover{background:rgba(200,168,75,.25)}
 .legend .lvl-head{font-size:0.78em;font-weight:bold;margin-top:3px;margin-bottom:1px}
 .legend .row{display:flex;align-items:center;gap:5px;margin:2px 0;color:var(--txt2);line-height:1.2}
+.legend .row.leg-findable{cursor:pointer;border-radius:3px}
+.legend .row.leg-findable:hover{background:rgba(200,168,75,.15)}
 .legend .row-icon{width:32px;height:32px;flex:0 0 32px;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .legend .row-icon svg{width:32px;height:32px;display:block}
 .legend .row-icon img{width:32px;height:32px;object-fit:contain;display:block;border-radius:3px}

@@ -72,7 +72,7 @@ function _renderLegendSummary(){
         byLvl[lc].forEach(function(g){
           var nm='',ico='';
           RISKS.forEach(function(r){if(r.id===g.id){nm=r.name;ico=iconSVG(r.g,lc,_LEG_ICO);}});
-          html+='<div class="row"><span class="row-icon">'+ico+'</span><span>'+_singForm(nm||g.id,g.n)+(g.n>1?' '+g.n:'')+'</span></div>';
+          html+='<div class="row leg-findable" data-fid="'+g.id+'" data-fcolor="'+lc+'" title="Clic para ubicarlo en el plano"><span class="row-icon">'+ico+'</span><span>'+_singForm(nm||g.id,g.n)+(g.n>1?' '+g.n:'')+'</span></div>';
         });
       });
       if(eaCnt)html+='<div class="row"><span class="row-icon">'+iconSVGEstoyAqui(_LEG_ICO)+'</span><span>Estoy aquí'+(eaCnt>1?' '+eaCnt:'')+'</span></div>';
@@ -98,6 +98,25 @@ function _renderLegendSummary(){
     }
   }
   legendEl.innerHTML=html;
+
+  /* Clic en una fila de la leyenda: ubica ese ícono en el plano (scroll +
+     resaltado temporal). Sirve para encontrar íconos difíciles de distinguir
+     a simple vista (p.ej. naranja vs rojo) o tapados por otro ícono. */
+  legendEl.querySelectorAll('.leg-findable').forEach(function(row){
+    row.addEventListener('mousedown',function(e){e.stopPropagation();});
+    row.addEventListener('click',function(e){
+      e.stopPropagation();
+      var fid=row.dataset.fid,fcolor=row.dataset.fcolor,match=null;
+      document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){
+        if(match)return;
+        if(m.dataset.itemId===fid&&m.dataset.itemColor===fcolor&&(m.dataset.mode||'riesgos')===_appMode&&String(m.dataset.plan||1)===String(_currentPlan))match=m;
+      });
+      if(!match){alert('No se encontró ese ícono en el plano actual. Puede estar en otro Nivel.');return;}
+      match.scrollIntoView({behavior:'smooth',block:'center',inline:'center'});
+      match.style.outline='5px solid magenta';match.style.outlineOffset='3px';
+      setTimeout(function(){match.style.outline='';match.style.outlineOffset='';},4000);
+    });
+  });
 }
 
 /* ── Drag + resize + girar leyenda ──
