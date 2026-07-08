@@ -46,7 +46,10 @@ function _buildLegendEl(cssWidth){
       var lc=LEVELS[lk].color, grp=d.byColor[lc];
       if(!grp||!Object.keys(grp).length)return;
       any=true;
-      invRows+='<tr class="lvlhead"><td colspan="3" style="background:'+lc+'"><span>'+LEVELS[lk].label.toUpperCase()+'</span></td></tr>';
+      var sub=0;Object.keys(grp).forEach(function(id){sub+=grp[id];});
+      var lbl=LEVELS[lk].label, mr=lbl.match(/\((\d)\)/), rank=mr?mr[1]:'', nm2=lbl.replace(/\s*\(\d\)\s*/,'').trim();
+      var head=nm2.toUpperCase()+(rank?' (NIVEL '+rank+')':'');
+      invRows+='<tr class="lvlhead"><td colspan="3" style="background:'+lc+'"><span><em>'+head+'</em><b>'+sub+' '+(sub===1?'ícono':'íconos')+'</b></span></td></tr>';
       Object.keys(grp).forEach(function(id){
         var r=null;RISKS.forEach(function(x){if(x.id===id)r=x;});
         var nm=r?r.name:id, ico=r?iconSVG(r.g,lc,ICO):'';
@@ -112,7 +115,8 @@ function _buildLegendEl(cssWidth){
     '.pl-tbl{width:100%;border-collapse:collapse;font-size:13px;}'+
     '.pl-tbl thead th{font-size:10px;letter-spacing:.5px;color:#6b6450;text-transform:uppercase;text-align:left;padding:3px 6px;font-weight:bold;}'+
     '.pl-tbl td{padding:5px 6px;border-bottom:1px solid #ece7d8;vertical-align:middle;}'+
-    '.pl-tbl tr.lvlhead td{padding:0;}.pl-tbl tr.lvlhead span{display:block;color:#fff;font-size:11px;font-weight:bold;letter-spacing:.8px;padding:4px 8px;}'+
+    '.pl-tbl tr.lvlhead td{padding:0;}.pl-tbl tr.lvlhead span{display:flex;justify-content:space-between;align-items:center;color:#fff;font-size:11px;letter-spacing:.8px;padding:4px 9px;}'+
+    '.pl-tbl tr.lvlhead em{font-style:normal;font-weight:bold;}.pl-tbl tr.lvlhead b{font-weight:bold;font-size:10.5px;opacity:.92;letter-spacing:.3px;}'+
     '.pl-tbl td.sym svg,.pl-tbl td.sym img{display:block;}.pl-tbl td.nm{font-size:13px;color:#20242b;}'+
     '.pl-tbl td.qty{text-align:center;font-weight:bold;font-size:14px;color:#16314f;}'+
     '.sc-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:11px;}'+
