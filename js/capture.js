@@ -33,7 +33,14 @@ async function _capturePlan(scaleFactor){
 
   /* 4. La leyenda ya se posiciona en % de markerLayer (ver core.js), así que
         su lugar relativo se preserva solo al resetear el ancho para capturar,
-        sin necesidad de convertir nada acá. */
+        sin necesidad de convertir nada acá.
+        Pero "resize:both"+"overflow:auto" (agregado para poder agrandarla a
+        mano) hace que html2canvas dibuje el fondo a tamaño completo y recorte
+        el contenido real a una franja chica arriba — se ve una caja oscura
+        casi vacía en el PNG. Se neutraliza SOLO durante la captura. */
+  var legEl=document.getElementById('legend');
+  var _legOverflow=legEl.style.overflow,_legResize=legEl.style.resize;
+  legEl.style.overflow='visible';legEl.style.resize='none';
 
   /* 5. Resetear zoom Y rotación del markerLayer para captura limpia.
         Capturamos el plano en su orientación NATURAL (sin rotar) y luego,
@@ -60,6 +67,7 @@ async function _capturePlan(scaleFactor){
     ml.style.width=origW;ml.style.marginTop=origMT;
     ml.style.transform=origTr;ml.style.marginBottom=origMB;ml.style.marginLeft=origML;
     _activeImg().style.width='100%';
+    legEl.style.overflow=_legOverflow;legEl.style.resize=_legResize;
     document.querySelectorAll('.del,.arr-del,.arr-resize').forEach(function(d){d.style.display='';});
     document.querySelectorAll('.marker').forEach(function(m){m.style.visibility=m._origVis||'visible';});
     document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){
