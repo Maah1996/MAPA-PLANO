@@ -313,7 +313,8 @@ function _applyZoom(){
   ml.style.width=_zw+'%';
   _activeImg().style.width='100%';
   document.getElementById('zoom-pct').textContent=Math.round(_zw)+'%';
-  _scaleMarkers();_scaleArrows();
+  if(typeof _scaleMarkers==='function')_scaleMarkers();
+  if(typeof _scaleArrows==='function')_scaleArrows();
   if(_planRot!==0)_applyPlanRotation();
   setTimeout(_centerView,0);
 }
