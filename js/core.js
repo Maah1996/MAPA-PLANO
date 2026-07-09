@@ -256,9 +256,10 @@ function addMarker(risk,color,xPct,yPct){
   var ml=document.getElementById('markerLayer'),m=document.createElement('div');
   m.className='marker';m.style.left=xPct+'%';m.style.top=yPct+'%';
   m.dataset.plan=_currentPlan;m.dataset.mode=_appMode;m.dataset.itemId=risk.id||'';m.dataset.itemColor=color||'';m.dataset.itemIsEvac=risk._isEvac?'1':'0';
-  /* Un ícono nuevo adopta el tamaño global actual de los íconos del mismo modo
-     (el tamaño es global; ver botones −/+), así no rompe la uniformidad. */
-  var _refM=null;document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(mm){if(!_refM&&(mm.dataset.mode||'riesgos')===_appMode)_refM=mm;});
+  /* Un ícono nuevo adopta el tamaño actual de su MISMO GRUPO (riesgo o
+     extintor/simbología; ver botones −/+), así no rompe la uniformidad. */
+  var _grpEv=(risk._isEvac?'1':'0'),_refM=null;
+  document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(mm){if(!_refM&&mm.dataset.itemIsEvac===_grpEv)_refM=mm;});
   m.dataset.markerScale=_refM?(_refM.dataset.markerScale||'1'):'1';
   var svgH=risk._isEvac?iconSVGEvac(risk,40):(risk._isSpecial?iconSVGEstoyAqui(40):iconSVG(risk.g,color,40));
   m.innerHTML=svgH+'<div class="mlabel" contenteditable="true" spellcheck="false" title="Clic para escribir etiqueta"></div>'
@@ -280,12 +281,15 @@ function addMarker(risk,color,xPct,yPct){
       e.stopPropagation();
       var a=b.dataset.a;
       if(a==='sub'||a==='add'){
-        /* TAMAÑO = GLOBAL: agranda/achica TODOS los íconos del mismo modo
-           (riesgos o evacuación) juntos, para que queden uniformes. */
+        /* TAMAÑO = GLOBAL POR GRUPO: hay 2 grupos independientes que se agrandan
+           /achican por separado:
+             · Íconos de RIESGO (triángulos de peligro)   → itemIsEvac='0'
+             · EXTINTOR / SIMBOLOGÍA (extintor, salida…)   → itemIsEvac='1'
+           Al cambiar el tamaño solo se afectan los del mismo grupo. */
         var s=Math.max(0.3,Math.min(3,parseFloat(m.dataset.markerScale||1)+(a==='add'?0.1:-0.1))).toFixed(2);
-        var mode=m.dataset.mode||'riesgos';
+        var grp=(m.dataset.itemIsEvac==='1');
         document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(mm){
-          if((mm.dataset.mode||'riesgos')===mode){mm.dataset.markerScale=s;var nn=mm.querySelector('.mkr-num');if(nn)nn.textContent=parseFloat(s).toFixed(1)+'×';}
+          if((mm.dataset.itemIsEvac==='1')===grp){mm.dataset.markerScale=s;var nn=mm.querySelector('.mkr-num');if(nn)nn.textContent=parseFloat(s).toFixed(1)+'×';}
         });
       }else{
         /* GIRO = INDIVIDUAL: solo rota este ícono. */
