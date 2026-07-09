@@ -150,17 +150,36 @@ var _legendScale=1,_legendRot=0;
     _applyLegTransform();
   }
 
+  /* Manija de redimensionar (esquina inferior-derecha): arrastra ancho/alto
+     directamente. Proyecta el desplazamiento del mouse sobre los ejes locales
+     de la leyenda (para que funcione bien aunque esté rotada) y descuenta la
+     escala real en pantalla (_legendScale × zoom del plano). */
+  function _startLegResize(e){
+    e.preventDefault();e.stopPropagation();
+    _ensureLegPosPct();
+    var sx=e.clientX,sy=e.clientY;
+    var sw=legendEl.offsetWidth,sh=legendEl.offsetHeight;
+    var rad=_legendRot*Math.PI/180,cos=Math.cos(rad),sin=Math.sin(rad);
+    var z=(typeof _zw!=='undefined'?_zw/100:1),sc=(_legendScale||1)*(z||1);
+    function _rzMove(ev){
+      var dx=ev.clientX-sx,dy=ev.clientY-sy;
+      var lx=(dx*cos+dy*sin)/sc,ly=(-dx*sin+dy*cos)/sc;
+      legendEl.style.width=Math.max(150,Math.min(600,sw+lx))+'px';
+      legendEl.style.height=Math.max(70,sh+ly)+'px';
+    }
+    function _rzUp(){document.removeEventListener('mousemove',_rzMove);document.removeEventListener('mouseup',_rzUp);}
+    document.addEventListener('mousemove',_rzMove);document.addEventListener('mouseup',_rzUp);
+  }
+
   legendEl.addEventListener('mousedown',function(e){
+    var rzHandle=e.target.closest&&e.target.closest('.leg-resize');
+    if(rzHandle){_startLegResize(e);return;}
     var rotBtn=e.target.closest&&e.target.closest('.leg-rot');
     if(rotBtn){e.stopPropagation();_ensureLegPosPct();_legendRot=(_legendRot+90)%360;_applyLegTransform();return;}
     var rotBtnL=e.target.closest&&e.target.closest('.leg-rotl');
     if(rotBtnL){e.stopPropagation();_ensureLegPosPct();_legendRot=(_legendRot-90+360)%360;_applyLegTransform();return;}
     var btn=e.target.closest&&e.target.closest('.leg-sz');
     if(btn){e.stopPropagation();_ensureLegPosPct();_legendScale=Math.min(2,Math.max(0.6,_legendScale+parseInt(btn.dataset.d)*0.1));_applyLegTransform();return;}
-    /* No interceptar el rincón inferior-derecho: ahí vive la manija nativa de
-       resize (CSS resize:both) para agrandar el panel libremente. */
-    var r=legendEl.getBoundingClientRect();
-    if((r.right-e.clientX)<16&&(r.bottom-e.clientY)<16)return;
     /* Arrastrar desde CUALQUIER punto del panel (no solo la barra de título):
        donde el usuario ponga la mano, desde ahí se mueve la leyenda. */
     _ensureLegPosPct();
@@ -178,6 +197,34 @@ var _legendScale=1,_legendRot=0;
   }
   function _legUp(){_dragging=false;document.removeEventListener('mousemove',_legMove);document.removeEventListener('mouseup',_legUp);}
 })();
+
+/* ── Guardar / restaurar el estado de la leyenda (posición, rotación, escala
+   y tamaño) para que al recargar quede tal como el usuario la dejó y no
+   vuelva siempre a horizontal / tamaño por defecto. ── */
+function _serializeLegend(){
+  if(!legendEl)return null;
+  return {
+    left:legendEl.style.left||'',top:legendEl.style.top||'',
+    width:legendEl.style.width||'',height:legendEl.style.height||'',
+    scale:_legendScale,rot:_legendRot
+  };
+}
+function _restoreLegend(o){
+  if(!legendEl||!o)return;
+  _legendScale=parseFloat(o.scale)||1;
+  _legendRot=parseFloat(o.rot)||0;
+  if(o.width)legendEl.style.width=o.width;
+  if(o.height)legendEl.style.height=o.height;
+  /* Solo reubicar+transformar cuando la posición quedó anclada al centro en %
+     (es decir, el usuario ya la movió/rotó). Si nunca la tocó, se respeta la
+     posición por defecto. El transform (incluye el zoom del plano) lo recalcula
+     __mplLegSync. */
+  if(o.left&&o.left.indexOf('%')!==-1){
+    legendEl.style.left=o.left;legendEl.style.top=o.top;
+    legendEl.style.bottom='auto';legendEl.style.right='auto';
+  }
+  if(window.__mplLegSync)window.__mplLegSync();
+}
 
 /* ── Drag & Drop ── */
 function startDragFromPalette(e,item){

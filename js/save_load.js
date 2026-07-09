@@ -232,6 +232,7 @@ function _createSave(){
     markerCount:markers.length,
     zw:_zw,
     title:(document.getElementById('titleInput')||{}).value||'',
+    legend:(typeof _serializeLegend==='function'?_serializeLegend():null),
     createdAt:Date.now()
   }).then(function(){
     _showToast('Guardado: '+name);
@@ -248,6 +249,7 @@ function _loadSave(id,name){
     var v=doc.data();
     _planLoaded=false;
     _restorePlanMarkers(v.markers||[]);
+    if(typeof _restoreLegend==='function')_restoreLegend(v.legend);
     _planLoaded=true;
     if(v.title&&document.getElementById('titleInput'))document.getElementById('titleInput').value=v.title;
     _closeSlPanel();
@@ -428,6 +430,7 @@ function _openPlan(planId,_retriesLeft,_onDone){
     if(document.getElementById('titleInput'))document.getElementById('titleInput').value=data.title||data.name||'';
     _planLoaded=false;
     _restorePlanMarkers(data.markers||[]);
+    if(typeof _restoreLegend==='function')_restoreLegend(data.legend);
     _planLoaded=true;
     _lastOpenedPlanId=planId;
     _showPlansOverlay(false);
@@ -492,6 +495,7 @@ function _savePlanNow(cb){
   if(!_planLoaded||!_planMeta){if(cb)cb();return;}
   _setSaveStatus('Guardando…',null);
   var upd={markers:_serializeMarkers(),zw:_zw,title:(document.getElementById('titleInput')||{}).value||'',updatedAt:Date.now()};
+  if(typeof _serializeLegend==='function'){var _lg=_serializeLegend();if(_lg)upd.legend=_lg;}
   _plansCol().doc(_planMeta.id).set(upd,{merge:true}).then(function(){
     var h=new Date();
     var t=h.getHours().toString().padStart(2,'0')+':'+h.getMinutes().toString().padStart(2,'0')+':'+h.getSeconds().toString().padStart(2,'0');

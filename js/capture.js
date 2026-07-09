@@ -108,7 +108,7 @@ function _mplHeaderHTML(opt){
     return '<span>'+v+'</span>';
   }
   return '<div class="mpl-block">'+
-    '<div class="mpl-hd-title">MAPA DE RIESGOS Y EVACUACIÓN</div>'+
+    '<div class="mpl-hd-title">MAPA DE RIESGO</div>'+
     '<div class="mpl-hd-sub">'+fld('local','')+'</div>'+
     '<table class="mpl-meta">'+
       '<tr><td class="k">Fecha</td><td>'+fld('fecha','')+'</td></tr>'+
@@ -176,7 +176,7 @@ function _renderLegendSummary(){
   var lg=document.getElementById('legend');if(!lg)return;
   _mplEnsureCSS();
   lg.style.background='#fff';lg.style.color='#1a1a1a';lg.style.border='1.5px solid #16314f';
-  lg.style.borderRadius='6px';lg.style.padding='0';lg.style.overflow='hidden';
+  lg.style.borderRadius='6px';lg.style.padding='0';lg.style.overflow='auto';
   if(!lg.style.width||['230px','250px','280px'].indexOf(lg.style.width)>=0)lg.style.width='300px';
   /* Anclar en % del markerLayer para que escale con el zoom del plano */
   if(!lg.style.left||lg.style.left.indexOf('%')===-1){lg.style.left='15%';lg.style.top='70%';lg.style.bottom='auto';lg.style.right='auto';}
@@ -185,7 +185,7 @@ function _renderLegendSummary(){
     '<button class="leg-sz" data-d="1" title="Agrandar">+</button>'+
     '<button class="leg-sz leg-rotl" title="Girar a la izquierda">↺</button>'+
     '<button class="leg-sz leg-rot" title="Girar a la derecha">↻</button></div>';
-  lg.innerHTML='<div class="mpl-leg">'+header+_mplLegendHTML({ico:32,eico:36,editable:true})+'</div>';
+  lg.innerHTML='<div class="mpl-leg">'+header+_mplLegendHTML({ico:32,eico:36,editable:true})+'</div>'+'<div class="leg-resize" title="Arrastra para cambiar ancho y alto"></div>';
   /* Campos de metadatos editables */
   lg.querySelectorAll('.mpl-ed').forEach(function(sp){
     sp.addEventListener('mousedown',function(e){e.stopPropagation();});
@@ -229,7 +229,7 @@ async function _capturePlan(scaleFactor){
   var ml=document.getElementById('markerLayer');
 
   /* 1. Ocultar controles UI (incluida la barra de arrastre de la leyenda) */
-  document.querySelectorAll('.del,.arr-del,.arr-resize,.afp-toggle,#arr-float-panel,#mkr-float-panel,.mpl-drag').forEach(function(d){d.style.display='none';});
+  document.querySelectorAll('.del,.arr-del,.arr-resize,.leg-resize,.afp-toggle,#arr-float-panel,#mkr-float-panel,.mpl-drag').forEach(function(d){d.style.display='none';});
 
   /* 2. Filtrar visibilidad por MODO y PLAN */
   document.querySelectorAll('.marker').forEach(function(m){
@@ -302,7 +302,7 @@ async function _capturePlan(scaleFactor){
     _activeImg().style.width='100%';
     legEl.style.overflow=_legOverflow;legEl.style.resize=_legResize;legEl.style.visibility=_legVis;legEl.style.transform=_legTr;
     if(window.__mplLegSync)window.__mplLegSync();
-    document.querySelectorAll('.del,.arr-del,.arr-resize,.mpl-drag').forEach(function(d){d.style.display='';});
+    document.querySelectorAll('.del,.arr-del,.arr-resize,.leg-resize,.mpl-drag').forEach(function(d){d.style.display='';});
     document.querySelectorAll('.marker').forEach(function(m){m.style.visibility=m._origVis||'visible';});
     document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){
       m.style.transform=m._origTr||'';
