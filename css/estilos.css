@@ -192,7 +192,7 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 .marker.mkr-sel{outline:2px dashed rgba(200,168,75,.9);outline-offset:3px;border-radius:4px}
 .marker .mkr-sz{width:22px;height:22px;border-radius:50%;background:#16314f;color:#fff;border:1px solid #2a4d74;font-size:15px;line-height:1;text-align:center;cursor:pointer;font-weight:bold;padding:0;display:flex;align-items:center;justify-content:center}
 .marker .mkr-sz:hover{background:#1f4b78}
-.marker .mkr-num{color:#fff;font-size:12px;font-weight:700;min-width:34px;text-align:center;display:flex;align-items:center;justify-content:center;font-family:inherit}
+.marker .mkr-num{color:#fff;font-size:12px;font-weight:800;min-width:38px;height:22px;text-align:center;display:flex;align-items:center;justify-content:center;font-family:inherit;background:#0b1a2b;border:1px solid #2a4d74;border-radius:6px;padding:0 4px;letter-spacing:.02em}
 
 /* Legend */
 .legend{position:absolute;left:10px;bottom:10px;background:rgba(15,25,35,.95);border:1px solid rgba(200,168,75,.5);border-radius:6px;padding:6px 10px 8px;font-size:10.5px;z-index:8;width:230px;min-width:150px;min-height:60px;max-width:600px;height:auto;overflow:auto;resize:none;box-shadow:0 4px 16px rgba(0,0,0,.5);font-family:inherit;user-select:none;cursor:grab}
