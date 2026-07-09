@@ -229,7 +229,7 @@ async function _capturePlan(scaleFactor){
   var ml=document.getElementById('markerLayer');
 
   /* 1. Ocultar controles UI (incluida la barra de arrastre de la leyenda) */
-  document.querySelectorAll('.del,.arr-del,.arr-resize,.leg-resize,.afp-toggle,#arr-float-panel,#mkr-float-panel,.mpl-drag').forEach(function(d){d.style.display='none';});
+  document.querySelectorAll('.del,.mkr-size,.arr-del,.arr-resize,.leg-resize,.afp-toggle,#arr-float-panel,#mkr-float-panel,.mpl-drag').forEach(function(d){d.style.display='none';});
 
   /* 2. Filtrar visibilidad por MODO y PLAN */
   document.querySelectorAll('.marker').forEach(function(m){
@@ -302,7 +302,7 @@ async function _capturePlan(scaleFactor){
     _activeImg().style.width='100%';
     legEl.style.overflow=_legOverflow;legEl.style.resize=_legResize;legEl.style.visibility=_legVis;legEl.style.transform=_legTr;
     if(window.__mplLegSync)window.__mplLegSync();
-    document.querySelectorAll('.del,.arr-del,.arr-resize,.leg-resize,.mpl-drag').forEach(function(d){d.style.display='';});
+    document.querySelectorAll('.del,.mkr-size,.arr-del,.arr-resize,.leg-resize,.mpl-drag').forEach(function(d){d.style.display='';});
     document.querySelectorAll('.marker').forEach(function(m){m.style.visibility=m._origVis||'visible';});
     document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){
       m.style.transform=m._origTr||'';
