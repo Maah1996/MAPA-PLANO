@@ -26,7 +26,7 @@ function addEvacArrow(angle,xPct,yPct,initW,initH){
   var arr=document.createElement('div');
   arr.className='evac-arrow marker';
   arr.dataset.plan=_currentPlan;
-  arr.dataset.mode='evacuacion';
+  arr.dataset.mode=_appMode;
   arr.dataset.isArrow='1';
   arr.dataset.angle=angle;
   arr.dataset.wpct=initW/mlW*100;
@@ -208,3 +208,28 @@ function _showFloatPanel(arr){
 function _hideFloatPanel(){var p=document.getElementById('arr-float-panel');if(p){p.style.display='none';if(p._setArr)p._setArr(null);}}
 
 
+
+/* ── Elementos de evacuación disponibles también en el Mapa de Riesgos ── */
+function renderRiskEvacPalette(){
+  var host=document.getElementById('evac-en-riesgos');
+  if(!host||typeof EVAC_ITEMS==='undefined')return;
+  host.innerHTML='<h2>3 · Elementos de evacuación</h2>';
+  var grid=document.createElement('div');grid.className='icons';
+  EVAC_ITEMS.forEach(function(item){
+    var it=document.createElement('div');it.className='pal-item';it.dataset.id=item.id;
+    it.innerHTML=iconSVGEvac(item,42)+'<span>'+item.name+'</span>';
+    it.addEventListener('mousedown',function(e){startDragFromPalette(e,Object.assign({},item,{_isEvac:true}));});
+    grid.appendChild(it);
+  });
+  host.appendChild(grid);
+  var h=document.createElement('h2');h.textContent='Flechas de evacuación';host.appendChild(h);
+  var ag=document.createElement('div');ag.className='arrow-dir-grid';
+  [0,45,90,135,180,225,270,315].forEach(function(angle){
+    var btn=document.createElement('div');btn.className='arrow-dir-btn';
+    btn.innerHTML=arrowSVGThumb(angle)+'<span>'+angle+'°</span>';
+    btn.addEventListener('mousedown',function(e){e.preventDefault();draggingNew={_isArrow:true,angle:angle};ghost=document.createElement('div');ghost.className='dragghost';ghost.innerHTML=arrowSVGThumb(angle);ghost.style.left=e.clientX+'px';ghost.style.top=e.clientY+'px';document.body.appendChild(ghost);window.addEventListener('mousemove',onMove);window.addEventListener('mouseup',onUp);});
+    ag.appendChild(btn);
+  });
+  host.appendChild(ag);
+}
+try{renderRiskEvacPalette();}catch(e){console.warn('renderRiskEvacPalette',e);}
