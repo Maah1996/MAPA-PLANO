@@ -1,4 +1,4 @@
-function iconSVGEvac(item,size){size=size||55;return'<img src="'+item.img+'" style="width:'+size+'px;height:auto;display:block;border-radius:3px;box-shadow:0 1px 4px #0005" draggable="false">';}
+function iconSVGEvac(item,size){size=size||55;return'<img src="'+(item._png||item.img)+'" style="width:'+size+'px;height:auto;display:block;border-radius:3px;box-shadow:0 1px 4px #0005" draggable="false">';}
 function renderEvacPalette(){var el=document.getElementById('evac-icons');if(!el)return;el.innerHTML='';EVAC_ITEMS.forEach(function(item){var it=document.createElement('div');it.className='pal-item';it.dataset.id=item.id;it.innerHTML=iconSVGEvac(item,42)+'<span>'+item.name+'</span>';it.addEventListener('mousedown',function(e){startDragFromPalette(e,Object.assign({},item,{_isEvac:true}));});el.appendChild(it);});var eaIt=document.createElement('div');eaIt.className='pal-item';eaIt.dataset.id='estoy_aqui';eaIt.innerHTML=iconSVGEstoyAqui(42)+'<span>Estoy aquí</span>';eaIt.addEventListener('mousedown',function(e){startDragFromPalette(e,_EA_ITEM);});el.appendChild(eaIt);}
 
 function arrowSVGThumb(angle){return'<svg width="30" height="18" viewBox="0 0 30 18"><g transform="translate(15,9) rotate('+angle+')"><rect x="-12" y="-1.5" width="16" height="3" fill="'+_ARROW_COLOR+'"/><polygon points="4,-5 13,0 4,5" fill="'+_ARROW_COLOR+'"/></g></svg>';}
@@ -233,3 +233,40 @@ function renderRiskEvacPalette(){
   host.appendChild(ag);
 }
 try{renderRiskEvacPalette();}catch(e){console.warn('renderRiskEvacPalette',e);}
+
+/* ── Rasteriza los SVG de evacuación a PNG (html2canvas renderiza PNG de forma
+   fiable; los <img> con SVG data-URI se cortan/desaparecen al exportar). Se
+   guarda en item._png y lo usan iconSVGEvac() y la leyenda. ── */
+function _svgAspect(dataUri){
+  try{
+    var parts=String(dataUri).split(',');var svg=parts[0].indexOf('base64')>=0?atob(parts[1]):decodeURIComponent(parts[1]);
+    var m=svg.match(/viewBox\s*=\s*"[\d.\-]+\s+[\d.\-]+\s+([\d.]+)\s+([\d.]+)"/);
+    if(m)return parseFloat(m[1])/parseFloat(m[2]);
+  }catch(e){}
+  return 1;
+}
+function _rasterizeEvacItem(item){
+  return new Promise(function(res){
+    if(!item||!item.img){res();return;}
+    var aspect=_svgAspect(item.img)||1;
+    var im=new Image();
+    im.onload=function(){
+      try{
+        var W=280,H=Math.max(1,Math.round(W/aspect));
+        var cv=document.createElement('canvas');cv.width=W;cv.height=H;
+        cv.getContext('2d').drawImage(im,0,0,W,H);
+        item._png=cv.toDataURL('image/png');
+      }catch(e){}
+      res();
+    };
+    im.onerror=function(){res();};
+    im.src=item.img;
+  });
+}
+(function _rasterizeAllEvac(){
+  if(typeof EVAC_ITEMS==='undefined')return;
+  EVAC_ITEMS.forEach(function(it){_rasterizeEvacItem(it).then(function(){
+    /* re-render de la leyenda cuando terminen, para que use el PNG */
+    if(typeof _renderLegendSummary==='function')try{_renderLegendSummary();}catch(e){}
+  });});
+})();

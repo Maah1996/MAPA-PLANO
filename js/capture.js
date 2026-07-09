@@ -135,7 +135,7 @@ function _mplLegendHTML(opt){
   var symRows='';
   d.evac.forEach(function(id){
     var it=null;if(typeof EVAC_ITEMS!=='undefined')EVAC_ITEMS.forEach(function(x){if(x.id===id)it=x;});
-    var nm=it?it.name:id,ico=it?'<img src="'+it.img+'" style="width:'+EICO+'px;height:'+EICO+'px;object-fit:contain">':'';
+    var nm=it?it.name:id,ico=it?'<img src="'+(it._png||it.img)+'" style="width:'+EICO+'px;height:auto">':'';
     symRows+='<div class="mpl-row"><span class="mpl-ic">'+ico+'</span><span class="mpl-nm">'+nm+'</span></div>';
   });
   if(d.arrows){var aico=typeof arrowSVGThumb==='function'?arrowSVGThumb(0):'→';symRows+='<div class="mpl-row"><span class="mpl-ic" style="width:'+EICO+'px;justify-content:center">'+aico+'</span><span class="mpl-nm">Vía de evacuación</span></div>';}
@@ -143,7 +143,7 @@ function _mplLegendHTML(opt){
   /* ZONA DE SEGURIDAD */
   if(d.zonas.length){
     var zr='';
-    d.zonas.forEach(function(id){var it=null;if(typeof EVAC_ITEMS!=='undefined')EVAC_ITEMS.forEach(function(x){if(x.id===id)it=x;});var nm=it?it.name:id,ico=it?'<img src="'+it.img+'" style="width:'+(EICO+6)+'px;height:'+(EICO+6)+'px;object-fit:contain">':'';zr+='<div class="mpl-row"><span class="mpl-ic">'+ico+'</span><span class="mpl-znm">'+nm+'</span></div>';});
+    d.zonas.forEach(function(id){var it=null;if(typeof EVAC_ITEMS!=='undefined')EVAC_ITEMS.forEach(function(x){if(x.id===id)it=x;});var nm=it?it.name:id,ico=it?'<img src="'+(it._png||it.img)+'" style="width:'+(EICO+6)+'px;height:auto">':'';zr+='<div class="mpl-row"><span class="mpl-ic">'+ico+'</span><span class="mpl-znm">'+nm+'</span></div>';});
     out+='<div class="mpl-block"><div class="mpl-hz">Zona de seguridad / Punto de encuentro</div>'+zr+'</div>';
   }
   return out;
@@ -228,8 +228,8 @@ async function _capturePlan(scaleFactor){
   var title=_modeLabel+(_planLabel?(' — '+_planLabel):'');
   var ml=document.getElementById('markerLayer');
 
-  /* 1. Ocultar controles UI */
-  document.querySelectorAll('.del,.arr-del,.arr-resize,.afp-toggle,#arr-float-panel,#mkr-float-panel').forEach(function(d){d.style.display='none';});
+  /* 1. Ocultar controles UI (incluida la barra de arrastre de la leyenda) */
+  document.querySelectorAll('.del,.arr-del,.arr-resize,.afp-toggle,#arr-float-panel,#mkr-float-panel,.mpl-drag').forEach(function(d){d.style.display='none';});
 
   /* 2. Filtrar visibilidad por MODO y PLAN */
   document.querySelectorAll('.marker').forEach(function(m){
@@ -261,11 +261,13 @@ async function _capturePlan(scaleFactor){
         el contenido real a una franja chica arriba — se ve una caja oscura
         casi vacía en el PNG. Se neutraliza SOLO durante la captura. */
   var legEl=document.getElementById('legend');
-  var _legOverflow=legEl.style.overflow,_legResize=legEl.style.resize,_legVis=legEl.style.visibility;
+  var _legOverflow=legEl.style.overflow,_legResize=legEl.style.resize,_legVis=legEl.style.visibility,_legTr=legEl.style.transform;
   legEl.style.overflow='visible';legEl.style.resize='none';
-  /* Ocultar la leyenda flotante del plano: ahora la leyenda profesional se
-     compone aparte debajo del plano (no incrustada sobre él). */
-  legEl.style.visibility='hidden';
+  /* La leyenda se captura EN SU LUGAR sobre el plano (igual que en pantalla).
+     Como el markerLayer se resetea a 100% (paso 5), la leyenda debe quedar con
+     su propio zoom (_legendScale) SIN el factor de zoom del plano (_zw). */
+  var _lgS=(typeof _legendScale!=='undefined'?_legendScale:1),_lgR=(typeof _legendRot!=='undefined'?_legendRot:0);
+  if(legEl.style.left&&legEl.style.left.indexOf('%')!==-1){legEl.style.transform='translate(-50%,-50%) scale('+_lgS+') rotate('+_lgR+'deg)';legEl.style.transformOrigin='center center';}
 
   /* 5. Resetear zoom Y rotación del markerLayer para captura limpia.
         Capturamos el plano en su orientación NATURAL (sin rotar) y luego,
@@ -279,10 +281,16 @@ async function _capturePlan(scaleFactor){
   _activeImg().style.width='100%';
   _scaleArrows(); /* recalcula el ancho/alto en px de las flechas para el ancho reseteado */
 
+  /* Tope de escala: los navegadores limitan el canvas (~16384px por lado). Si
+     el plano es grande, bajamos la escala para no obtener un PNG en blanco o
+     con íconos faltantes (html2canvas descarta lo que se sale del límite). */
+  var _maxDim=Math.max(ml.offsetWidth||1000,ml.offsetHeight||1000);
+  var _capScale=Math.min(scaleFactor,Math.max(1,16000/_maxDim));
+
   var planCanvas;
   try{
     planCanvas=await html2canvas(ml,{
-      backgroundColor:'#ffffff',scale:scaleFactor,useCORS:true,
+      backgroundColor:'#ffffff',scale:_capScale,useCORS:true,allowTaint:false,imageTimeout:20000,
       scrollX:0,scrollY:0,
       width:ml.offsetWidth,height:ml.offsetHeight,
       logging:false
@@ -292,8 +300,9 @@ async function _capturePlan(scaleFactor){
     ml.style.width=origW;ml.style.marginTop=origMT;
     ml.style.transform=origTr;ml.style.marginBottom=origMB;ml.style.marginLeft=origML;
     _activeImg().style.width='100%';
-    legEl.style.overflow=_legOverflow;legEl.style.resize=_legResize;legEl.style.visibility=_legVis;
-    document.querySelectorAll('.del,.arr-del,.arr-resize').forEach(function(d){d.style.display='';});
+    legEl.style.overflow=_legOverflow;legEl.style.resize=_legResize;legEl.style.visibility=_legVis;legEl.style.transform=_legTr;
+    if(window.__mplLegSync)window.__mplLegSync();
+    document.querySelectorAll('.del,.arr-del,.arr-resize,.mpl-drag').forEach(function(d){d.style.display='';});
     document.querySelectorAll('.marker').forEach(function(m){m.style.visibility=m._origVis||'visible';});
     document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){
       m.style.transform=m._origTr||'';
@@ -318,7 +327,7 @@ async function _capturePlan(scaleFactor){
     else break;
   }
   /* Pequeño margen de seguridad: dejar 4px para no cortar el borde del plano */
-  blankRows=Math.max(0,blankRows-Math.round(4*scaleFactor));
+  blankRows=Math.max(0,blankRows-Math.round(4*_capScale));
 
   var crop=document.createElement('canvas');
   crop.width=planCanvas.width;
@@ -340,38 +349,9 @@ async function _capturePlan(scaleFactor){
     crop=rot;
   }
 
-  /* 6. Agregar franja de título */
-  var pad=Math.round(6*scaleFactor),titleH=Math.round(54*scaleFactor),gap=Math.round(2*scaleFactor);
-  var fin=document.createElement('canvas');
-  fin.width=crop.width;fin.height=crop.height+pad+titleH+gap;
-  var ctx=fin.getContext('2d');
-  ctx.fillStyle='#ffffff';ctx.fillRect(0,0,fin.width,fin.height);
-  /* Franja de fondo oscuro para el título */
-  ctx.fillStyle='#16314f';ctx.fillRect(0,0,fin.width,pad+titleH);
-  ctx.font='bold '+Math.round(32*scaleFactor)+'px Georgia,serif';
-  ctx.fillStyle='#ffffff';ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText(title,fin.width/2,pad+titleH/2);
-  ctx.strokeStyle='#cdbf9b';ctx.lineWidth=Math.round(2*scaleFactor);
-  ctx.beginPath();ctx.moveTo(0,pad+titleH);ctx.lineTo(fin.width,pad+titleH);ctx.stroke();
-  ctx.drawImage(crop,0,pad+titleH+gap);
-
-  /* 7. Componer la leyenda profesional DEBAJO del plano, misma hoja */
-  var legCanvas=null;
-  try{ legCanvas=await _renderLegendCanvas(fin.width,scaleFactor); }catch(e){ legCanvas=null; }
-  if(legCanvas){
-    var legGap=Math.round(10*scaleFactor);
-    var comb=document.createElement('canvas');
-    comb.width=fin.width;
-    comb.height=fin.height+legGap+legCanvas.height;
-    var cctx=comb.getContext('2d');
-    cctx.fillStyle='#ffffff';cctx.fillRect(0,0,comb.width,comb.height);
-    cctx.drawImage(fin,0,0);
-    /* Centrar la leyenda si por redondeo quedó 1-2px más angosta */
-    var lx=Math.round((fin.width-legCanvas.width)/2);
-    cctx.drawImage(legCanvas,lx,fin.height+legGap);
-    return comb;
-  }
-  return fin;
+  /* 6. La leyenda ya quedó incrustada sobre el plano (en su posición de
+        pantalla), así que el resultado es el plano recortado tal cual se ve. */
+  return crop;
 }
 
 document.getElementById('exportBtn').onclick=async function(){
@@ -390,29 +370,21 @@ document.getElementById('pdfBtn').onclick=async function(){
   try{
     var c=await _capturePlan(4);
     var imgSrc=c.toDataURL('image/png');
-    var pxPerMm=3.7795275591;
-    var sf=4;
-    var wMm=Math.ceil(c.width/sf/pxPerMm)+10;
-    var hMm=Math.ceil(c.height/sf/pxPerMm)+10;
-    var w=window.open('','_blank');
-    w.document.write(
-      '<!DOCTYPE html><html><head>'
-      +'<meta charset="UTF-8"><title>Plano MONTICHEF</title>'
-      +'<style>'
-      +'*{margin:0;padding:0;box-sizing:border-box}'
-      +'html,body{width:100%;background:#fff}'
-      +'img{display:block;width:100%;height:auto}'
-      +'@media print{'
-      +'  @page{margin:5mm;size:'+wMm+'mm '+hMm+'mm}'
-      +'  img{width:100%;height:auto;page-break-inside:avoid}'
-      +'}'
-      +'<\/style>'
-      +'<\/head><body>'
-      +'<img src="'+imgSrc+'">'
-      +'<script>window.onload=function(){setTimeout(function(){window.print();},600);};<\/script>'
-      +'<\/body><\/html>'
-    );
-    w.document.close();
+    var JS=(window.jspdf&&window.jspdf.jsPDF)||window.jsPDF;
+    if(JS){
+      /* Página de una hoja ajustada al plano (lado largo ~297mm tipo A4). La
+         resolución la aporta el PNG de alta escala incrustado. */
+      var maxMm=297,wMm,hMm;
+      if(c.width>=c.height){wMm=maxMm;hMm=maxMm*c.height/c.width;}
+      else{hMm=maxMm;wMm=maxMm*c.width/c.height;}
+      var pdf=new JS({orientation:wMm>=hMm?'landscape':'portrait',unit:'mm',format:[wMm,hMm],compress:true});
+      pdf.addImage(imgSrc,'PNG',0,0,wMm,hMm,undefined,'FAST');
+      pdf.save('Plano_MONTICHEF.pdf');
+    }else{
+      /* Fallback si jsPDF no cargó: descargar el PNG */
+      var a=document.createElement('a');a.download='Plano_MONTICHEF.png';a.href=imgSrc;a.click();
+      alert('No se pudo cargar el generador de PDF; se descargó el PNG en su lugar.');
+    }
   }catch(err){alert('Error al exportar PDF: '+err);}
   this.textContent='Exportar PDF';this.disabled=false;
 };
