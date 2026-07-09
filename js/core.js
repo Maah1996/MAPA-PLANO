@@ -264,6 +264,7 @@ function addMarker(risk,color,xPct,yPct){
   m.innerHTML=svgH+'<div class="mlabel" contenteditable="true" spellcheck="false" title="Clic para escribir etiqueta"></div>'
     +'<div class="mkr-size">'
     +'<button class="mkr-sz" data-a="sub" title="Achicar ícono">−</button>'
+    +'<span class="mkr-num" title="Tamaño del ícono">'+parseFloat(m.dataset.markerScale||1).toFixed(1)+'×</span>'
     +'<button class="mkr-sz" data-a="add" title="Agrandar ícono">+</button>'
     +'<button class="mkr-sz" data-a="rl" title="Girar a la izquierda">↺</button>'
     +'<button class="mkr-sz" data-a="rr" title="Girar a la derecha">↻</button>'
@@ -284,7 +285,7 @@ function addMarker(risk,color,xPct,yPct){
         var s=Math.max(0.3,Math.min(3,parseFloat(m.dataset.markerScale||1)+(a==='add'?0.1:-0.1))).toFixed(2);
         var mode=m.dataset.mode||'riesgos';
         document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(mm){
-          if((mm.dataset.mode||'riesgos')===mode)mm.dataset.markerScale=s;
+          if((mm.dataset.mode||'riesgos')===mode){mm.dataset.markerScale=s;var nn=mm.querySelector('.mkr-num');if(nn)nn.textContent=parseFloat(s).toFixed(1)+'×';}
         });
       }else{
         /* GIRO = INDIVIDUAL: solo rota este ícono. */
