@@ -57,15 +57,15 @@ function _mplEnsureCSS(){
     ".mpl-ed{outline:none;display:inline-block;min-width:40px;min-height:1.1em}"+
     ".mpl-ed:focus{background:#fff7cc;border-radius:2px}"+
     ".mpl-ed:empty:before{content:'\\2014';color:#c3c3c3}"+
-    ".mpl-h{text-align:center;font-weight:bold;color:#16314f;font-size:13.5px;letter-spacing:1px;padding:7px 8px;border-bottom:1.6px solid #16314f;text-transform:uppercase}"+
-    ".mpl-row{display:flex;align-items:center;gap:13px;padding:7px 12px;border-bottom:1px solid #e4e4e4}"+
+    ".mpl-h{text-align:center;font-weight:bold;color:#16314f;font-size:13.5px;letter-spacing:1px;padding:12px 8px 11px;border-bottom:1.6px solid #16314f;text-transform:uppercase}"+
+    ".mpl-row{display:flex;align-items:center;gap:13px;padding:9px 12px;border-bottom:1px solid #e4e4e4}"+
     ".mpl-row:last-child{border-bottom:none}"+
     ".mpl-ic{flex:0 0 auto;display:flex;align-items:center;justify-content:center}"+
     ".mpl-ic svg,.mpl-ic img{display:block}"+
     ".mpl-nm{font-size:13.5px;color:#20242b;line-height:1.25}"+
     ".mpl-find{cursor:pointer}"+
     ".mpl-find:hover{background:#f3f0e7}"+
-    ".mpl-hz{background:#1b7a3d;color:#fff;text-align:center;font-weight:bold;font-size:12px;letter-spacing:.6px;padding:7px 8px;text-transform:uppercase;line-height:1.25}"+
+    ".mpl-hz{background:#1b7a3d;color:#fff;text-align:center;font-weight:bold;font-size:12px;letter-spacing:.6px;padding:11px 8px;text-transform:uppercase;line-height:1.3}"+
     ".mpl-znm{font-size:13px;font-weight:bold;color:#16314f}"+
     ".mpl-empty{padding:12px;text-align:center;color:#8a8470;font-style:italic;font-size:12.5px}"+
     ".mpl-drag{display:flex;align-items:center;gap:5px;background:#16314f;padding:5px 8px;cursor:grab;margin-bottom:8px}"+
