@@ -30,102 +30,140 @@ function _legendCollect(){
   }
 }
 
+/* ── Leyenda estilo "clave" (según foto de referencia) ──────────────────────
+   Leyenda dinámica: muestra SOLO los símbolos efectivamente colocados en el
+   plano actual, sin cantidades, en 3 bloques (LEYENDA RIESGOS, SIMBOLOGÍA,
+   ZONA DE SEGURIDAD). El MISMO builder se usa en pantalla y en la exportación
+   PNG/PDF, para que se vean iguales. */
+function _mplEnsureCSS(){
+  if(document.getElementById('mpl-leg-css'))return;
+  var st=document.createElement('style');st.id='mpl-leg-css';
+  st.textContent=
+    ".mpl-leg{font-family:'Times New Roman',Georgia,serif;color:#1a1a1a;background:#fff;box-sizing:border-box}"+
+    ".mpl-leg *{box-sizing:border-box}"+
+    ".mpl-sec{padding:7px 11px 9px}"+
+    ".mpl-sec+.mpl-sec{border-top:1px solid #d9d2bf}"+
+    ".mpl-h{text-align:center;font-weight:bold;color:#16314f;font-size:13px;letter-spacing:1px;padding-bottom:5px;margin-bottom:7px;border-bottom:2px solid #16314f;text-transform:uppercase}"+
+    ".mpl-row{display:flex;align-items:center;gap:10px;padding:3px 3px;border-bottom:1px solid #eee}"+
+    ".mpl-row:last-child{border-bottom:none}"+
+    ".mpl-ic{flex:0 0 auto;display:flex;align-items:center;justify-content:center}"+
+    ".mpl-ic svg,.mpl-ic img{display:block}"+
+    ".mpl-nm{font-size:13px;color:#20242b;line-height:1.25}"+
+    ".mpl-find{cursor:pointer;border-radius:3px}"+
+    ".mpl-find:hover{background:#f3f0e7}"+
+    ".mpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:7px}"+
+    ".mpl-cell{display:flex;flex-direction:column;align-items:center;text-align:center;gap:3px;padding:4px 2px}"+
+    ".mpl-cic{display:flex;align-items:center;justify-content:center}"+
+    ".mpl-cic img{max-width:100%;object-fit:contain;display:block}"+
+    ".mpl-cic svg{display:block}"+
+    ".mpl-cl{font-size:9px;font-weight:bold;color:#33393f;letter-spacing:.3px;line-height:1.15}"+
+    ".mpl-zona{padding:0}"+
+    ".mpl-hz{background:#1b7a3d;color:#fff;text-align:center;font-weight:bold;font-size:11.5px;letter-spacing:.5px;padding:6px 8px;line-height:1.25}"+
+    ".mpl-zrow{display:flex;align-items:center;gap:11px;padding:8px 12px;border-bottom:1px solid #eee}"+
+    ".mpl-zrow:last-child{border-bottom:none}"+
+    ".mpl-znm{font-size:12.5px;font-weight:bold;color:#16314f}"+
+    ".mpl-empty{padding:12px;text-align:center;color:#8a8470;font-style:italic;font-size:12px}"+
+    ".mpl-drag{display:flex;align-items:center;gap:5px;background:#16314f;padding:5px 8px;cursor:grab}"+
+    ".mpl-drag .mpl-tt{flex:1;min-width:0;color:#fff;font-weight:bold;font-size:11px;letter-spacing:.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"+
+    ".mpl-leg .leg-sz{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.55);color:#fff;border-radius:3px;width:18px;height:18px;font-size:13px;line-height:1;cursor:pointer;padding:0;flex:0 0 18px;display:flex;align-items:center;justify-content:center}"+
+    ".mpl-leg .leg-sz:hover{background:rgba(255,255,255,.3)}";
+  document.head.appendChild(st);
+}
+
+function _mplRiskRank(color){var order=['#e00000','#ff8c00','#f5d000','#7dc560'];var i=order.indexOf((color||'').toLowerCase());return i<0?99:i;}
+
+/* Recolecta los símbolos DISTINTOS presentes en el plano/modo actual */
+function _mplLegendData(){
+  var curr=[].slice.call(document.querySelectorAll('.marker:not(.evac-arrow)')).filter(function(m){
+    return (m.dataset.mode||'riesgos')===_appMode && String(m.dataset.plan||1)===String(_currentPlan);
+  });
+  var risks=[],rSeen={},evac=[],eSeen={},zonas=[],zSeen={},eaCnt=0;
+  curr.forEach(function(m){
+    var id=m.dataset.itemId||'',c=m.dataset.itemColor||'',isEvac=m.dataset.itemIsEvac==='1';
+    if(id==='estoy_aqui'){eaCnt++;return;}
+    if(isEvac){
+      if(id==='zona_seguridad'||id==='zona_seguridad_sismo'){if(!zSeen[id]){zSeen[id]=1;zonas.push(id);}}
+      else{if(!eSeen[id]){eSeen[id]=1;evac.push(id);}}
+    }else{
+      var k=id+'|'+c;if(!rSeen[k]){rSeen[k]=1;risks.push({id:id,color:c});}
+    }
+  });
+  var arrows=[].slice.call(document.querySelectorAll('.evac-arrow')).filter(function(m){
+    return (m.dataset.mode||'riesgos')===_appMode && String(m.dataset.plan||1)===String(_currentPlan);
+  }).length;
+  return {risks:risks,evac:evac,zonas:zonas,arrows:arrows,eaCnt:eaCnt};
+}
+
+/* Devuelve el HTML de los 3 bloques (solo los que tengan contenido). opt.ico = px del ícono */
+function _mplLegendHTML(opt){
+  opt=opt||{};var ICO=opt.ico||32,EICO=opt.eico||(ICO+6);
+  var d=_mplLegendData();var out='';
+  var riskRows='';
+  d.risks.slice().sort(function(a,b){return _mplRiskRank(a.color)-_mplRiskRank(b.color);}).forEach(function(r){
+    var rk=null;RISKS.forEach(function(x){if(x.id===r.id)rk=x;});
+    var nm=rk?rk.name:r.id,ico=rk?iconSVG(rk.g,r.color,ICO):'';
+    riskRows+='<div class="mpl-row mpl-find" data-fid="'+r.id+'" data-fcolor="'+r.color+'"><span class="mpl-ic">'+ico+'</span><span class="mpl-nm">'+nm+'</span></div>';
+  });
+  if(d.eaCnt){riskRows+='<div class="mpl-row"><span class="mpl-ic">'+(typeof iconSVGEstoyAqui==='function'?iconSVGEstoyAqui(ICO):'')+'</span><span class="mpl-nm">Estoy aquí</span></div>';}
+  if(riskRows)out+='<div class="mpl-sec"><div class="mpl-h">Leyenda riesgos</div>'+riskRows+'</div>';
+  var symCells='';
+  d.evac.forEach(function(id){
+    var it=null;if(typeof EVAC_ITEMS!=='undefined')EVAC_ITEMS.forEach(function(x){if(x.id===id)it=x;});
+    var nm=it?it.name:id,ico=it?'<img src="'+it.img+'" style="width:'+EICO+'px;height:'+EICO+'px">':'';
+    symCells+='<div class="mpl-cell"><span class="mpl-cic">'+ico+'</span><span class="mpl-cl">'+nm+'</span></div>';
+  });
+  if(d.arrows){var aico=typeof arrowSVGThumb==='function'?arrowSVGThumb(0):'→';symCells+='<div class="mpl-cell"><span class="mpl-cic" style="height:'+EICO+'px">'+aico+'</span><span class="mpl-cl">VÍA DE EVACUACIÓN</span></div>';}
+  if(symCells)out+='<div class="mpl-sec"><div class="mpl-h">Simbología</div><div class="mpl-grid">'+symCells+'</div></div>';
+  if(d.zonas.length){
+    var zr='';
+    d.zonas.forEach(function(id){var it=null;if(typeof EVAC_ITEMS!=='undefined')EVAC_ITEMS.forEach(function(x){if(x.id===id)it=x;});var nm=it?it.name:id,ico=it?'<img src="'+it.img+'" style="width:'+(EICO+6)+'px;height:'+(EICO+6)+'px">':'';zr+='<div class="mpl-zrow"><span class="mpl-ic">'+ico+'</span><span class="mpl-znm">'+nm+'</span></div>';});
+    out+='<div class="mpl-sec mpl-zona"><div class="mpl-hz">Zona de seguridad / Punto de encuentro</div>'+zr+'</div>';
+  }
+  if(!out)out='<div class="mpl-empty">Sin íconos en este plano</div>';
+  return out;
+}
+
+/* Export: bloque de leyenda que se compone DEBAJO del plano */
 function _buildLegendEl(cssWidth){
-  var isR=_appMode==='riesgos';
-  var d=_legendCollect();
-  var planLbl=(window._currentPlanName||'').trim()||'Sin nombre';
+  _mplEnsureCSS();
   var el=document.createElement('div');
-  el.style.cssText='position:absolute;left:-99999px;top:0;width:'+cssWidth+'px;font-family:Georgia,"Times New Roman",serif;background:#fff;border:2px solid #16314f;box-sizing:border-box;';
-  var ICO=44;
-
-  /* Inventario */
-  var invRows='';
-  if(isR){
-    var any=false;
-    Object.keys(LEVELS).forEach(function(lk){
-      var lc=LEVELS[lk].color, grp=d.byColor[lc];
-      if(!grp||!Object.keys(grp).length)return;
-      any=true;
-      var sub=0;Object.keys(grp).forEach(function(id){sub+=grp[id];});
-      var lbl=LEVELS[lk].label, mr=lbl.match(/\((\d)\)/), rank=mr?mr[1]:'', nm2=lbl.replace(/\s*\(\d\)\s*/,'').trim();
-      var head=nm2.toUpperCase()+(rank?' (NIVEL '+rank+')':'');
-      invRows+='<tr class="lvlhead"><td colspan="3" style="background:'+lc+'"><span><em>'+head+'</em><b>'+sub+' '+(sub===1?'ícono':'íconos')+'</b></span></td></tr>';
-      Object.keys(grp).forEach(function(id){
-        var r=null;RISKS.forEach(function(x){if(x.id===id)r=x;});
-        var nm=r?r.name:id, ico=r?iconSVG(r.g,lc,ICO):'';
-        invRows+='<tr><td class="sym">'+ico+'</td><td class="nm">'+nm+'</td><td class="qty">'+grp[id]+'</td></tr>';
-      });
-    });
-    if(d.eaCnt){any=true;invRows+='<tr><td class="sym">'+(typeof iconSVGEstoyAqui==='function'?iconSVGEstoyAqui(ICO):'')+'</td><td class="nm">Estoy aquí</td><td class="qty">'+d.eaCnt+'</td></tr>';}
-    if(!any)invRows='<tr><td colspan="3" style="padding:14px;color:#8a8470;font-style:italic;">Sin íconos de riesgo en este plano.</td></tr>';
-  }else{
-    var any2=false;
-    d.order.forEach(function(id){
-      var it=null;if(typeof EVAC_ITEMS!=='undefined')EVAC_ITEMS.forEach(function(x){if(x.id===id)it=x;});
-      var nm=it?it.name:id, ico=it?'<img src="'+it.img+'" style="width:'+ICO+'px;height:'+ICO+'px;object-fit:contain">':'';
-      any2=true;
-      invRows+='<tr><td class="sym">'+ico+'</td><td class="nm">'+nm+'</td><td class="qty">'+d.items[id]+'</td></tr>';
-    });
-    if(d.eaCnt){any2=true;invRows+='<tr><td class="sym">'+(typeof iconSVGEstoyAqui==='function'?iconSVGEstoyAqui(ICO):'')+'</td><td class="nm">Estoy aquí</td><td class="qty">'+d.eaCnt+'</td></tr>';}
-    if(d.arrows){any2=true;var aico=typeof arrowSVGThumb==='function'?arrowSVGThumb(0):'→';invRows+='<tr><td class="sym" style="max-width:'+ICO+'px">'+aico+'</td><td class="nm">Ruta de evacuación (flechas)</td><td class="qty">'+d.arrows+'</td></tr>';}
-    if(!any2)invRows='<tr><td colspan="3" style="padding:14px;color:#8a8470;font-style:italic;">Sin elementos de evacuación en este plano.</td></tr>';
-  }
-
-  /* Columna derecha */
-  var rightTitle,rightBody;
-  if(isR){
-    rightTitle='CLASIFICACIÓN DEL NIVEL DE RIESGO';
-    var scale=[
-      {c:'#e00000',t:'Intolerable (4)',x:'Riesgo inaceptable. Detener la actividad hasta reducir el riesgo. Acción inmediata.'},
-      {c:'#ff8c00',t:'Importante (3)',x:'Adoptar medidas de control en el corto plazo. No iniciar la tarea sin mitigación.'},
-      {c:'#f5d000',t:'Moderado (2)',x:'Implementar medidas para reducir el riesgo. Verificar controles periódicamente.'},
-      {c:'#7dc560',t:'Tolerable (1)',x:'Riesgo aceptable. Mantener los controles existentes y la supervisión.'}
-    ];
-    rightBody=scale.map(function(s){return '<div class="sc-row"><span class="sc-chip" style="background:'+s.c+'"></span><div class="sc-txt"><b>'+s.t+'</b><span>'+s.x+'</span></div></div>';}).join('')
-      +'<div class="sc-note">El color del triángulo de cada símbolo indica el nivel de riesgo evaluado en ese punto del plano.</div>';
-  }else{
-    rightTitle='INDICACIONES DE EVACUACIÓN';
-    rightBody=''
-      +'<div class="sc-row"><span class="sc-chip" style="background:#007541"></span><div class="sc-txt"><b>Recorrido</b><span>Siga las flechas verdes hasta la vía de evacuación y la zona de seguridad.</span></div></div>'
-      +'<div class="sc-row"><span class="sc-chip" style="background:#e20713"></span><div class="sc-txt"><b>Equipos</b><span>Ubique extintores, red húmeda y activación manual según la simbología.</span></div></div>'
-      +'<div class="sc-note">Ante una emergencia, mantenga la calma, no use ascensores y diríjase a la zona de seguridad indicada.</div>';
-  }
-
-  var title=isR?'MAPA DE RIESGOS':'PLANO DE EVACUACIÓN';
-  var sub=isR?'MONTICHEF · Identificación de peligros':'MONTICHEF · Plan de evacuación';
-  el.innerHTML=''+
-    '<div class="pl-head"><div class="pl-brand"><div class="pl-logo">LOGO</div><div><div class="pl-title">'+title+'</div><div class="pl-sub">'+sub+'</div></div></div>'+
-      '<div class="pl-meta">Plano: <b>'+planLbl+'</b><br>Referencia: <b>Guía DS N°44/2024</b></div></div>'+
-    '<div class="pl-body">'+
-      '<div class="pl-col pl-left"><div class="pl-h2">'+(isR?'INVENTARIO DE RIESGOS':'INVENTARIO DE ELEMENTOS')+'</div>'+
-        '<table class="pl-tbl"><thead><tr><th style="width:64px">Símbolo</th><th>'+(isR?'Peligro identificado':'Elemento')+'</th><th style="width:44px;text-align:center">Cant.</th></tr></thead><tbody>'+invRows+'</tbody></table></div>'+
-      '<div class="pl-col pl-right"><div class="pl-h2">'+rightTitle+'</div>'+rightBody+'</div>'+
-    '</div>'+
-    '<div class="pl-foot"><span>Sistema MAPA-PLANO — MONTICHEF</span><span>Elaborado por: _______________   ·   Revisado por: _______________</span></div>'+
-    '<style>'+
-    '#___pl .pl-head,.pl-head{background:#16314f;color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #cdbf9b;}'+
-    '.pl-brand{display:flex;align-items:center;gap:16px;}'+
-    '.pl-logo{width:74px;height:74px;border:1.5px dashed #8ea3bd;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#8ea3bd;font-size:10px;letter-spacing:1px;font-family:Arial,sans-serif;}'+
-    '.pl-title{font-size:23px;font-weight:bold;letter-spacing:.5px;}'+
-    '.pl-sub{font-size:12px;color:#cdbf9b;margin-top:3px;letter-spacing:1px;}'+
-    '.pl-meta{text-align:right;font-size:11.5px;line-height:1.6;color:#dfe6ee;}.pl-meta b{color:#fff;}'+
-    '.pl-body{display:flex;}'+
-    '.pl-col{padding:16px 20px;}.pl-left{flex:1.15;border-right:1px solid #d9d2bf;}.pl-right{flex:1;}'+
-    '.pl-h2{font-size:14px;font-weight:bold;color:#16314f;border-bottom:2px solid #16314f;padding-bottom:5px;margin-bottom:10px;}'+
-    '.pl-tbl{width:100%;border-collapse:collapse;font-size:13px;}'+
-    '.pl-tbl thead th{font-size:10px;letter-spacing:.5px;color:#6b6450;text-transform:uppercase;text-align:left;padding:3px 6px;font-weight:bold;}'+
-    '.pl-tbl td{padding:5px 6px;border-bottom:1px solid #ece7d8;vertical-align:middle;}'+
-    '.pl-tbl tr.lvlhead td{padding:0;}.pl-tbl tr.lvlhead span{display:flex;justify-content:space-between;align-items:center;color:#fff;font-size:11px;letter-spacing:.8px;padding:4px 9px;}'+
-    '.pl-tbl tr.lvlhead em{font-style:normal;font-weight:bold;}.pl-tbl tr.lvlhead b{font-weight:bold;font-size:10.5px;opacity:.92;letter-spacing:.3px;}'+
-    '.pl-tbl td.sym svg,.pl-tbl td.sym img{display:block;}.pl-tbl td.nm{font-size:13px;color:#20242b;}'+
-    '.pl-tbl td.qty{text-align:center;font-weight:bold;font-size:14px;color:#16314f;}'+
-    '.sc-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:11px;}'+
-    '.sc-chip{flex:0 0 22px;height:22px;border-radius:4px;margin-top:2px;border:1px solid rgba(0,0,0,.25);}'+
-    '.sc-txt{font-size:12px;line-height:1.35;color:#33393f;}.sc-txt b{display:block;color:#16314f;font-size:13px;margin-bottom:1px;}'+
-    '.sc-note{margin-top:14px;padding:9px 12px;background:#f3f0e7;border-left:3px solid #cdbf9b;font-size:11px;color:#5c5641;line-height:1.4;}'+
-    '.pl-foot{background:#16314f;color:#cdbf9b;padding:7px 20px;font-size:10.5px;display:flex;justify-content:space-between;font-family:Arial,sans-serif;}'+
-    '</style>';
+  el.style.cssText='position:absolute;left:-99999px;top:0;width:'+cssWidth+'px;box-sizing:border-box;';
+  el.innerHTML='<div class="mpl-leg" style="border:2px solid #16314f">'+_mplLegendHTML({ico:40,eico:46})+'</div>';
   return el;
+}
+
+/* Pantalla: reemplaza la leyenda flotante anterior por la misma clave estilo foto.
+   Se mantiene el arrastre/redimensión/giro del panel (core.js) vía los botones
+   .leg-sz/.leg-rot/.leg-rotl del encabezado. */
+function _renderLegendSummary(){
+  var legendEl=document.getElementById('legend');if(!legendEl)return;
+  _mplEnsureCSS();
+  legendEl.style.background='#fff';legendEl.style.color='#1a1a1a';
+  legendEl.style.border='1.5px solid #16314f';legendEl.style.borderRadius='6px';
+  legendEl.style.padding='0';legendEl.style.overflow='hidden';
+  if(!legendEl.style.width||legendEl.style.width==='230px')legendEl.style.width='250px';
+  var header='<div class="mpl-drag"><span class="mpl-tt">Leyenda</span>'+
+    '<button class="leg-sz" data-d="-1" title="Achicar">−</button>'+
+    '<button class="leg-sz" data-d="1" title="Agrandar">+</button>'+
+    '<button class="leg-sz leg-rotl" title="Girar a la izquierda">↺</button>'+
+    '<button class="leg-sz leg-rot" title="Girar a la derecha">↻</button></div>';
+  legendEl.innerHTML='<div class="mpl-leg">'+header+_mplLegendHTML({ico:30,eico:36})+'</div>';
+  /* Clic en una fila de riesgo: ubica ese ícono en el plano (scroll + resaltado) */
+  legendEl.querySelectorAll('.mpl-find').forEach(function(row){
+    row.addEventListener('mousedown',function(e){e.stopPropagation();});
+    row.addEventListener('click',function(e){
+      e.stopPropagation();
+      var fid=row.dataset.fid,fcolor=row.dataset.fcolor,match=null;
+      document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){
+        if(match)return;
+        if(m.dataset.itemId===fid&&m.dataset.itemColor===fcolor&&(m.dataset.mode||'riesgos')===_appMode&&String(m.dataset.plan||1)===String(_currentPlan))match=m;
+      });
+      if(!match){alert('No se encontró ese ícono en el plano actual.');return;}
+      match.scrollIntoView({behavior:'smooth',block:'center',inline:'center'});
+      match.style.outline='5px solid magenta';match.style.outlineOffset='3px';
+      setTimeout(function(){match.style.outline='';match.style.outlineOffset='';},4000);
+    });
+  });
 }
 
 async function _renderLegendCanvas(finWidth,scaleFactor){
