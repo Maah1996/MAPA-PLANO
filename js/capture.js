@@ -30,49 +30,54 @@ function _legendCollect(){
   }
 }
 
-/* ── Leyenda estilo "clave" (según foto de referencia) ──────────────────────
-   Leyenda dinámica: muestra SOLO los símbolos efectivamente colocados en el
-   plano actual, sin cantidades, en 3 bloques (LEYENDA RIESGOS, SIMBOLOGÍA,
-   ZONA DE SEGURIDAD). El MISMO builder se usa en pantalla y en la exportación
-   PNG/PDF, para que se vean iguales. */
+/* ── Leyenda estilo "ficha" (según foto de referencia) ──────────────────────
+   Tarjeta vertical con: caja de título + metadatos (Fecha/Versión/Elaborado
+   por), bloque LEYENDA RIESGOS, bloque SIMBOLOGÍA y bloque ZONA DE SEGURIDAD.
+   Dinámica: muestra solo lo colocado en el plano (sin cantidades). El MISMO
+   builder se usa en pantalla y en el export PNG/PDF. */
+
+/* Metadatos de la cabecera (editables en pantalla, persistidos en localStorage) */
+var _legMeta=(function(){try{return JSON.parse(localStorage.getItem('mpl_legmeta_v1'))||{};}catch(e){return {};}})();
+function _legMetaSave(){try{localStorage.setItem('mpl_legmeta_v1',JSON.stringify(_legMeta));}catch(e){}}
+function _mplMetaVal(k,def){return (_legMeta[k]!=null&&_legMeta[k]!=='')?_legMeta[k]:(def||'');}
+function _mplEsc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
 function _mplEnsureCSS(){
-  if(document.getElementById('mpl-leg-css'))return;
-  var st=document.createElement('style');st.id='mpl-leg-css';
-  st.textContent=
-    ".mpl-leg{font-family:'Times New Roman',Georgia,serif;color:#1a1a1a;background:#fff;box-sizing:border-box}"+
+  var st=document.getElementById('mpl-leg-css');
+  var css=
+    ".mpl-leg{font-family:'Times New Roman',Georgia,serif;color:#1a1a1a;background:#fff;box-sizing:border-box;padding:8px}"+
     ".mpl-leg *{box-sizing:border-box}"+
-    ".mpl-sec{padding:7px 11px 9px}"+
-    ".mpl-sec+.mpl-sec{border-top:1px solid #d9d2bf}"+
-    ".mpl-h{text-align:center;font-weight:bold;color:#16314f;font-size:13px;letter-spacing:1px;padding-bottom:5px;margin-bottom:7px;border-bottom:2px solid #16314f;text-transform:uppercase}"+
-    ".mpl-row{display:flex;align-items:center;gap:10px;padding:3px 3px;border-bottom:1px solid #eee}"+
+    ".mpl-block{border:1.6px solid #16314f;margin-bottom:8px;background:#fff}"+
+    ".mpl-block:last-child{margin-bottom:0}"+
+    ".mpl-hd-title{color:#16314f;font-weight:bold;text-align:center;font-size:15px;letter-spacing:.5px;padding:9px 10px 3px;line-height:1.15}"+
+    ".mpl-hd-sub{text-align:center;font-size:11.5px;color:#555;padding:0 10px 8px;letter-spacing:.6px;text-transform:uppercase;border-bottom:1.4px solid #16314f}"+
+    ".mpl-meta{width:100%;border-collapse:collapse;font-size:12px}"+
+    ".mpl-meta td{border:1px solid #9fb0c3;padding:5px 9px;color:#20242b;vertical-align:middle}"+
+    ".mpl-meta td.k{background:#eef1f5;font-weight:bold;width:44%;color:#16314f}"+
+    ".mpl-ed{outline:none;display:inline-block;min-width:40px;min-height:1.1em}"+
+    ".mpl-ed:focus{background:#fff7cc;border-radius:2px}"+
+    ".mpl-ed:empty:before{content:'\\2014';color:#c3c3c3}"+
+    ".mpl-h{text-align:center;font-weight:bold;color:#16314f;font-size:13.5px;letter-spacing:1px;padding:7px 8px;border-bottom:1.6px solid #16314f;text-transform:uppercase}"+
+    ".mpl-row{display:flex;align-items:center;gap:13px;padding:7px 12px;border-bottom:1px solid #e4e4e4}"+
     ".mpl-row:last-child{border-bottom:none}"+
     ".mpl-ic{flex:0 0 auto;display:flex;align-items:center;justify-content:center}"+
     ".mpl-ic svg,.mpl-ic img{display:block}"+
-    ".mpl-nm{font-size:13px;color:#20242b;line-height:1.25}"+
-    ".mpl-find{cursor:pointer;border-radius:3px}"+
+    ".mpl-nm{font-size:13.5px;color:#20242b;line-height:1.25}"+
+    ".mpl-find{cursor:pointer}"+
     ".mpl-find:hover{background:#f3f0e7}"+
-    ".mpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:7px}"+
-    ".mpl-cell{display:flex;flex-direction:column;align-items:center;text-align:center;gap:3px;padding:4px 2px}"+
-    ".mpl-cic{display:flex;align-items:center;justify-content:center}"+
-    ".mpl-cic img{max-width:100%;object-fit:contain;display:block}"+
-    ".mpl-cic svg{display:block}"+
-    ".mpl-cl{font-size:9px;font-weight:bold;color:#33393f;letter-spacing:.3px;line-height:1.15}"+
-    ".mpl-zona{padding:0}"+
-    ".mpl-hz{background:#1b7a3d;color:#fff;text-align:center;font-weight:bold;font-size:11.5px;letter-spacing:.5px;padding:6px 8px;line-height:1.25}"+
-    ".mpl-zrow{display:flex;align-items:center;gap:11px;padding:8px 12px;border-bottom:1px solid #eee}"+
-    ".mpl-zrow:last-child{border-bottom:none}"+
-    ".mpl-znm{font-size:12.5px;font-weight:bold;color:#16314f}"+
-    ".mpl-empty{padding:12px;text-align:center;color:#8a8470;font-style:italic;font-size:12px}"+
-    ".mpl-drag{display:flex;align-items:center;gap:5px;background:#16314f;padding:5px 8px;cursor:grab}"+
+    ".mpl-hz{background:#1b7a3d;color:#fff;text-align:center;font-weight:bold;font-size:12px;letter-spacing:.6px;padding:7px 8px;text-transform:uppercase;line-height:1.25}"+
+    ".mpl-znm{font-size:13px;font-weight:bold;color:#16314f}"+
+    ".mpl-empty{padding:12px;text-align:center;color:#8a8470;font-style:italic;font-size:12.5px}"+
+    ".mpl-drag{display:flex;align-items:center;gap:5px;background:#16314f;padding:5px 8px;cursor:grab;margin-bottom:8px}"+
     ".mpl-drag .mpl-tt{flex:1;min-width:0;color:#fff;font-weight:bold;font-size:11px;letter-spacing:.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"+
     ".mpl-leg .leg-sz{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.55);color:#fff;border-radius:3px;width:18px;height:18px;font-size:13px;line-height:1;cursor:pointer;padding:0;flex:0 0 18px;display:flex;align-items:center;justify-content:center}"+
     ".mpl-leg .leg-sz:hover{background:rgba(255,255,255,.3)}";
-  document.head.appendChild(st);
+  if(!st){st=document.createElement('style');st.id='mpl-leg-css';document.head.appendChild(st);}
+  st.textContent=css;
 }
 
 function _mplRiskRank(color){var order=['#e00000','#ff8c00','#f5d000','#7dc560'];var i=order.indexOf((color||'').toLowerCase());return i<0?99:i;}
 
-/* Recolecta los símbolos DISTINTOS presentes en el plano/modo actual */
 function _mplLegendData(){
   var curr=[].slice.call(document.querySelectorAll('.marker:not(.evac-arrow)')).filter(function(m){
     return (m.dataset.mode||'riesgos')===_appMode && String(m.dataset.plan||1)===String(_currentPlan);
@@ -94,10 +99,30 @@ function _mplLegendData(){
   return {risks:risks,evac:evac,zonas:zonas,arrows:arrows,eaCnt:eaCnt};
 }
 
-/* Devuelve el HTML de los 3 bloques (solo los que tengan contenido). opt.ico = px del ícono */
+/* Caja de título + metadatos */
+function _mplHeaderHTML(opt){
+  var ed=opt&&opt.editable;
+  function fld(k,def){
+    var v=_mplEsc(_mplMetaVal(k,def));
+    if(ed)return '<span class="mpl-ed" contenteditable="true" data-k="'+k+'">'+v+'</span>';
+    return '<span>'+v+'</span>';
+  }
+  return '<div class="mpl-block">'+
+    '<div class="mpl-hd-title">MAPA DE RIESGOS Y EVACUACIÓN</div>'+
+    '<div class="mpl-hd-sub">'+fld('local','')+'</div>'+
+    '<table class="mpl-meta">'+
+      '<tr><td class="k">Fecha</td><td>'+fld('fecha','')+'</td></tr>'+
+      '<tr><td class="k">Versión</td><td>'+fld('version','')+'</td></tr>'+
+      '<tr><td class="k">Elaborado por</td><td>'+fld('elaborado','')+'</td></tr>'+
+    '</table></div>';
+}
+
+/* HTML de la leyenda (cabecera + bloques con contenido) */
 function _mplLegendHTML(opt){
-  opt=opt||{};var ICO=opt.ico||32,EICO=opt.eico||(ICO+6);
-  var d=_mplLegendData();var out='';
+  opt=opt||{};var ICO=opt.ico||34,EICO=opt.eico||38;
+  var d=_mplLegendData();
+  var out=_mplHeaderHTML(opt);
+  /* LEYENDA RIESGOS */
   var riskRows='';
   d.risks.slice().sort(function(a,b){return _mplRiskRank(a.color)-_mplRiskRank(b.color);}).forEach(function(r){
     var rk=null;RISKS.forEach(function(x){if(x.id===r.id)rk=x;});
@@ -105,51 +130,69 @@ function _mplLegendHTML(opt){
     riskRows+='<div class="mpl-row mpl-find" data-fid="'+r.id+'" data-fcolor="'+r.color+'"><span class="mpl-ic">'+ico+'</span><span class="mpl-nm">'+nm+'</span></div>';
   });
   if(d.eaCnt){riskRows+='<div class="mpl-row"><span class="mpl-ic">'+(typeof iconSVGEstoyAqui==='function'?iconSVGEstoyAqui(ICO):'')+'</span><span class="mpl-nm">Estoy aquí</span></div>';}
-  if(riskRows)out+='<div class="mpl-sec"><div class="mpl-h">Leyenda riesgos</div>'+riskRows+'</div>';
-  var symCells='';
+  if(riskRows)out+='<div class="mpl-block"><div class="mpl-h">Leyenda riesgos</div>'+riskRows+'</div>';
+  /* SIMBOLOGÍA */
+  var symRows='';
   d.evac.forEach(function(id){
     var it=null;if(typeof EVAC_ITEMS!=='undefined')EVAC_ITEMS.forEach(function(x){if(x.id===id)it=x;});
-    var nm=it?it.name:id,ico=it?'<img src="'+it.img+'" style="width:'+EICO+'px;height:'+EICO+'px">':'';
-    symCells+='<div class="mpl-cell"><span class="mpl-cic">'+ico+'</span><span class="mpl-cl">'+nm+'</span></div>';
+    var nm=it?it.name:id,ico=it?'<img src="'+it.img+'" style="width:'+EICO+'px;height:'+EICO+'px;object-fit:contain">':'';
+    symRows+='<div class="mpl-row"><span class="mpl-ic">'+ico+'</span><span class="mpl-nm">'+nm+'</span></div>';
   });
-  if(d.arrows){var aico=typeof arrowSVGThumb==='function'?arrowSVGThumb(0):'→';symCells+='<div class="mpl-cell"><span class="mpl-cic" style="height:'+EICO+'px">'+aico+'</span><span class="mpl-cl">VÍA DE EVACUACIÓN</span></div>';}
-  if(symCells)out+='<div class="mpl-sec"><div class="mpl-h">Simbología</div><div class="mpl-grid">'+symCells+'</div></div>';
+  if(d.arrows){var aico=typeof arrowSVGThumb==='function'?arrowSVGThumb(0):'→';symRows+='<div class="mpl-row"><span class="mpl-ic" style="width:'+EICO+'px;justify-content:center">'+aico+'</span><span class="mpl-nm">Vía de evacuación</span></div>';}
+  if(symRows)out+='<div class="mpl-block"><div class="mpl-h">Simbología</div>'+symRows+'</div>';
+  /* ZONA DE SEGURIDAD */
   if(d.zonas.length){
     var zr='';
-    d.zonas.forEach(function(id){var it=null;if(typeof EVAC_ITEMS!=='undefined')EVAC_ITEMS.forEach(function(x){if(x.id===id)it=x;});var nm=it?it.name:id,ico=it?'<img src="'+it.img+'" style="width:'+(EICO+6)+'px;height:'+(EICO+6)+'px">':'';zr+='<div class="mpl-zrow"><span class="mpl-ic">'+ico+'</span><span class="mpl-znm">'+nm+'</span></div>';});
-    out+='<div class="mpl-sec mpl-zona"><div class="mpl-hz">Zona de seguridad / Punto de encuentro</div>'+zr+'</div>';
+    d.zonas.forEach(function(id){var it=null;if(typeof EVAC_ITEMS!=='undefined')EVAC_ITEMS.forEach(function(x){if(x.id===id)it=x;});var nm=it?it.name:id,ico=it?'<img src="'+it.img+'" style="width:'+(EICO+6)+'px;height:'+(EICO+6)+'px;object-fit:contain">':'';zr+='<div class="mpl-row"><span class="mpl-ic">'+ico+'</span><span class="mpl-znm">'+nm+'</span></div>';});
+    out+='<div class="mpl-block"><div class="mpl-hz">Zona de seguridad / Punto de encuentro</div>'+zr+'</div>';
   }
-  if(!out)out='<div class="mpl-empty">Sin íconos en este plano</div>';
   return out;
 }
 
-/* Export: bloque de leyenda que se compone DEBAJO del plano */
+/* Export: tarjeta de ancho fijo (no se estira a todo el plano) */
 function _buildLegendEl(cssWidth){
   _mplEnsureCSS();
+  var W=Math.min(cssWidth||420,440);
   var el=document.createElement('div');
-  el.style.cssText='position:absolute;left:-99999px;top:0;width:'+cssWidth+'px;box-sizing:border-box;';
-  el.innerHTML='<div class="mpl-leg" style="border:2px solid #16314f">'+_mplLegendHTML({ico:40,eico:46})+'</div>';
+  el.style.cssText='position:absolute;left:-99999px;top:0;width:'+W+'px;box-sizing:border-box;';
+  el.innerHTML='<div class="mpl-leg" style="border:2px solid #16314f">'+_mplLegendHTML({ico:40,eico:44,editable:false})+'</div>';
   return el;
 }
 
-/* Pantalla: reemplaza la leyenda flotante anterior por la misma clave estilo foto.
-   Se mantiene el arrastre/redimensión/giro del panel (core.js) vía los botones
-   .leg-sz/.leg-rot/.leg-rotl del encabezado. */
+/* Mantiene la leyenda escalada junto con el zoom del plano (× su propio zoom) */
+window.__mplLegSync=function(){
+  var lg=document.getElementById('legend');if(!lg)return;
+  if(!lg.style.left||lg.style.left.indexOf('%')===-1)return;
+  var ls=(typeof _legendScale!=='undefined'?_legendScale:1);
+  var lr=(typeof _legendRot!=='undefined'?_legendRot:0);
+  var z=(typeof _zw!=='undefined'?_zw:100);
+  lg.style.transform='translate(-50%,-50%) scale('+(ls*z/100)+') rotate('+lr+'deg)';
+  lg.style.transformOrigin='center center';
+};
+
+/* Pantalla: reemplaza la leyenda flotante. Mantiene arrastre/redimensión/giro
+   (core.js) y clic en fila de riesgo para ubicar el ícono en el plano. */
 function _renderLegendSummary(){
-  var legendEl=document.getElementById('legend');if(!legendEl)return;
+  var lg=document.getElementById('legend');if(!lg)return;
   _mplEnsureCSS();
-  legendEl.style.background='#fff';legendEl.style.color='#1a1a1a';
-  legendEl.style.border='1.5px solid #16314f';legendEl.style.borderRadius='6px';
-  legendEl.style.padding='0';legendEl.style.overflow='hidden';
-  if(!legendEl.style.width||legendEl.style.width==='230px')legendEl.style.width='250px';
+  lg.style.background='#fff';lg.style.color='#1a1a1a';lg.style.border='1.5px solid #16314f';
+  lg.style.borderRadius='6px';lg.style.padding='0';lg.style.overflow='hidden';
+  if(!lg.style.width||['230px','250px','280px'].indexOf(lg.style.width)>=0)lg.style.width='300px';
+  /* Anclar en % del markerLayer para que escale con el zoom del plano */
+  if(!lg.style.left||lg.style.left.indexOf('%')===-1){lg.style.left='15%';lg.style.top='70%';lg.style.bottom='auto';lg.style.right='auto';}
   var header='<div class="mpl-drag"><span class="mpl-tt">Leyenda</span>'+
     '<button class="leg-sz" data-d="-1" title="Achicar">−</button>'+
     '<button class="leg-sz" data-d="1" title="Agrandar">+</button>'+
     '<button class="leg-sz leg-rotl" title="Girar a la izquierda">↺</button>'+
     '<button class="leg-sz leg-rot" title="Girar a la derecha">↻</button></div>';
-  legendEl.innerHTML='<div class="mpl-leg">'+header+_mplLegendHTML({ico:30,eico:36})+'</div>';
-  /* Clic en una fila de riesgo: ubica ese ícono en el plano (scroll + resaltado) */
-  legendEl.querySelectorAll('.mpl-find').forEach(function(row){
+  lg.innerHTML='<div class="mpl-leg">'+header+_mplLegendHTML({ico:32,eico:36,editable:true})+'</div>';
+  /* Campos de metadatos editables */
+  lg.querySelectorAll('.mpl-ed').forEach(function(sp){
+    sp.addEventListener('mousedown',function(e){e.stopPropagation();});
+    sp.addEventListener('input',function(){_legMeta[sp.dataset.k]=sp.textContent;_legMetaSave();});
+  });
+  /* Clic en fila de riesgo: ubica ese ícono en el plano */
+  lg.querySelectorAll('.mpl-find').forEach(function(row){
     row.addEventListener('mousedown',function(e){e.stopPropagation();});
     row.addEventListener('click',function(e){
       e.stopPropagation();
@@ -164,8 +207,9 @@ function _renderLegendSummary(){
       setTimeout(function(){match.style.outline='';match.style.outlineOffset='';},4000);
     });
   });
+  /* Aplicar el zoom actual del plano a la leyenda */
+  if(window.__mplLegSync)window.__mplLegSync();
 }
-
 async function _renderLegendCanvas(finWidth,scaleFactor){
   var cssW=Math.round(finWidth/scaleFactor);
   var el=_buildLegendEl(cssW);

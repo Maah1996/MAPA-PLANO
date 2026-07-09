@@ -132,7 +132,7 @@ var _legendScale=1,_legendRot=0;
   var _dragging=false,_offX=0,_offY=0;
 
   function _applyLegTransform(){
-    legendEl.style.transform='translate(-50%,-50%) scale('+_legendScale+') rotate('+_legendRot+'deg)';
+    legendEl.style.transform='translate(-50%,-50%) scale('+(_legendScale*(typeof _zw!=='undefined'?_zw/100:1))+') rotate('+_legendRot+'deg)';
     legendEl.style.transformOrigin='center center';
   }
   /* La primera vez que se toca la leyenda, convierte su posición actual
@@ -338,6 +338,7 @@ function _applyZoom(){
   if(typeof _scaleArrows==='function')_scaleArrows();
   if(_planRot!==0)_applyPlanRotation();
   setTimeout(_centerView,0);
+  if(window.__mplLegSync)window.__mplLegSync();
 }
 function zoomIn(){_zw=Math.min(500,_zw+25);_applyZoom();}
 function zoomOut(){_zw=Math.max(30,_zw-25);_applyZoom();}
