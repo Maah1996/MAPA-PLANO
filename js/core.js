@@ -258,23 +258,41 @@ function addMarker(risk,color,xPct,yPct){
   m.dataset.plan=_currentPlan;m.dataset.mode=_appMode;m.dataset.itemId=risk.id||'';m.dataset.itemColor=color||'';m.dataset.itemIsEvac=risk._isEvac?'1':'0';
   m.dataset.markerScale='1';
   var svgH=risk._isEvac?iconSVGEvac(risk,40):(risk._isSpecial?iconSVGEstoyAqui(40):iconSVG(risk.g,color,40));
-  m.innerHTML=svgH+'<div class="mlabel" contenteditable="true" spellcheck="false" title="Clic para escribir etiqueta"></div><div class="mkr-size"><button class="mkr-sz" data-d="-1" title="Achicar ícono">−</button><button class="mkr-sz" data-d="1" title="Agrandar ícono">+</button></div><div class="del" title="Eliminar">×</div>';
+  m.innerHTML=svgH+'<div class="mlabel" contenteditable="true" spellcheck="false" title="Clic para escribir etiqueta"></div>'
+    +'<div class="mkr-size">'
+    +'<button class="mkr-sz" data-a="sub" title="Achicar ícono">−</button>'
+    +'<button class="mkr-sz" data-a="add" title="Agrandar ícono">+</button>'
+    +'<button class="mkr-sz" data-a="rl" title="Girar a la izquierda">↺</button>'
+    +'<button class="mkr-sz" data-a="rr" title="Girar a la derecha">↻</button>'
+    +'</div><div class="del" title="Eliminar">×</div>';
   m.addEventListener('mousedown',function(e){if(e.target.classList.contains('del')||e.target.classList.contains('mlabel')||e.target.classList.contains('mkr-sz'))return;e.preventDefault();var pos=_toLocalPct(e.clientX,e.clientY);m._dragOffX=pos.x-parseFloat(m.style.left);m._dragOffY=pos.y-parseFloat(m.style.top);movingMarker=m;window.addEventListener('mousemove',onMove);window.addEventListener('mouseup',onUp);});
   m.querySelector('.del').addEventListener('click',function(e){e.stopPropagation();m.remove();_hideMkrPanel();_renderLegendSummary();});
-  /* Control −/+ SIEMPRE visible al pasar el mouse (igual de confiable que el
-     botón ×): agranda o achica este ícono directamente, sin depender del panel
-     flotante. Equivale a lo que hace el panel de las flechas. */
+  /* Barra de opciones del ícono (agrandar/achicar/girar) pegada al ícono, que
+     aparece al PASAR EL MOUSE o al TOCAR/CLIC (clase .mkr-sel). No depende del
+     panel flotante ni solo de :hover, así funciona también en pantalla táctil. */
   m.querySelectorAll('.mkr-sz').forEach(function(b){
     b.addEventListener('mousedown',function(e){e.stopPropagation();e.preventDefault();});
     b.addEventListener('click',function(e){
       e.stopPropagation();
-      var s=Math.max(0.3,Math.min(3,parseFloat(m.dataset.markerScale||1)+parseInt(b.dataset.d)*0.1));
-      m.dataset.markerScale=s.toFixed(2);
+      var a=b.dataset.a;
+      if(a==='sub'||a==='add'){
+        var s=Math.max(0.3,Math.min(3,parseFloat(m.dataset.markerScale||1)+(a==='add'?0.1:-0.1)));
+        m.dataset.markerScale=s.toFixed(2);
+      }else{
+        var r=(parseFloat(m.dataset.markerRot||0)+(a==='rr'?15:-15)+360)%360;
+        m.dataset.markerRot=r;
+      }
       if(typeof _scaleMarkers==='function')_scaleMarkers();
     });
   });
-  m.addEventListener('click',function(e){if(e.target.classList.contains('del')||e.target.classList.contains('mlabel')||e.target.classList.contains('mkr-sz'))return;_showMkrPanel(m);});
+  m.addEventListener('click',function(e){
+    if(e.target.classList.contains('del')||e.target.classList.contains('mlabel')||e.target.classList.contains('mkr-sz'))return;
+    document.querySelectorAll('.marker.mkr-sel').forEach(function(mm){if(mm!==m)mm.classList.remove('mkr-sel');});
+    m.classList.add('mkr-sel');
+  });
   ml.appendChild(m);
+  /* Deseleccionar (ocultar la barra) al tocar/hacer clic fuera de un ícono. */
+  if(!window.__mkrSelInit){window.__mkrSelInit=1;document.addEventListener('mousedown',function(e){if(e.target.closest&&e.target.closest('.marker'))return;document.querySelectorAll('.marker.mkr-sel').forEach(function(mm){mm.classList.remove('mkr-sel');});});}
   _renderLegendSummary();
 }
 

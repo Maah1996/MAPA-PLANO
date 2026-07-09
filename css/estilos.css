@@ -187,9 +187,10 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 .marker .mlabel:focus{background:var(--surf2);border-color:var(--acc)}
 .marker .del{position:absolute;top:-9px;right:-9px;width:18px;height:18px;border-radius:50%;background:var(--rojo);color:#fff;border:2px solid var(--bg);font-size:12px;line-height:14px;text-align:center;cursor:pointer;display:none;font-weight:bold;z-index:6}
 .marker:hover .del{display:block}
-.marker .mkr-size{position:absolute;top:-11px;left:-11px;display:none;gap:3px;z-index:6}
-.marker:hover .mkr-size{display:flex}
-.marker .mkr-sz{width:19px;height:19px;border-radius:50%;background:#16314f;color:#fff;border:2px solid var(--bg);font-size:15px;line-height:1;text-align:center;cursor:pointer;font-weight:bold;padding:0;display:flex;align-items:center;justify-content:center}
+.marker .mkr-size{position:absolute;bottom:calc(100% + 5px);left:50%;transform:translateX(-50%);display:none;gap:3px;z-index:7;background:rgba(15,25,35,.94);padding:3px 4px;border-radius:9px;box-shadow:0 3px 10px rgba(0,0,0,.5);white-space:nowrap}
+.marker:hover .mkr-size,.marker.mkr-sel .mkr-size{display:flex}
+.marker.mkr-sel{outline:2px dashed rgba(200,168,75,.9);outline-offset:3px;border-radius:4px}
+.marker .mkr-sz{width:22px;height:22px;border-radius:50%;background:#16314f;color:#fff;border:1px solid #2a4d74;font-size:15px;line-height:1;text-align:center;cursor:pointer;font-weight:bold;padding:0;display:flex;align-items:center;justify-content:center}
 .marker .mkr-sz:hover{background:#1f4b78}
 
 /* Legend */
