@@ -91,6 +91,41 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .loading{text-align:center;padding:40px;color:var(--txt2)}
 #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);padding:10px 22px;border-radius:8px;font-size:13.5px;font-weight:600;z-index:9999;pointer-events:none;transition:opacity .4s;opacity:0;box-shadow:0 4px 16px rgba(0,0,0,.4)}
 .dirty{outline:2px solid var(--acc);outline-offset:-2px}
+
+/* Botón primario (Crear usuario) */
+.btn-primary{background:var(--acc);color:var(--bg);border-color:var(--acc);font-weight:700}
+.btn-primary:hover{filter:brightness(1.08);background:var(--acc)}
+
+/* Modal Crear usuario */
+.modal-wrap{position:fixed;inset:0;background:rgba(5,10,18,.72);display:flex;align-items:center;justify-content:center;padding:20px;z-index:100}
+.modal-card{background:var(--surf);border:1px solid var(--brd);border-top:3px solid var(--acc);border-radius:14px;width:min(450px,96vw);max-height:92vh;overflow:auto;box-shadow:0 24px 70px rgba(0,0,0,.6)}
+.modal-head{display:flex;align-items:center;padding:15px 20px;border-bottom:1px solid var(--brd);position:sticky;top:0;background:var(--surf);z-index:1}
+.modal-head h3{font-size:17px;color:var(--acc);flex:1;font-weight:700}
+.modal-x{background:none;border:none;color:var(--txt2);font-size:17px;cursor:pointer;padding:4px 8px;line-height:1}
+.modal-x:hover{color:var(--txt);background:none}
+.modal-body{padding:18px 20px 20px}
+.fld{display:block;margin-bottom:15px}
+.fld-lbl{display:block;margin-bottom:7px;font-size:12px;color:var(--txt2);text-transform:uppercase;letter-spacing:.4px;font-weight:600}
+.fld input[type=text],.fld input[type=email]{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--brd);border-radius:7px;color:var(--txt);font-size:14px;outline:none;font-family:inherit}
+.fld input[type=text]:focus,.fld input[type=email]:focus{border-color:var(--acc)}
+.pw-row{display:flex;gap:8px}
+.pw-row input{flex:1}
+.perm-row{display:flex;gap:18px;flex-wrap:wrap;padding-top:2px}
+.dur-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.dur-num{width:78px;padding:8px 10px;background:var(--bg);border:1px solid var(--brd);border-radius:6px;color:var(--txt);font-size:14px;font-family:inherit;outline:none}
+.dur-num:focus{border-color:var(--acc)}
+.dur-num:disabled{opacity:.4}
+.dur-hint{margin-top:9px;font-size:12.5px;color:var(--acc);min-height:16px}
+.modal-err{color:#f87171;font-size:13px;margin:2px 0 12px;min-height:16px;text-align:center;line-height:1.4}
+.modal-acts{display:flex;gap:10px;justify-content:flex-end;margin-top:4px}
+.modal-acts .btn-sm{padding:9px 18px;font-size:13px}
+/* Resumen de credenciales */
+.cu-done{text-align:center;padding:6px 4px 4px}
+.cu-done .done-ic{width:52px;height:52px;border-radius:50%;background:#14532d;color:#86efac;font-size:28px;display:flex;align-items:center;justify-content:center;margin:4px auto 10px}
+.cu-done h4{font-size:16px;color:var(--txt);margin-bottom:14px}
+.cred-box{text-align:left;background:var(--bg);border:1px solid var(--brd);border-radius:9px;padding:14px 16px;font-size:13.5px;line-height:2;margin-bottom:14px}
+.cred-box b{color:var(--acc);user-select:all}
+.cred-box .cred-k{color:var(--txt2);display:inline-block;min-width:96px}
 @media(max-width:720px){.tbl{font-size:12px}.tbl th,.tbl td{padding:8px 7px}}
 </style>
 </head>
@@ -128,10 +163,75 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
     <h2>Usuarios registrados</h2>
     <span class="count" id="user-count"></span>
     <input type="text" class="search" id="search" placeholder="Buscar por nombre o correo...">
+    <button class="btn-sm btn-primary" id="btn-create">+ Crear usuario</button>
     <button class="btn-sm" id="btn-reload">↻ Recargar</button>
   </div>
   <div id="table-wrap">
     <div class="loading">Cargando usuarios...</div>
+  </div>
+</div>
+
+<!-- MODAL CREAR USUARIO -->
+<div id="create-wrap" class="modal-wrap" style="display:none">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>Crear usuario</h3>
+      <button class="modal-x" id="cu-close" type="button" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="cu-form" autocomplete="off">
+        <div class="fld">
+          <span class="fld-lbl">Nombre completo</span>
+          <input type="text" id="cu-name" placeholder="Ej: Juan Pérez" required>
+        </div>
+        <div class="fld">
+          <span class="fld-lbl">Correo electrónico</span>
+          <input type="email" id="cu-email" placeholder="correo@ejemplo.com" autocomplete="off" required>
+        </div>
+        <div class="fld">
+          <span class="fld-lbl">Contraseña</span>
+          <div class="pw-row">
+            <input type="text" id="cu-pass" placeholder="Mínimo 6 caracteres" autocomplete="new-password" required>
+            <button type="button" class="btn-sm" id="cu-gen">Generar</button>
+          </div>
+        </div>
+        <div class="fld">
+          <span class="fld-lbl">Permisos de acceso</span>
+          <div class="perm-row">
+            <label class="chk"><input type="checkbox" id="cu-mapa" checked> Mapa de Riesgos</label>
+            <label class="chk"><input type="checkbox" id="cu-plano" checked> Plano de Emergencia</label>
+          </div>
+        </div>
+        <div class="fld">
+          <span class="fld-lbl">Tiempo de acceso autorizado</span>
+          <div class="dur-row">
+            <label class="chk"><input type="radio" name="cu-dur" value="days" checked> Por</label>
+            <input type="number" id="cu-days" value="30" min="1" max="3650" class="dur-num">
+            <span style="font-size:13px;color:var(--txt2)">días</span>
+            <label class="chk"><input type="radio" name="cu-dur" value="none"> Sin límite</label>
+          </div>
+          <div class="dur-hint" id="cu-exp-hint"></div>
+        </div>
+        <p class="modal-err" id="cu-err"></p>
+        <div class="modal-acts">
+          <button type="button" class="btn-sm" id="cu-cancel">Cancelar</button>
+          <button type="submit" class="btn-sm btn-save" id="cu-submit">Crear usuario</button>
+        </div>
+      </form>
+      <div class="cu-done" id="cu-done" style="display:none">
+        <div class="done-ic">✓</div>
+        <h4>Usuario creado correctamente</h4>
+        <div class="cred-box">
+          <div><span class="cred-k">Correo:</span> <b id="cu-done-email"></b></div>
+          <div><span class="cred-k">Contraseña:</span> <b id="cu-done-pass"></b></div>
+          <div><span class="cred-k">Acceso:</span> <b id="cu-done-exp"></b></div>
+        </div>
+        <div class="modal-acts" style="justify-content:center">
+          <button type="button" class="btn-sm" id="cu-copy">📋 Copiar credenciales</button>
+          <button type="button" class="btn-sm btn-save" id="cu-done-close">Listo</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -339,6 +439,116 @@ function _toggleSaves(tr,id){
     });
   }).catch(function(e){box.innerHTML='<div class="save-empty" style="color:#f87171">Error: '+_esc(e.message)+'</div>';});
 }
+
+/* ══════════════════════════════════════════════════════════
+   CREAR USUARIO (desde el panel admin)
+   Usa una instancia SECUNDARIA de Firebase para crear la cuenta:
+   el SDK cliente cambia la sesión al nuevo usuario al crearlo, así
+   que lo hacemos en otra app y la deslogueamos enseguida — la sesión
+   del admin en la app principal no se toca.
+══════════════════════════════════════════════════════════ */
+function _creatorAuth(){
+  var app;
+  try{app=firebase.app('userCreator');}
+  catch(e){app=firebase.initializeApp(firebaseConfig,'userCreator');}
+  return app.auth();
+}
+function _expFromDays(days){
+  var d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()+parseInt(days,10));
+  var y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+dd;
+}
+function _durMode(){var r=document.querySelector('input[name="cu-dur"]:checked');return r?r.value:'days';}
+function _updExpHint(){
+  var hint=document.getElementById('cu-exp-hint');
+  var daysInp=document.getElementById('cu-days');
+  var noLimit=_durMode()==='none';
+  daysInp.disabled=noLimit;
+  if(noLimit){hint.textContent='La cuenta permanecerá activa sin fecha de vencimiento.';return;}
+  var days=parseInt(daysInp.value,10)||0;
+  if(days<1){hint.textContent='';return;}
+  var venc=new Date(_expFromDays(days)+'T00:00:00').toLocaleDateString('es-CL',{day:'2-digit',month:'long',year:'numeric'});
+  hint.textContent='Vence el '+venc+' ('+days+' día'+(days!==1?'s':'')+' de acceso).';
+}
+function _genPass(){
+  var cs='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  var s='';for(var i=0;i<10;i++)s+=cs.charAt(Math.floor(Math.random()*cs.length));
+  document.getElementById('cu-pass').value=s;
+}
+function _openCreate(){
+  document.getElementById('cu-form').reset();
+  document.getElementById('cu-mapa').checked=true;
+  document.getElementById('cu-plano').checked=true;
+  document.getElementById('cu-days').value=30;
+  document.getElementById('cu-err').textContent='';
+  document.getElementById('cu-form').style.display='';
+  document.getElementById('cu-done').style.display='none';
+  _updExpHint();
+  document.getElementById('create-wrap').style.display='flex';
+  setTimeout(function(){document.getElementById('cu-name').focus();},50);
+}
+function _closeCreate(){document.getElementById('create-wrap').style.display='none';}
+
+document.getElementById('btn-create').addEventListener('click',_openCreate);
+document.getElementById('cu-close').addEventListener('click',_closeCreate);
+document.getElementById('cu-cancel').addEventListener('click',_closeCreate);
+document.getElementById('cu-done-close').addEventListener('click',_closeCreate);
+document.getElementById('cu-gen').addEventListener('click',_genPass);
+document.getElementById('cu-days').addEventListener('input',_updExpHint);
+document.querySelectorAll('input[name="cu-dur"]').forEach(function(r){r.addEventListener('change',_updExpHint);});
+document.getElementById('create-wrap').addEventListener('click',function(e){if(e.target===this)_closeCreate();});
+
+document.getElementById('cu-form').addEventListener('submit',function(e){
+  e.preventDefault();
+  var err=document.getElementById('cu-err');err.textContent='';
+  var name=document.getElementById('cu-name').value.trim();
+  var email=document.getElementById('cu-email').value.trim();
+  var pass=document.getElementById('cu-pass').value;
+  var mapa=document.getElementById('cu-mapa').checked;
+  var plano=document.getElementById('cu-plano').checked;
+  if(name.length<2){err.textContent='Ingresa el nombre completo.';return;}
+  if(!/.+@.+\..+/.test(email)){err.textContent='Ingresa un correo válido.';return;}
+  if(pass.length<6){err.textContent='La contraseña debe tener al menos 6 caracteres.';return;}
+  if(!mapa&&!plano){err.textContent='Marca al menos un permiso (Mapa de Riesgos o Plano de Emergencia).';return;}
+  var expDate=null;
+  if(_durMode()==='days'){var dv=parseInt(document.getElementById('cu-days').value,10);if(dv>=1)expDate=_expFromDays(dv);}
+  var btn=document.getElementById('cu-submit');btn.disabled=true;btn.textContent='Creando…';
+  var ca=_creatorAuth();
+  ca.createUserWithEmailAndPassword(email,pass).then(function(cred){
+    var uid=cred.user.uid;
+    return cred.user.updateProfile({displayName:name}).catch(function(){}).then(function(){
+      return _db.collection('users').doc(uid).set({
+        name:name,email:email,mapaRiesgo:mapa,planoEmerg:plano,expDate:expDate,
+        createdAt:Date.now(),role:'user',createdByAdmin:true
+      });
+    });
+  }).then(function(){
+    return ca.signOut().catch(function(){});
+  }).then(function(){
+    btn.disabled=false;btn.textContent='Crear usuario';
+    document.getElementById('cu-done-email').textContent=email;
+    document.getElementById('cu-done-pass').textContent=pass;
+    document.getElementById('cu-done-exp').textContent=expDate?('hasta el '+new Date(expDate+'T00:00:00').toLocaleDateString('es-CL')):'sin límite';
+    document.getElementById('cu-form').style.display='none';
+    document.getElementById('cu-done').style.display='';
+    _toast('Usuario creado: '+email);
+    loadUsers();
+  }).catch(function(e2){
+    btn.disabled=false;btn.textContent='Crear usuario';
+    err.textContent=_authMsg(e2);
+    ca.signOut().catch(function(){}); /* no dejar sesión secundaria abierta */
+  });
+});
+
+document.getElementById('cu-copy').addEventListener('click',function(){
+  var email=document.getElementById('cu-done-email').textContent;
+  var pass=document.getElementById('cu-done-pass').textContent;
+  var link=location.origin+location.pathname.replace(/admin\.html$/,'index.html');
+  var txt='Acceso a PrevenRiesgo\nCorreo: '+email+'\nContraseña: '+pass+'\nEnlace: '+link;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){_toast('Credenciales copiadas al portapapeles');}).catch(function(){_toast('No se pudo copiar automáticamente',true);});
+  }else{_toast('Copia manual: '+email+' / '+pass);}
+});
 </script>
 </body>
 </html>
