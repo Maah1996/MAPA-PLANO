@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PrevenRiesgo — Afiche para imprimir</title>
+<style>
+  :root{--gold:#e0a12a;--navy:#16314f;--ink:#1f2937;--soft:#6b7280;--line:#e5e7eb}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#eef1f5;color:var(--ink);
+       display:flex;flex-direction:column;align-items:center;padding:24px 16px;min-height:100vh}
+
+  /* Barra de acciones (no se imprime) */
+  .bar{width:100%;max-width:720px;display:flex;justify-content:flex-end;gap:10px;margin-bottom:16px}
+  .bar button{font-family:inherit;font-size:14px;font-weight:700;padding:10px 20px;border-radius:8px;
+              border:1px solid var(--navy);background:var(--navy);color:#fff;cursor:pointer}
+  .bar button.ghost{background:#fff;color:var(--navy)}
+  .bar button:hover{filter:brightness(1.06)}
+
+  /* Hoja del afiche */
+  .sheet{width:210mm;max-width:100%;min-height:297mm;background:#fff;border-radius:6px;
+         box-shadow:0 12px 40px rgba(0,0,0,.14);padding:26mm 22mm;display:flex;flex-direction:column}
+
+  /* Encabezado marca */
+  .brand{display:flex;align-items:center;gap:12px;padding-bottom:16px;border-bottom:3px solid var(--gold)}
+  .brand .name{font-size:30px;font-weight:800;letter-spacing:.3px;color:var(--navy)}
+  .brand .tag{margin-left:auto;font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--gold);
+              text-transform:uppercase;border:1px solid var(--gold);border-radius:20px;padding:6px 12px}
+
+  .hero{margin-top:34px;text-align:center}
+  .hero h1{font-size:34px;line-height:1.15;color:var(--navy);font-weight:800}
+  .hero h1 span{color:var(--gold)}
+  .hero p{margin-top:12px;font-size:16px;color:var(--soft);line-height:1.5}
+
+  /* Cuerpo: pasos + QR */
+  .body{margin-top:38px;display:flex;gap:34px;align-items:center;justify-content:center;flex-wrap:wrap}
+  .steps{flex:1;min-width:250px;max-width:340px}
+  .step{display:flex;align-items:flex-start;gap:14px;margin-bottom:20px}
+  .step .n{flex:0 0 34px;height:34px;border-radius:50%;background:var(--navy);color:#fff;font-weight:800;
+           font-size:16px;display:flex;align-items:center;justify-content:center}
+  .step .t{font-size:15.5px;line-height:1.45;padding-top:5px}
+  .step .t b{color:var(--navy)}
+
+  /* Tarjeta del QR (tamaño moderado, elegante) */
+  .qr-card{flex:0 0 auto;text-align:center;border:1px solid var(--line);border-radius:14px;
+           padding:18px 18px 14px;background:#fafbfc}
+  .qr-card img{width:190px;height:190px;display:block;border-radius:8px}
+  .qr-card .cap{margin-top:12px;font-size:13px;font-weight:700;color:var(--navy)}
+  .qr-card .cap small{display:block;font-weight:500;color:var(--soft);margin-top:3px;font-size:11.5px}
+
+  /* Pie con el enlace */
+  .foot{margin-top:auto;padding-top:26px;text-align:center}
+  .foot .url{display:inline-block;font-size:15px;font-weight:700;color:#fff;background:var(--navy);
+             padding:10px 20px;border-radius:8px;letter-spacing:.2px}
+  .foot .note{margin-top:12px;font-size:12px;color:var(--soft)}
+
+  @media print{
+    body{background:#fff;padding:0}
+    .bar{display:none}
+    .sheet{box-shadow:none;border-radius:0;width:auto;min-height:auto;padding:16mm 18mm}
+    @page{size:A4;margin:0}
+  }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <button class="ghost" onclick="location.href='index.html'">← Volver</button>
+  <button onclick="window.print()">🖨 Imprimir</button>
+</div>
+
+<div class="sheet">
+  <div class="brand">
+    <svg viewBox="0 0 100 100" width="40" height="40" aria-hidden="true">
+      <path d="M50 7 L84 19 V46 C84 69 69 86 50 93 C31 86 16 69 16 46 V19 Z" fill="none" stroke="#e0a12a" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M35 50 L46 61 L67 38" fill="none" stroke="#e0a12a" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span class="name">PrevenRiesgo</span>
+    <span class="tag">Seguridad Laboral</span>
+  </div>
+
+  <div class="hero">
+    <h1>Crea tus <span>mapas de riesgo</span><br>y planos de evacuación</h1>
+    <p>Según la Guía DS N°44/2024. Ingresa desde cualquier computador o celular,<br>de forma simple y segura.</p>
+  </div>
+
+  <div class="body">
+    <div class="steps">
+      <div class="step"><div class="n">1</div><div class="t">Escanea el <b>código QR</b> o entra al enlace de abajo.</div></div>
+      <div class="step"><div class="n">2</div><div class="t">Toca <b>“Crear cuenta”</b> y completa tu nombre, correo y clave.</div></div>
+      <div class="step"><div class="n">3</div><div class="t"><b>Verifica tu correo</b> (revisa también Spam y Promociones) y ¡listo, a trabajar!</div></div>
+    </div>
+
+    <div class="qr-card">
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=6&data=https%3A%2F%2Fmaah1996.github.io%2FMAPA-PLANO%2F" alt="Código QR de PrevenRiesgo">
+      <div class="cap">Escanea con tu celular<small>Te lleva directo a la plataforma</small></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span class="url">maah1996.github.io/MAPA-PLANO</span>
+    <div class="note">Plataforma de mapas de riesgo y planos de evacuación · PrevenRiesgo</div>
+  </div>
+</div>
+
+</body>
+</html>
