@@ -349,6 +349,22 @@ function _updateResumeBtn(){var b=document.getElementById('plans-resume');if(b)b
 function _ownerUid(){return _planOwnerUid||(_currentUser&&_currentUser.uid);}
 function _plansCol(){return _db.collection('users').doc(_ownerUid()).collection('plans');}
 
+/* ── Limpiar TODO el estado de sesión al cambiar de usuario ──
+   Al cerrar sesión de una cuenta y entrar con otra en la misma pestaña, quedan
+   variables "pegadas" (último plano abierto, imagen y marcadores en el DOM,
+   pestañas de planos…). Sin esto, un usuario nuevo veía el plano de la cuenta
+   anterior al "Volver al editor". Se llama en el signOut (evento null). */
+function _resetSessionState(){
+  _editCtx=null;_planOwnerUid=null;_planMeta=null;_planLoaded=false;
+  _lastOpenedPlanId=null;_currentPlan=1;_allPlans=[];window._currentPlanName='';
+  clearTimeout(_planSaveTimer);
+  document.querySelectorAll('.marker').forEach(function(m){m.remove();});
+  var pimg=document.getElementById('planImg');if(pimg)pimg.src='';
+  var bar=document.getElementById('plan-tabs-bar');if(bar){bar.innerHTML='';bar.style.display='none';}
+  var eb=document.getElementById('edit-banner');if(eb)eb.style.display='none';
+  if(typeof _updateResumeBtn==='function')_updateResumeBtn();
+}
+
 /* ── Comprimir imagen subida (canvas → JPEG, ajusta para caber en Firestore) ── */
 function _compressImage(file,cb){
   var reader=new FileReader();
@@ -452,12 +468,15 @@ function _openPlan(planId,_retriesLeft,_onDone){
   _plansCol().doc(planId).get().then(function(doc){
     var builtinIdx=-1;
     if(String(planId).indexOf('montichef-')===0)builtinIdx=parseInt(planId.split('-')[1])-1;
+    /* Los planos demo MONTICHEF son SOLO del admin: un usuario normal no debe
+       poder abrirlos ni que se le creen en su cuenta. */
+    var _isAdm=_currentUser&&_isAdminEmail(_currentUser.email)&&!_planOwnerUid;
     var data;
     if(doc.exists){data=doc.data();}
-    else if(builtinIdx>=0){
+    else if(builtinIdx>=0&&_isAdm){
       data={name:'MONTICHEF — Nivel '+(builtinIdx+1),builtin:true,builtinRef:builtinIdx,markers:[],zw:100,title:'MONTICHEF — Nivel '+(builtinIdx+1)};
       _plansCol().doc(planId).set(Object.assign({createdAt:Date.now(),updatedAt:Date.now()},data));
-    }else{_showToast('El plano ya no existe.',true);return;}
+    }else{_showToast('El plano ya no existe.',true);_showPlansOverlay(true);return;}
     var isB=!!(data.builtin)||builtinIdx>=0;
     var refIdx=(data.builtinRef!=null?data.builtinRef:builtinIdx);
     var img=isB?_BUILTIN_PLAN_IMGS[refIdx]:(data.img||'');
@@ -668,6 +687,7 @@ _auth.onAuthStateChanged(function(user){
   _hideBootLoading();
   if(!user){
     _userPerms=null;
+    _resetSessionState(); /* limpiar estado del usuario anterior antes del próximo login */
     _showStatusOverlay(false);_showLoginOverlay(false);_showPlansOverlay(false);
     _showLanding(true);
     _updateAuthBar(null);
