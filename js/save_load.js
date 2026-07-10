@@ -469,8 +469,21 @@ function _openPlan(planId,_retriesLeft,_onDone){
     var builtinIdx=-1;
     if(String(planId).indexOf('montichef-')===0)builtinIdx=parseInt(planId.split('-')[1])-1;
     /* Los planos demo MONTICHEF son SOLO del admin: un usuario normal no debe
-       poder abrirlos ni que se le creen en su cuenta. */
+       poder abrirlos ni tenerlos en su cuenta. */
     var _isAdm=_currentUser&&_isAdminEmail(_currentUser.email)&&!_planOwnerUid;
+    var _isBuiltinDoc=builtinIdx>=0||(doc.exists&&doc.data()&&doc.data().builtin);
+    if(!_isAdm&&_isBuiltinDoc){
+      /* Si en una sesión anterior (bug ya corregido) se le copió el plano demo a
+         la cuenta del usuario, lo borramos y limpiamos el rastro para que no se
+         reabra. Los ids 'montichef-N' nunca son planos reales del usuario. */
+      if(doc.exists&&builtinIdx>=0)_plansCol().doc(planId).delete().catch(function(){});
+      _clearAppState();_lastOpenedPlanId=null;_planLoaded=false;_planMeta=null;
+      if(typeof _updateResumeBtn==='function')_updateResumeBtn();
+      document.querySelectorAll('.marker').forEach(function(m){m.remove();});
+      var _pi=document.getElementById('planImg');if(_pi)_pi.src='';
+      _showPlansOverlay(true);
+      return;
+    }
     var data;
     if(doc.exists){data=doc.data();}
     else if(builtinIdx>=0&&_isAdm){
