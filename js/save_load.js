@@ -40,6 +40,30 @@ function _updateAuthBar(user){
     info.style.display='none';
     if(mpBtn)mpBtn.style.display='none';
   }
+  _renderExpBadge();
+}
+
+/* ── Contador de días de acceso ──
+   Solo se muestra si el admin le puso caducidad (expDate). Si no hay caducidad
+   ("Sin límite"), no aparece nada. Cambia de color al acercarse el vencimiento. */
+var _userExpDate=null;
+function _renderExpBadge(){
+  var el=document.getElementById('auth-exp');
+  if(!el)return;
+  if(!_userExpDate){el.style.display='none';el.textContent='';return;}
+  var today=new Date();today.setHours(0,0,0,0);
+  var exp=new Date(_userExpDate+'T00:00:00');
+  var days=Math.round((exp-today)/86400000);
+  var txt;
+  if(days<=0)txt='⏳ Último día';
+  else if(days===1)txt='⏳ Queda 1 día';
+  else txt='⏳ Quedan '+days+' días';
+  var cls=days<=2?'exp-danger':(days<=7?'exp-warn':'exp-ok');
+  el.className='auth-exp '+cls;
+  el.textContent=txt;
+  var p=String(_userExpDate).split('-');
+  el.title='Tu acceso vence el '+(p[2]+'-'+p[1]+'-'+p[0]);
+  el.style.display='';
 }
 
 /* ── Traducción de errores Firebase ── */
@@ -355,7 +379,7 @@ function _plansCol(){return _db.collection('users').doc(_ownerUid()).collection(
    pestañas de planos…). Sin esto, un usuario nuevo veía el plano de la cuenta
    anterior al "Volver al editor". Se llama en el signOut (evento null). */
 function _resetSessionState(){
-  _editCtx=null;_planOwnerUid=null;_planMeta=null;_planLoaded=false;
+  _editCtx=null;_planOwnerUid=null;_planMeta=null;_planLoaded=false;_userExpDate=null;
   _lastOpenedPlanId=null;_currentPlan=1;_allPlans=[];window._currentPlanName='';
   clearTimeout(_planSaveTimer);
   document.querySelectorAll('.marker').forEach(function(m){m.remove();});
@@ -709,6 +733,7 @@ _auth.onAuthStateChanged(function(user){
   _showLoginOverlay(false);
   if(_isAdminEmail(user.email)){
     _userPerms={mapaRiesgo:true,planoEmerg:true,admin:true};
+    _userExpDate=null; /* el admin no tiene caducidad ni contador */
     _enterApp();
     return;
   }
@@ -735,6 +760,7 @@ _auth.onAuthStateChanged(function(user){
     }
     /* Si el admin deshabilitó ambos módulos, no hay acceso. */
     if(!d.mapaRiesgo&&!d.planoEmerg){_showDisabled();return;}
+    _userExpDate=d.expDate||null; /* contador de días (solo si tiene caducidad) */
     _userPerms={mapaRiesgo:!!d.mapaRiesgo,planoEmerg:!!d.planoEmerg,admin:false};
     _enterApp();
   }).catch(function(e){
