@@ -709,6 +709,8 @@ _auth.onAuthStateChanged(function(user){
       d={name:user.displayName||user.email,email:user.email,mapaRiesgo:true,planoEmerg:true,expDate:null,createdAt:Date.now(),role:'user'};
       _db.collection('users').doc(user.uid).set(d).catch(function(){});
     }
+    /* Cuenta deshabilitada por el admin (interruptor "Activa" del panel). */
+    if(d.disabled===true){_showDisabled();return;}
     /* Gate de acceso: el usuario debe tener el CORREO VERIFICADO. Excepción:
        las cuentas creadas por el admin (createdByAdmin) entran directo, sin
        verificar, porque el admin ya las validó al crearlas. */

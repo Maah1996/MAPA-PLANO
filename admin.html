@@ -58,6 +58,15 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .badge.active{background:#14532d;color:#86efac}
 .badge.pending{background:#422006;color:#fcd34d}
 .badge.expired{background:#4a1010;color:#fca5a5}
+.badge.disabled{background:#3f3f46;color:#d4d4d8}
+
+/* Interruptor habilitar/deshabilitar cuenta */
+.switch{position:relative;display:inline-block;width:40px;height:22px;cursor:pointer;vertical-align:middle}
+.switch input{opacity:0;width:0;height:0;position:absolute}
+.switch-sl{position:absolute;inset:0;background:#4a1a1a;border:1px solid var(--brd);border-radius:22px;transition:.15s}
+.switch-sl::before{content:"";position:absolute;height:16px;width:16px;left:2px;top:2px;background:#fca5a5;border-radius:50%;transition:.15s}
+.switch input:checked+.switch-sl{background:#14532d;border-color:rgba(22,101,49,.6)}
+.switch input:checked+.switch-sl::before{transform:translateX(18px);background:#86efac}
 
 /* Checkbox cells */
 .chk{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--txt2);cursor:pointer;user-select:none;white-space:nowrap}
@@ -326,6 +335,7 @@ document.getElementById('btn-reload').addEventListener('click',loadUsers);
 document.getElementById('search').addEventListener('input',renderTable);
 
 function _statusOf(u){
+  if(u.disabled)return 'disabled';
   if(u.expDate){var t=new Date();t.setHours(0,0,0,0);if(new Date(u.expDate+'T23:59:59')<t)return 'expired';}
   if(u.mapaRiesgo||u.planoEmerg)return 'active';
   return 'pending';
@@ -337,11 +347,12 @@ function renderTable(){
   var list=_users.filter(function(u){return!q||(u.name||'').toLowerCase().indexOf(q)>=0||(u.email||'').toLowerCase().indexOf(q)>=0;});
   document.getElementById('user-count').textContent=_users.length+' usuario'+(_users.length!==1?'s':'');
   if(!list.length){document.getElementById('table-wrap').innerHTML='<div class="loading">No hay usuarios'+(q?' que coincidan con la búsqueda':' registrados aún')+'.</div>';return;}
-  var html='<table class="tbl"><thead><tr><th>Usuario</th><th>Registro</th><th>Estado</th><th>Mapa Riesgo</th><th>Plano Emerg.</th><th>Caducidad</th><th>Acciones</th></tr></thead><tbody>';
+  var html='<table class="tbl"><thead><tr><th title="Habilitar o deshabilitar la cuenta">Activa</th><th>Usuario</th><th>Registro</th><th>Estado</th><th>Mapa Riesgo</th><th>Plano Emerg.</th><th>Caducidad</th><th>Acciones</th></tr></thead><tbody>';
   list.forEach(function(u){
     var st=_statusOf(u);
-    var stLabel=st==='active'?'Activo':st==='pending'?'Pendiente':'Expirado';
+    var stLabel=st==='active'?'Activo':st==='pending'?'Pendiente':st==='expired'?'Expirado':'Inactiva';
     html+='<tr data-id="'+u._id+'">'
+      +'<td style="text-align:center"><label class="switch" title="Cuenta habilitada / deshabilitada"><input type="checkbox" class="ck-active" '+(u.disabled?'':'checked')+'><span class="switch-sl"></span></label></td>'
       +'<td><div class="u-name">'+_esc(u.name||'(sin nombre)')+'</div><div class="u-email">'+_esc(u.email)+'</div></td>'
       +'<td class="u-date">'+_fmtDate(u.createdAt)+'</td>'
       +'<td><span class="badge '+st+'">'+stLabel+'</span></td>'
@@ -370,10 +381,12 @@ function _wireRows(){
   document.querySelectorAll('.tbl tbody tr[data-id]').forEach(function(tr){
     var id=tr.getAttribute('data-id');
     var ckMapa=tr.querySelector('.ck-mapa'),ckPlano=tr.querySelector('.ck-plano'),expIn=tr.querySelector('.exp-input');
+    var ckActive=tr.querySelector('.ck-active');
     function markDirty(){tr.classList.add('dirty');}
     ckMapa.addEventListener('change',markDirty);
     ckPlano.addEventListener('change',markDirty);
     expIn.addEventListener('change',markDirty);
+    if(ckActive)ckActive.addEventListener('change',markDirty);
 
     /* Botones rápidos de tiempo: extienden desde la fecha actual (o desde hoy
        si ya venció / no tiene), así "dar más tiempo de uso" es de un clic.
@@ -401,10 +414,10 @@ function _wireRows(){
     });
 
     tr.querySelector('.btn-save').addEventListener('click',function(){
-      var upd={mapaRiesgo:ckMapa.checked,planoEmerg:ckPlano.checked,expDate:expIn.value||null};
+      var upd={mapaRiesgo:ckMapa.checked,planoEmerg:ckPlano.checked,expDate:expIn.value||null,disabled:ckActive?!ckActive.checked:false};
       _db.collection('users').doc(id).update(upd).then(function(){
         var u=_users.filter(function(x){return x._id===id;})[0];
-        if(u){u.mapaRiesgo=upd.mapaRiesgo;u.planoEmerg=upd.planoEmerg;u.expDate=upd.expDate;}
+        if(u){u.mapaRiesgo=upd.mapaRiesgo;u.planoEmerg=upd.planoEmerg;u.expDate=upd.expDate;u.disabled=upd.disabled;}
         tr.classList.remove('dirty');
         _toast('Cambios guardados');
         renderTable();
