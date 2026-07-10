@@ -681,7 +681,14 @@ _auth.onAuthStateChanged(function(user){
   }
   _db.collection('users').doc(user.uid).get().then(function(doc){
     var d=doc.exists?doc.data():null;
-    if(!d){_showPending();return;}
+    if(!d){
+      /* Perfil ausente: cuenta de acceso sin registro en la base (p.ej. creada
+         cuando las reglas de Firestore bloqueaban el guardado del perfil). Lo
+         creamos ahora con acceso por defecto, para que aparezca en el panel del
+         admin y siga el flujo normal de verificación de correo. */
+      d={name:user.displayName||user.email,email:user.email,mapaRiesgo:true,planoEmerg:true,expDate:null,createdAt:Date.now(),role:'user'};
+      _db.collection('users').doc(user.uid).set(d).catch(function(){});
+    }
     /* Gate de acceso: el usuario debe tener el CORREO VERIFICADO. Excepción:
        las cuentas creadas por el admin (createdByAdmin) entran directo, sin
        verificar, porque el admin ya las validó al crearlas. */
