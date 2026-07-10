@@ -77,6 +77,12 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .btn-del:hover{background:#4a1010}
 .btn-view{background:#1e3a5f;color:#93c5fd;border-color:rgba(30,64,175,.5)}
 .btn-view:hover{background:#1e40af;color:#fff}
+.btn-key{background:#3a2f5f;color:#c4b5fd;border-color:rgba(139,92,246,.4)}
+.btn-key:hover{background:#4c3d7a;color:#fff}
+/* Botones rápidos de caducidad */
+.exp-quick{display:flex;gap:4px;margin-top:5px;flex-wrap:wrap}
+.btn-xs{padding:3px 7px;border-radius:4px;font-size:10.5px;font-weight:600;cursor:pointer;border:1px solid var(--brd);background:var(--surf2);color:var(--txt2);font-family:inherit;white-space:nowrap}
+.btn-xs:hover{background:var(--brd);color:var(--txt)}
 
 /* Saves sub-row */
 .saves-row td{background:#0a111a;padding:0}
@@ -341,9 +347,15 @@ function renderTable(){
       +'<td><span class="badge '+st+'">'+stLabel+'</span></td>'
       +'<td><label class="chk"><input type="checkbox" class="ck-mapa" '+(u.mapaRiesgo?'checked':'')+'> Habilitado</label></td>'
       +'<td><label class="chk"><input type="checkbox" class="ck-plano" '+(u.planoEmerg?'checked':'')+'> Habilitado</label></td>'
-      +'<td><input type="date" class="exp-input" value="'+_esc(u.expDate||'')+'"></td>'
+      +'<td><input type="date" class="exp-input" value="'+_esc(u.expDate||'')+'">'
+        +'<div class="exp-quick">'
+          +'<button type="button" class="btn-xs exp-add" data-d="30" title="Sumar 30 días">+30d</button>'
+          +'<button type="button" class="btn-xs exp-add" data-d="90" title="Sumar 90 días">+90d</button>'
+          +'<button type="button" class="btn-xs exp-none" title="Sin fecha de caducidad">∞ Sin límite</button>'
+        +'</div></td>'
       +'<td><div class="act">'
-        +'<button class="btn-sm btn-save">Guardar</button>'
+        +'<button class="btn-sm btn-save">💾 Guardar</button>'
+        +'<button class="btn-sm btn-key">🔑 Clave</button>'
         +'<button class="btn-sm btn-view">Planos</button>'
         +'<button class="btn-sm btn-del">Eliminar</button>'
       +'</div></td>'
@@ -362,6 +374,31 @@ function _wireRows(){
     ckMapa.addEventListener('change',markDirty);
     ckPlano.addEventListener('change',markDirty);
     expIn.addEventListener('change',markDirty);
+
+    /* Botones rápidos de tiempo: extienden desde la fecha actual (o desde hoy
+       si ya venció / no tiene), así "dar más tiempo de uso" es de un clic.
+       Recuerda tocar "Guardar" para que quede registrado. */
+    tr.querySelectorAll('.exp-add').forEach(function(b){
+      b.addEventListener('click',function(){
+        var days=parseInt(b.dataset.d,10)||0;
+        var base=new Date();base.setHours(0,0,0,0);
+        if(expIn.value){var cur=new Date(expIn.value+'T00:00:00');if(cur>base)base=cur;}
+        base.setDate(base.getDate()+days);
+        var y=base.getFullYear(),m=String(base.getMonth()+1).padStart(2,'0'),d2=String(base.getDate()).padStart(2,'0');
+        expIn.value=y+'-'+m+'-'+d2;markDirty();
+      });
+    });
+    tr.querySelector('.exp-none').addEventListener('click',function(){expIn.value='';markDirty();});
+
+    /* Restablecer clave: envía al usuario un correo para que la cambie él mismo
+       (el SDK cliente no permite fijar la clave de otra cuenta directamente). */
+    tr.querySelector('.btn-key').addEventListener('click',function(){
+      var u=_users.filter(function(x){return x._id===id;})[0];
+      var email=u?u.email:'';
+      if(!email){_toast('Este usuario no tiene correo registrado.',true);return;}
+      if(!confirm('¿Enviar a '+email+' un correo para restablecer su contraseña?\n\nEl usuario recibe un enlace y define su nueva clave. Recuérdale revisar Spam y Promociones.'))return;
+      _auth.sendPasswordResetEmail(email).then(function(){_toast('Correo de restablecimiento enviado a '+email);}).catch(function(e){_toast('Error: '+e.message,true);});
+    });
 
     tr.querySelector('.btn-save').addEventListener('click',function(){
       var upd={mapaRiesgo:ckMapa.checked,planoEmerg:ckPlano.checked,expDate:expIn.value||null};
