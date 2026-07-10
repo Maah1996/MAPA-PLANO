@@ -9,7 +9,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-<link rel="stylesheet" href="css/estilos.css?v=16">
+<link rel="stylesheet" href="css/estilos.css?v=17">
 </head>
 <body>
 
@@ -112,13 +112,17 @@
   </div>
 </div>
 
-<!-- Overlay de estado: cuenta pendiente o expirada -->
+<!-- Overlay de estado: verificar correo / cuenta expirada / sin acceso -->
 <div id="status-overlay" style="display:none">
   <div class="status-card">
     <div id="status-icon">⏳</div>
     <h2 id="status-title">Cuenta pendiente</h2>
     <p id="status-msg"></p>
-    <button id="status-logout" type="button">Cerrar sesión</button>
+    <div class="st-actions">
+      <button id="status-recheck" type="button" style="display:none">✓ Ya verifiqué mi correo</button>
+      <button id="status-resend" type="button" style="display:none">Reenviar correo de verificación</button>
+      <button id="status-logout" type="button">Cerrar sesión</button>
+    </div>
   </div>
 </div>
 
@@ -276,7 +280,7 @@
 <script src="js/core.js?v=42"></script>
 <script src="js/evac_items.js?v=7"></script>
 <script src="js/evac_arrows.js?v=9"></script>
-<script src="js/save_load.js?v=13"></script>
+<script src="js/save_load.js?v=14"></script>
 <script src="js/cad.js?v=7"></script>
 <script src="js/capture.js?v=21"></script>
 <script src="js/version_check.js?v=1"></script>

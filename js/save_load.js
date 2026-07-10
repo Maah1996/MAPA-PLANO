@@ -108,12 +108,17 @@ document.getElementById('form-register').addEventListener('submit',function(e){
   _auth.createUserWithEmailAndPassword(em,pw).then(function(cred){
     var user=cred.user;
     return user.updateProfile({displayName:name}).then(function(){
+      /* Acceso a ambos módulos por defecto; el admin puede restringir, poner
+         caducidad o eliminar la cuenta después. El acceso real se libera cuando
+         el usuario VERIFICA su correo (ver onAuthStateChanged). */
       return _db.collection('users').doc(user.uid).set({
-        name:name,email:em,mapaRiesgo:false,planoEmerg:false,expDate:null,createdAt:Date.now(),role:'user'
+        name:name,email:em,mapaRiesgo:true,planoEmerg:true,expDate:null,createdAt:Date.now(),role:'user'
       });
+    }).then(function(){
+      return user.sendEmailVerification().catch(function(){});
     });
   }).then(function(){
-    /* onAuthStateChanged mostrará la pantalla "pendiente" */
+    /* onAuthStateChanged mostrará la pantalla "verifica tu correo" */
   }).catch(function(err){_setLoginError(_firebaseAuthMsg(err));});
 });
 
@@ -130,12 +135,54 @@ document.getElementById('li-forgot').addEventListener('click',function(){
 document.getElementById('btn-logout').addEventListener('click',function(){_auth.signOut();});
 document.getElementById('status-logout').addEventListener('click',function(){_auth.signOut();});
 
+/* ── Botones de la pantalla de estado (solo visibles en modo "verificar correo") ── */
+function _setStatusVerifyBtns(show){
+  var rc=document.getElementById('status-recheck'),rs=document.getElementById('status-resend');
+  if(rc)rc.style.display=show?'':'none';
+  if(rs)rs.style.display=show?'':'none';
+}
+/* Reenviar correo de verificación */
+document.getElementById('status-resend').addEventListener('click',function(){
+  var u=_auth.currentUser;if(!u)return;
+  var b=this;b.disabled=true;var old=b.textContent;b.textContent='Enviando…';
+  u.sendEmailVerification().then(function(){
+    alert('Te reenviamos el correo de verificación a '+u.email+'.\nRevisa tu bandeja, y también las carpetas de Spam y Promociones.');
+  }).catch(function(e){alert('No se pudo reenviar el correo: '+(e.message||e.code||''));})
+   .then(function(){b.disabled=false;b.textContent=old;});
+});
+/* "Ya verifiqué mi correo": refresca el estado y, si quedó verificado, entra */
+document.getElementById('status-recheck').addEventListener('click',function(){
+  var u=_auth.currentUser;if(!u)return;
+  var b=this;b.disabled=true;var old=b.textContent;b.textContent='Comprobando…';
+  u.reload().then(function(){
+    if(_auth.currentUser&&_auth.currentUser.emailVerified){location.reload();}
+    else{b.disabled=false;b.textContent=old;alert('Tu correo todavía no aparece como verificado.\nAbre el enlace que te enviamos y vuelve a tocar “Ya verifiqué mi correo”.');}
+  }).catch(function(){b.disabled=false;b.textContent=old;});
+});
+
 /* ── Pantallas de estado ── */
+function _showVerify(user){
+  _showLanding(false);_showLoginOverlay(false);_showPlansOverlay(false);
+  document.getElementById('status-icon').textContent='✉️';
+  document.getElementById('status-title').textContent='Verifica tu correo';
+  document.getElementById('status-msg').innerHTML='Te enviamos un enlace de verificación a <b>'+_escHtml(user&&user.email)+'</b>.<br>Ábrelo y luego toca “Ya verifiqué mi correo” para ingresar.<br><span style="opacity:.75">Si no lo ves, revisa las carpetas de Spam y Promociones.</span>';
+  _setStatusVerifyBtns(true);
+  _showStatusOverlay(true);
+}
 function _showPending(msg){
   _showLanding(false);_showLoginOverlay(false);_showPlansOverlay(false);
   document.getElementById('status-icon').textContent='⏳';
-  document.getElementById('status-title').textContent='Cuenta pendiente de aprobación';
-  document.getElementById('status-msg').textContent=msg||'Tu cuenta fue creada. El administrador debe habilitar tu acceso antes de que puedas ingresar.';
+  document.getElementById('status-title').textContent='Cuenta pendiente';
+  document.getElementById('status-msg').textContent=msg||'Tu cuenta aún no está lista para ingresar. Contacta al administrador.';
+  _setStatusVerifyBtns(false);
+  _showStatusOverlay(true);
+}
+function _showDisabled(){
+  _showLanding(false);_showLoginOverlay(false);_showPlansOverlay(false);
+  document.getElementById('status-icon').textContent='🔒';
+  document.getElementById('status-title').textContent='Acceso deshabilitado';
+  document.getElementById('status-msg').textContent='El administrador deshabilitó tu acceso a los módulos. Contáctalo para reactivarlo.';
+  _setStatusVerifyBtns(false);
   _showStatusOverlay(true);
 }
 function _showExpired(){
@@ -143,6 +190,7 @@ function _showExpired(){
   document.getElementById('status-icon').textContent='⛔';
   document.getElementById('status-title').textContent='Acceso expirado';
   document.getElementById('status-msg').textContent='Tu acceso ha caducado. Contacta al administrador para renovar tu plazo.';
+  _setStatusVerifyBtns(false);
   _showStatusOverlay(true);
 }
 
@@ -634,12 +682,17 @@ _auth.onAuthStateChanged(function(user){
   _db.collection('users').doc(user.uid).get().then(function(doc){
     var d=doc.exists?doc.data():null;
     if(!d){_showPending();return;}
+    /* Gate de acceso: el usuario debe tener el CORREO VERIFICADO. Excepción:
+       las cuentas creadas por el admin (createdByAdmin) entran directo, sin
+       verificar, porque el admin ya las validó al crearlas. */
+    if(!user.emailVerified && d.createdByAdmin!==true){_showVerify(user);return;}
     if(d.expDate){
       var today=new Date();today.setHours(0,0,0,0);
       var exp=new Date(d.expDate+'T23:59:59');
       if(exp<today){_showExpired();return;}
     }
-    if(!d.mapaRiesgo&&!d.planoEmerg){_showPending();return;}
+    /* Si el admin deshabilitó ambos módulos, no hay acceso. */
+    if(!d.mapaRiesgo&&!d.planoEmerg){_showDisabled();return;}
     _userPerms={mapaRiesgo:!!d.mapaRiesgo,planoEmerg:!!d.planoEmerg,admin:false};
     _enterApp();
   }).catch(function(e){
