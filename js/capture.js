@@ -107,8 +107,9 @@ function _mplHeaderHTML(opt){
     if(ed)return '<span class="mpl-ed" contenteditable="true" data-k="'+k+'">'+v+'</span>';
     return '<span>'+v+'</span>';
   }
+  var _hdTitle=(typeof _appMode!=='undefined'&&_appMode==='evacuacion')?'PLANO DE EVACUACIÓN':'MAPA DE RIESGO';
   return '<div class="mpl-block">'+
-    '<div class="mpl-hd-title">MAPA DE RIESGO</div>'+
+    '<div class="mpl-hd-title">'+_hdTitle+'</div>'+
     '<div class="mpl-hd-sub">'+fld('local','')+'</div>'+
     '<table class="mpl-meta">'+
       '<tr><td class="k">Fecha</td><td>'+fld('fecha','')+'</td></tr>'+
@@ -230,6 +231,8 @@ async function _capturePlan(scaleFactor){
 
   /* 1. Ocultar controles UI (incluida la barra de arrastre de la leyenda) */
   document.querySelectorAll('.del,.mkr-size,.arr-del,.arr-resize,.leg-resize,.afp-toggle,#arr-float-panel,#mkr-float-panel,.mpl-drag').forEach(function(d){d.style.display='none';});
+  /* Quitar el recuadro punteado de selección para que no salga en el PNG/PDF. */
+  document.querySelectorAll('.marker.mkr-sel').forEach(function(m){m.classList.remove('mkr-sel');});
 
   /* 2. Filtrar visibilidad por MODO y PLAN */
   document.querySelectorAll('.marker').forEach(function(m){
