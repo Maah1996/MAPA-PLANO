@@ -107,7 +107,7 @@ function _mplHeaderHTML(opt){
     if(ed)return '<span class="mpl-ed" contenteditable="true" data-k="'+k+'">'+v+'</span>';
     return '<span>'+v+'</span>';
   }
-  var _hdTitle=(typeof _appMode!=='undefined'&&_appMode==='evacuacion')?'PLANO DE EVACUACIÓN':'MAPA DE RIESGO';
+  var _hdTitle=(typeof _appMode!=='undefined'&&_appMode==='evacuacion')?'PLANO DE EVACUACIÓN':'MAPA DE RIESGOS';
   return '<div class="mpl-block">'+
     '<div class="mpl-hd-title">'+_hdTitle+'</div>'+
     '<div class="mpl-hd-sub">'+fld('local','')+'</div>'+

@@ -29,12 +29,15 @@ function _th(){return _cadDark?_cadTheme.dark:_cadTheme.light;}
 /* ── Helpers ── */
 function _snapV(v){return _cadSnapEnabled?Math.round(v/_cadGridPx)*_cadGridPx:v;}
 function _pxToM(px){return Math.round(Math.abs(px)/_cadGridPx*_cadScaleM*100)/100;}
-function _fmtM(m){return m%1===0?m+' m':m+' m';}
+function _fmtM(m){return m+' m';}
 function _distPts(x1,y1,x2,y2){return Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));}
 
 function _getPos(e){
   var r=_cCanvas.getBoundingClientRect();
-  var src=e.touches?e.touches[0]:e;
+  /* En 'touchend' e.touches viene vacío (el dedo ya se levantó); hay que usar
+     e.changedTouches. Con mouse no existe ninguno de los dos y cae en 'e'. */
+  var src=(e.touches&&e.touches.length)?e.touches[0]
+         :((e.changedTouches&&e.changedTouches.length)?e.changedTouches[0]:e);
   return{x:_snapV(src.clientX-r.left),y:_snapV(src.clientY-r.top),
          rx:src.clientX-r.left,ry:src.clientY-r.top};
 }
@@ -91,7 +94,6 @@ function _cadRender(){
 
   /* eje de escala — pequeña regla en esquina inferior derecha */
   var ru=_cadGridPx*5; /* 5 celdas */
-  var rlabel=_fmtM(_pxToM(ru)*5/5*5);
   var rx=w-ru-20,ry=h-20;
   ctx.strokeStyle=th.gridHi;ctx.lineWidth=1.5;
   ctx.beginPath();ctx.moveTo(rx,ry);ctx.lineTo(rx+ru,ry);ctx.stroke();
