@@ -325,12 +325,23 @@ async function _capturePlan(scaleFactor){
   return crop;
 }
 
+/* Nombre de archivo genérico: modo + nombre del plano/empresa abierto (si lo
+   tiene), en vez de un nombre fijo con el nombre de un cliente en particular.
+   Así sirve igual para cualquier empresa que use la plataforma. */
+function _exportFileName(){
+  var modeLabel=_appMode==='evacuacion'?'Plano_Evacuacion':'Mapa_Riesgos';
+  var planName=String(window._currentPlanName||'').trim();
+  if(planName&&planName.normalize)planName=planName.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  planName=planName.replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+  return planName?(modeLabel+'_'+planName):modeLabel;
+}
+
 document.getElementById('exportBtn').onclick=async function(){
   this.textContent='Generando...';this.disabled=true;
   try{
     var c=await _capturePlan(3);
     var a=document.createElement('a');
-    a.download='Plano_MONTICHEF.png';
+    a.download=_exportFileName()+'.png';
     a.href=c.toDataURL('image/png');a.click();
   }catch(err){alert('Error al exportar PNG: '+err);}
   this.textContent='Exportar PNG';this.disabled=false;
@@ -350,10 +361,10 @@ document.getElementById('pdfBtn').onclick=async function(){
       else{hMm=maxMm;wMm=maxMm*c.width/c.height;}
       var pdf=new JS({orientation:wMm>=hMm?'landscape':'portrait',unit:'mm',format:[wMm,hMm],compress:true});
       pdf.addImage(imgSrc,'PNG',0,0,wMm,hMm,undefined,'FAST');
-      pdf.save('Plano_MONTICHEF.pdf');
+      pdf.save(_exportFileName()+'.pdf');
     }else{
       /* Fallback si jsPDF no cargó: descargar el PNG */
-      var a=document.createElement('a');a.download='Plano_MONTICHEF.png';a.href=imgSrc;a.click();
+      var a=document.createElement('a');a.download=_exportFileName()+'.png';a.href=imgSrc;a.click();
       alert('No se pudo cargar el generador de PDF; se descargó el PNG en su lugar.');
     }
   }catch(err){alert('Error al exportar PDF: '+err);}

@@ -442,8 +442,8 @@ function _loadUserPlans(){
     var isAdmin=_currentUser&&_isAdminEmail(_currentUser.email)&&!_planOwnerUid;
     _allPlans=[];
     if(isAdmin){
-      _allPlans.push({_id:'montichef-1',name:'MONTICHEF — Nivel 1'});
-      _allPlans.push({_id:'montichef-2',name:'MONTICHEF — Nivel 2'});
+      _allPlans.push({_id:'montichef-1',name:'Demo — Nivel 1'});
+      _allPlans.push({_id:'montichef-2',name:'Demo — Nivel 2'});
     }
     list.forEach(function(p){_allPlans.push(p);});
     _renderPlansGrid(list);
@@ -459,7 +459,7 @@ function _renderPlansGrid(list){
   var isAdmin=_currentUser&&_isAdminEmail(_currentUser.email)&&!_planOwnerUid;
   if(isAdmin){
     _BUILTIN_PLAN_IMGS.forEach(function(img,i){
-      grid.appendChild(_planCard({_id:'montichef-'+(i+1),name:'MONTICHEF — Nivel '+(i+1),img:img,builtin:true},true));
+      grid.appendChild(_planCard({_id:'montichef-'+(i+1),name:'Demo — Nivel '+(i+1),img:img,builtin:true},true));
     });
   }
   if(!list.length){
@@ -492,7 +492,7 @@ function _openPlan(planId,_retriesLeft,_onDone){
   _plansCol().doc(planId).get().then(function(doc){
     var builtinIdx=-1;
     if(String(planId).indexOf('montichef-')===0)builtinIdx=parseInt(planId.split('-')[1])-1;
-    /* Los planos demo MONTICHEF son SOLO del admin: un usuario normal no debe
+    /* Los planos demo (montichef-N) son SOLO del admin: un usuario normal no debe
        poder abrirlos ni tenerlos en su cuenta. */
     var _isAdm=_currentUser&&_isAdminEmail(_currentUser.email)&&!_planOwnerUid;
     var _isBuiltinDoc=builtinIdx>=0||(doc.exists&&doc.data()&&doc.data().builtin);
@@ -511,7 +511,7 @@ function _openPlan(planId,_retriesLeft,_onDone){
     var data;
     if(doc.exists){data=doc.data();}
     else if(builtinIdx>=0&&_isAdm){
-      data={name:'MONTICHEF — Nivel '+(builtinIdx+1),builtin:true,builtinRef:builtinIdx,markers:[],zw:100,title:'MONTICHEF — Nivel '+(builtinIdx+1)};
+      data={name:'Demo — Nivel '+(builtinIdx+1),builtin:true,builtinRef:builtinIdx,markers:[],zw:100,title:'Demo — Nivel '+(builtinIdx+1)};
       _plansCol().doc(planId).set(Object.assign({createdAt:Date.now(),updatedAt:Date.now()},data));
     }else{_showToast('El plano ya no existe.',true);_showPlansOverlay(true);return;}
     var isB=!!(data.builtin)||builtinIdx>=0;
