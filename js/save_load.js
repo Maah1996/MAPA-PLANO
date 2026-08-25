@@ -571,7 +571,7 @@ function _restorePlanMarkers(arr){
         if(entry.itemId==='estoy_aqui')risk=_EA_ITEM;
         else if(entry.isEvac)EVAC_ITEMS.forEach(function(it){if(it.id===entry.itemId)risk=Object.assign({},it,{_isEvac:true});});
         else RISKS.forEach(function(it){if(it.id===entry.itemId)risk=it;});
-        if(risk){addMarker(risk,color,xPct,yPct);var last=document.getElementById('markerLayer').querySelector('.marker:not(.evac-arrow):last-child');if(last){if(entry.label){var lbl=last.querySelector('.mlabel');if(lbl)lbl.innerText=entry.label;}if(entry.markerScale)last.dataset.markerScale=entry.markerScale;if(entry.markerRot)last.dataset.markerRot=entry.markerRot;}}
+        if(risk){var last=addMarker(risk,color,xPct,yPct);if(last){if(entry.label){var lbl=last.querySelector('.mlabel');if(lbl)lbl.innerText=entry.label;}if(entry.markerScale)last.dataset.markerScale=entry.markerScale;if(entry.markerRot)last.dataset.markerRot=entry.markerRot;}}
       }
     }catch(err){console.warn('restore marker',err);}
   });
@@ -776,7 +776,7 @@ setTimeout(function(){
   var ml=document.getElementById('markerLayer');
   if(ml&&window.MutationObserver){
     var obs=new MutationObserver(function(){_schedulePlanSave();});
-    obs.observe(ml,{childList:true,subtree:true,attributes:true,attributeFilter:['style','data-angle','data-wpct','data-hpct','data-marker-scale']});
+    obs.observe(ml,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['style','data-angle','data-wpct','data-hpct','data-marker-scale']});
   }
 },0);
 window.addEventListener('beforeunload',function(){if(_planLoaded)_savePlanNow();});

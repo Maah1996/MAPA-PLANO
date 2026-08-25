@@ -259,7 +259,7 @@ function addMarker(risk,color,xPct,yPct){
   /* Un ícono nuevo adopta el tamaño actual de su MISMO GRUPO (riesgo o
      extintor/simbología; ver botones −/+), así no rompe la uniformidad. */
   var _grpEv=(risk._isEvac?'1':'0'),_refM=null;
-  document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(mm){if(!_refM&&mm.dataset.itemIsEvac===_grpEv)_refM=mm;});
+  document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(mm){if(!_refM&&mm.dataset.itemIsEvac===_grpEv&&(mm.dataset.mode||'riesgos')===_appMode&&String(mm.dataset.plan||1)===String(_currentPlan))_refM=mm;});
   m.dataset.markerScale=_refM?(_refM.dataset.markerScale||'1'):'1';
   var svgH=risk._isEvac?iconSVGEvac(risk,40):(risk._isSpecial?iconSVGEstoyAqui(40):iconSVG(risk.g,color,40));
   m.innerHTML=svgH+'<div class="mlabel" contenteditable="true" spellcheck="false" title="Clic para escribir etiqueta"></div>'
@@ -271,7 +271,7 @@ function addMarker(risk,color,xPct,yPct){
     +'<button class="mkr-sz" data-a="rr" title="Girar a la derecha">↻</button>'
     +'</div><div class="del" title="Eliminar">×</div>';
   m.addEventListener('mousedown',function(e){if(e.target.classList.contains('del')||e.target.classList.contains('mlabel')||e.target.classList.contains('mkr-sz'))return;e.preventDefault();var pos=_toLocalPct(e.clientX,e.clientY);m._dragOffX=pos.x-parseFloat(m.style.left);m._dragOffY=pos.y-parseFloat(m.style.top);movingMarker=m;window.addEventListener('mousemove',onMove);window.addEventListener('mouseup',onUp);});
-  m.querySelector('.del').addEventListener('click',function(e){e.stopPropagation();m.remove();_hideMkrPanel();_renderLegendSummary();});
+  m.querySelector('.del').addEventListener('click',function(e){e.stopPropagation();m.remove();_renderLegendSummary();});
   /* Barra de opciones del ícono (agrandar/achicar/girar) pegada al ícono, que
      aparece al PASAR EL MOUSE o al TOCAR/CLIC (clase .mkr-sel). No depende del
      panel flotante ni solo de :hover, así funciona también en pantalla táctil. */
@@ -288,8 +288,9 @@ function addMarker(risk,color,xPct,yPct){
            Al cambiar el tamaño solo se afectan los del mismo grupo. */
         var s=Math.max(0.3,Math.min(3,parseFloat(m.dataset.markerScale||1)+(a==='add'?0.1:-0.1))).toFixed(2);
         var grp=(m.dataset.itemIsEvac==='1');
+        var grpMode=m.dataset.mode||'riesgos',grpPlan=String(m.dataset.plan||1);
         document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(mm){
-          if((mm.dataset.itemIsEvac==='1')===grp){mm.dataset.markerScale=s;var nn=mm.querySelector('.mkr-num');if(nn)nn.textContent=parseFloat(s).toFixed(1)+'×';}
+          if((mm.dataset.itemIsEvac==='1')===grp&&(mm.dataset.mode||'riesgos')===grpMode&&String(mm.dataset.plan||1)===grpPlan){mm.dataset.markerScale=s;var nn=mm.querySelector('.mkr-num');if(nn)nn.textContent=parseFloat(s).toFixed(1)+'×';}
         });
       }else{
         /* GIRO = INDIVIDUAL: solo rota este ícono. */
@@ -308,115 +309,8 @@ function addMarker(risk,color,xPct,yPct){
   /* Deseleccionar (ocultar la barra) al tocar/hacer clic fuera de un ícono. */
   if(!window.__mkrSelInit){window.__mkrSelInit=1;document.addEventListener('mousedown',function(e){if(e.target.closest&&e.target.closest('.marker'))return;document.querySelectorAll('.marker.mkr-sel').forEach(function(mm){mm.classList.remove('mkr-sel');});});}
   _renderLegendSummary();
+  return m;
 }
-
-/* ── Marker Float Panel ── */
-function _initMkrPanel(){
-  if(document.getElementById('mkr-float-panel'))return;
-  var p=document.createElement('div');
-  p.id='mkr-float-panel';
-  p.innerHTML=
-    '<button class="afp-toggle" title="Editar ícono">✦ Ícono <span class="afp-chev">▾</span></button>'
-    +'<div class="afp-body" style="display:none">'
-    +'<div class="afp-section"><span class="afp-lbl">Tamaño</span>'
-    +'<button class="afp-btn afp-pm mkp-minus">−</button>'
-    +'<span class="afp-num mkp-num" style="min-width:36px;text-align:center">1.0×</span>'
-    +'<button class="afp-btn afp-pm mkp-plus">+</button></div>'
-    +'<div class="afp-div"></div>'
-    +'<div class="afp-section" style="gap:4px">'
-    +'<button class="afp-btn afp-btn-rot mkp-rot" data-d="-15">↺</button>'
-    +'<span class="afp-num mkp-rot-num" style="min-width:38px;text-align:center">0°</span>'
-    +'<button class="afp-btn afp-btn-rot mkp-rot" data-d="15">↻</button>'
-    +'<button class="afp-btn afp-btn-rot mkp-rot180">⇄</button>'
-    +'</div>'
-    +'<div class="afp-div"></div>'
-    +'<div class="afp-section"><button class="afp-btn mkp-reset">Reset</button></div>'
-    +'<div class="afp-div"></div>'
-    +'<div class="afp-section" style="gap:5px">'
-    +'<button class="afp-btn mkp-copy">Copiar</button>'
-    +'<button class="afp-btn mkp-paste" style="display:none">Pegar</button>'
-    +'</div>'
-    +'<div class="afp-div"></div>'
-    +'<div class="afp-section"><button class="afp-btn afp-del mkp-del">✕ Eliminar</button></div>'
-    +'</div>';
-  document.body.appendChild(p);
-
-  /* Toggle colapsar/expandir */
-  var body=p.querySelector('.afp-body'),chev=p.querySelector('.afp-chev');
-  p.querySelector('.afp-toggle').addEventListener('mousedown',function(e){e.stopPropagation();});
-  p.querySelector('.afp-toggle').addEventListener('click',function(){
-    var open=body.style.display!=='none';
-    body.style.display=open?'none':'flex';
-    chev.textContent=open?'▾':'▴';
-    if(!open){var r2=p.getBoundingClientRect();if(r2.right>window.innerWidth-10)p.style.left=Math.max(10,window.innerWidth-r2.width-10)+'px';}
-  });
-
-  var _m=null;
-  function _upd(sc){if(!_m)return;sc=Math.max(0.3,Math.min(3,sc));_m.dataset.markerScale=sc.toFixed(2);p.querySelector('.mkp-num').textContent=sc.toFixed(1)+'×';_scaleMarkers();}
-  function _updRot(delta){if(!_m)return;var r=(parseFloat(_m.dataset.markerRot||0)+delta+360)%360;_m.dataset.markerRot=r;p.querySelector('.mkp-rot-num').textContent=r+'°';_scaleMarkers();}
-  p._set=function(mkr){_m=mkr;if(!mkr)return;var sc=parseFloat(mkr.dataset.markerScale||1);p.querySelector('.mkp-num').textContent=sc.toFixed(1)+'×';var r=parseFloat(mkr.dataset.markerRot||0);p.querySelector('.mkp-rot-num').textContent=r+'°';};
-
-  function _sp(el){el.addEventListener('mousedown',function(e){e.stopPropagation();});}
-  _sp(p.querySelector('.mkp-minus'));
-  p.querySelector('.mkp-minus').addEventListener('click',function(){if(!_m)return;_upd(parseFloat(_m.dataset.markerScale||1)-0.1);});
-  _sp(p.querySelector('.mkp-plus'));
-  p.querySelector('.mkp-plus').addEventListener('click',function(){if(!_m)return;_upd(parseFloat(_m.dataset.markerScale||1)+0.1);});
-  /* Rotación */
-  p.querySelectorAll('.mkp-rot').forEach(function(btn){
-    _sp(btn);
-    btn.addEventListener('click',function(){_updRot(parseInt(this.dataset.d));});
-  });
-  _sp(p.querySelector('.mkp-rot180'));
-  p.querySelector('.mkp-rot180').addEventListener('click',function(){_updRot(180);});
-
-  _sp(p.querySelector('.mkp-reset'));
-  p.querySelector('.mkp-reset').addEventListener('click',function(){_upd(1);if(_m){_m.dataset.markerRot=0;p.querySelector('.mkp-rot-num').textContent='0°';_scaleMarkers();}});
-
-  /* Copiar */
-  _sp(p.querySelector('.mkp-copy'));
-  p.querySelector('.mkp-copy').addEventListener('click',function(){
-    if(!_m)return;
-    window._markerClipboard={itemId:_m.dataset.itemId,itemColor:_m.dataset.itemColor,isEvac:_m.dataset.itemIsEvac==='1',markerScale:parseFloat(_m.dataset.markerScale||1),left:parseFloat(_m.style.left),top:parseFloat(_m.style.top)};
-    p.querySelector('.mkp-paste').style.display='';
-  });
-  /* Pegar */
-  _sp(p.querySelector('.mkp-paste'));
-  p.querySelector('.mkp-paste').addEventListener('click',function(){
-    var cb=window._markerClipboard;if(!cb)return;
-    var risk=null;
-    if(cb.isEvac){EVAC_ITEMS.forEach(function(it){if(it.id===cb.itemId)risk=Object.assign({},it,{_isEvac:true});});}
-    else{RISKS.forEach(function(it){if(it.id===cb.itemId)risk=it;});}
-    if(!risk)return;
-    var xPct=Math.min(95,(cb.left||42)+3),yPct=Math.min(95,(cb.top||42)+3);
-    addMarker(risk,cb.itemColor,xPct,yPct);
-    var last=document.getElementById('markerLayer').querySelector('.marker:not(.evac-arrow):last-child');
-    if(last){last.dataset.markerScale=cb.markerScale;_scaleMarkers();}
-    window._markerClipboard.left=xPct;window._markerClipboard.top=yPct;
-  });
-
-  _sp(p.querySelector('.mkp-del'));
-  p.querySelector('.mkp-del').addEventListener('click',function(){if(!_m)return;_m.remove();_hideMkrPanel();_renderLegendSummary();});
-  /* Click fuera: ocultar completamente */
-  document.addEventListener('mousedown',function(e){
-    if(p.contains(e.target))return;
-    _hideMkrPanel();
-  });
-}
-function _showMkrPanel(m){
-  _initMkrPanel();
-  var p=document.getElementById('mkr-float-panel');
-  p._set(m);
-  /* expandir directamente */
-  var body=p.querySelector('.afp-body'),chev=p.querySelector('.afp-chev');
-  if(body)body.style.display='flex';
-  if(chev)chev.textContent='▴';
-  p.style.display='flex';
-  var r=m.getBoundingClientRect(),pH=p.offsetHeight||50,pW=p.offsetWidth||260;
-  var top=Math.max(10,r.top-pH-30);
-  var left=Math.max(10,Math.min(r.left+(r.width/2)-(pW/2),window.innerWidth-pW-10));
-  p.style.top=top+'px';p.style.left=left+'px';
-}
-function _hideMkrPanel(){var p=document.getElementById('mkr-float-panel');if(p){p.style.display='none';if(p._set)p._set(null);}}
 
 /* ── Zoom / Pan ── */
 function _activeImg(){return document.getElementById('planImg');}

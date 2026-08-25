@@ -263,9 +263,22 @@ function _rasterizeEvacItem(item){
     im.src=item.img;
   });
 }
+/* Si un ícono de evacuación ya se colocó en el plano ANTES de que termine su
+   rasterización (arriba), su <img> quedó con el SVG original incrustado para
+   siempre (nunca se vuelve a escribir el innerHTML del marcador). Sin esto,
+   ese ícono en particular podía salir en blanco/recortado en cualquier
+   exportación PNG/PDF futura, aunque el resto de la app ya tuviera el PNG
+   listo — exactamente el problema que la rasterización intenta evitar. */
+function _refreshEvacMarkerImgs(item){
+  if(!item||!item.id||!item._png)return;
+  document.querySelectorAll('.marker[data-item-is-evac="1"][data-item-id="'+item.id+'"] img').forEach(function(img){
+    img.src=item._png;
+  });
+}
 (function _rasterizeAllEvac(){
   if(typeof EVAC_ITEMS==='undefined')return;
   EVAC_ITEMS.forEach(function(it){_rasterizeEvacItem(it).then(function(){
+    _refreshEvacMarkerImgs(it);
     /* re-render de la leyenda cuando terminen, para que use el PNG */
     if(typeof _renderLegendSummary==='function')try{_renderLegendSummary();}catch(e){}
   });});

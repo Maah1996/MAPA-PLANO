@@ -1,35 +1,3 @@
-/* ── Leyenda profesional para exportación ──────────────────────────────────
-   Genera un bloque de leyenda de alto estándar (cabecera con espacio de logo,
-   inventario de riesgos/elementos agrupado, clasificación de niveles explicada
-   y pie con firmas) a partir de los marcadores del plano actual. Se compone
-   DEBAJO del plano en la misma hoja al exportar PNG/PDF. */
-function _legendCollect(){
-  var isR=_appMode==='riesgos';
-  var curr=[].slice.call(document.querySelectorAll('.marker:not(.evac-arrow)')).filter(function(m){
-    return (m.dataset.mode||'riesgos')===_appMode && String(m.dataset.plan||1)===String(_currentPlan);
-  });
-  if(isR){
-    var byColor={},eaCnt=0;
-    curr.forEach(function(m){
-      var id=m.dataset.itemId||'',c=m.dataset.itemColor||'';
-      if(id==='estoy_aqui'){eaCnt++;return;}
-      if(!byColor[c])byColor[c]={};
-      byColor[c][id]=(byColor[c][id]||0)+1;
-    });
-    return {isR:true,byColor:byColor,eaCnt:eaCnt};
-  }else{
-    var items={},order=[],eaCnt=0;
-    curr.forEach(function(m){
-      var id=m.dataset.itemId||'';
-      if(id==='estoy_aqui'){eaCnt++;return;}
-      if(items[id]===undefined){items[id]=0;order.push(id);}
-      items[id]++;
-    });
-    var arrows=[].slice.call(document.querySelectorAll('.evac-arrow')).filter(function(m){return String(m.dataset.plan||1)===String(_currentPlan);}).length;
-    return {isR:false,items:items,order:order,eaCnt:eaCnt,arrows:arrows};
-  }
-}
-
 /* ── Leyenda estilo "ficha" (según foto de referencia) ──────────────────────
    Tarjeta vertical con: caja de título + metadatos (Fecha/Versión/Elaborado
    por), bloque LEYENDA RIESGOS, bloque SIMBOLOGÍA y bloque ZONA DE SEGURIDAD.
