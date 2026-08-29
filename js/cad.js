@@ -13,6 +13,7 @@ var _cadShapes=[],_cadUndoStack=[];
 var _cadDrawing=false,_cadStart=null,_cadMouse=null;
 var _cCanvas=null,_cCtx=null;
 var _lastEP=null; /* último extremo al que se imantó el cursor (para la marca visual) */
+var _WIN_H_M=2.2; /* alto estándar de ventanas/ventanales (m); el usuario regula el ancho */
 
 /* ── Paletas de color oscuro/claro ── */
 var _cadTheme={
@@ -177,7 +178,7 @@ function _cadRender(){
   if(_cadDrawing&&_cadStart&&_cadMouse){
     var _pv=_cadMakeShape(_cadStart,_segEnd(_cadMouse));
     var _last=_cadShapes[_cadShapes.length-1];
-    if(_last&&_sameStyle(_last,_pv)&&_isCollinearContinuation(_last,_pv.x1,_pv.y1,_pv.x2,_pv.y2)){
+    if(_cadTool==='wall'&&_last&&_sameStyle(_last,_pv)&&_isCollinearContinuation(_last,_pv.x1,_pv.y1,_pv.x2,_pv.y2)){
       _pv.x1=_last.x1;_pv.y1=_last.y1;   /* previsualiza el tramo COMPLETO unido, con una sola medida */
     }
     _cadDrawShape(ctx,_pv,true);
@@ -252,7 +253,8 @@ function _cadDrawShape(ctx,s,preview){
       var mx=(s.x1+s.x2)/2,my=(s.y1+s.y2)/2;
       ctx.beginPath();ctx.moveTo(mx+nx,my+ny);ctx.lineTo(mx-nx,my-ny);ctx.stroke();
     }
-    _cadLblLine(ctx,s,th);
+    /* cota: ANCHO (lo regula el usuario) × ALTO estándar */
+    _cadLblLine(ctx,s,th,_pxToM(len)+' × '+_WIN_H_M+' m');
 
   }else if(s.type==='door'){
     var ddx=s.x2-s.x1,ddy=s.y2-s.y1;
@@ -275,8 +277,8 @@ function _cadDrawShape(ctx,s,preview){
   ctx.restore();
 }
 
-/* ── Etiqueta medida para línea ── */
-function _cadLblLine(ctx,s,th){
+/* ── Etiqueta medida para línea (txt opcional para sobreescribir la cota) ── */
+function _cadLblLine(ctx,s,th,txt){
   var dx=s.x2-s.x1,dy=s.y2-s.y1;
   var len=Math.sqrt(dx*dx+dy*dy);
   if(len<8)return;
@@ -292,7 +294,7 @@ function _cadLblLine(ctx,s,th){
   /* sombra para legibilidad */
   ctx.shadowColor=_cadDark?'#111827':'#f0f4f8';
   ctx.shadowBlur=3;
-  ctx.fillText(_fmtM(m),0,-7);
+  ctx.fillText(txt||_fmtM(m),0,-7);
   ctx.restore();
 }
 
@@ -323,9 +325,9 @@ function _cadOnDown(e){
   if(_cadTool==='erase'){_cadErase(p);return;}
   if(_cadTool==='text'){_cadInsertText(p);return;}
   if(_cadTool==='room'){_cadDrawing=true;_cadStart=p;_cadMouse=p;_cadRender();return;}
-  /* Pared / Ventana / Puerta = polilínea: cada clic fija un punto y el
-     siguiente segmento arranca desde ahí, así se "continúa" la línea sin
-     borrar. Esc / clic derecho / cambiar de herramienta corta la cadena. */
+  /* Dos clics = dos puntos de un tramo. La PARED encadena (el siguiente tramo
+     sale del final del anterior); VENTANA y PUERTA se colocan de a una (la
+     cadena se corta al terminar cada una). Esc / clic derecho también cortan. */
   if(!_cadStart){_cadStart={x:p.x,y:p.y};_cadDrawing=true;_cadMouse=p;_cadRender();return;}
   var end=_segEnd(p);
   var ddx=end.x-_cadStart.x,ddy=end.y-_cadStart.y;
@@ -333,14 +335,18 @@ function _cadOnDown(e){
   _cadUndoStack.push(JSON.stringify(_cadShapes));
   var ns=_cadMakeShape(_cadStart,end);
   var last=_cadShapes[_cadShapes.length-1];
-  if(last&&_sameStyle(last,ns)&&_isCollinearContinuation(last,ns.x1,ns.y1,ns.x2,ns.y2)){
-    last.x2=ns.x2;last.y2=ns.y2;   /* alargar el mismo tramo → una sola medida */
+  if(_cadTool==='wall'&&last&&_sameStyle(last,ns)&&_isCollinearContinuation(last,ns.x1,ns.y1,ns.x2,ns.y2)){
+    last.x2=ns.x2;last.y2=ns.y2;   /* pared recta continua → un solo tramo, una sola medida */
   }else{
     _cadShapes.push(ns);
   }
-  _cadStart={x:end.x,y:end.y};
-  _cadMouse=p;
-  _cadRender();
+  if(_cadTool==='wall'){
+    _cadStart={x:end.x,y:end.y};   /* la pared sigue encadenando */
+    _cadMouse=p;
+    _cadRender();
+  }else{
+    _endChain();                   /* ventana / puerta: una y listo */
+  }
 }
 
 function _cadOnMove(e){
@@ -360,11 +366,17 @@ function _cadOnMove(e){
     }else{
       var pe=_segEnd(p);
       var segLen=Math.sqrt((pe.x-_cadStart.x)*(pe.x-_cadStart.x)+(pe.y-_cadStart.y)*(pe.y-_cadStart.y));
-      var mLast=_cadShapes[_cadShapes.length-1];
-      var mNs=_cadMakeShape(_cadStart,pe);
-      if(mLast&&_sameStyle(mLast,mNs)&&_isCollinearContinuation(mLast,mNs.x1,mNs.y1,mNs.x2,mNs.y2)){
-        var mll=Math.sqrt((mLast.x2-mLast.x1)*(mLast.x2-mLast.x1)+(mLast.y2-mLast.y1)*(mLast.y2-mLast.y1));
-        di.textContent=_fmtM(_pxToM(mll+segLen));   /* total del tramo unido */
+      if(_cadTool==='window'){
+        di.textContent=_pxToM(segLen)+' × '+_WIN_H_M+' m';   /* ancho × alto estándar */
+      }else if(_cadTool==='wall'){
+        var mLast=_cadShapes[_cadShapes.length-1];
+        var mNs=_cadMakeShape(_cadStart,pe);
+        if(mLast&&_sameStyle(mLast,mNs)&&_isCollinearContinuation(mLast,mNs.x1,mNs.y1,mNs.x2,mNs.y2)){
+          var mll=Math.sqrt((mLast.x2-mLast.x1)*(mLast.x2-mLast.x1)+(mLast.y2-mLast.y1)*(mLast.y2-mLast.y1));
+          di.textContent=_fmtM(_pxToM(mll+segLen));   /* total del tramo unido */
+        }else{
+          di.textContent=_fmtM(_pxToM(segLen));
+        }
       }else{
         di.textContent=_fmtM(_pxToM(segLen));
       }
