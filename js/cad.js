@@ -19,15 +19,12 @@ var _WALL_H_M=2.5; /* alto estándar de muro para la vista de frentes (m) */
 var _cadSel=null;  /* figura seleccionada con la herramienta Mover */
 var _cadDrag=null; /* sesión de arrastre: {mode:'move'|'p1'|'p2', sx, sy, orig} */
 var _cadPlanId=null; /* id del plano que se está editando (null = plano nuevo) */
-var _cadBgImg=null;  /* imagen del dibujo anterior (planos CAD viejos sin cadShapes), como calco de fondo */
 var _cadEraseHover=null; /* figura resaltada bajo el cursor con la herramienta Borrar */
 var _cadDelHit=null;     /* zona del botón ✕ de la figura seleccionada: {x,y,r} */
 var _cadAutoT=null,_cadDirty=false; /* autoguardado del dibujo CAD */
 var _cadRedoStack=[]; /* para Rehacer */
 /* Guarda el estado actual para Deshacer (y descarta lo que hubiera para Rehacer). */
 function _cadPushUndo(){_cadUndoStack.push(JSON.stringify(_cadShapes));if(_cadUndoStack.length>120)_cadUndoStack.shift();_cadRedoStack.length=0;}
-function _cadBgClearBtn(){var b=document.getElementById('cad-bg-clear');if(b)b.style.display=_cadBgImg?'':'none';}
-function _cadClearBg(){_cadBgImg=null;_cadBgClearBtn();_cadRender();}
 
 /* ── Autoguardado del dibujo CAD ──
    Cada cambio (dibujar / mover / borrar / deshacer) programa un guardado.
@@ -211,7 +208,7 @@ function _cadSelDimText(){
 function _cadOpenEditor(){
   _cadOpen=true;
   _cadShapes=[];_cadUndoStack=[];_cadRedoStack=[];_cadDrawing=false;_cadStart=null;_cadMouse=null;
-  _cadSel=null;_cadDrag=null;_cadPlanId=null;_cadBgImg=null;_cadBgClearBtn();
+  _cadSel=null;_cadDrag=null;_cadPlanId=null;
   _cadDirty=false;clearTimeout(_cadAutoT);_cadSaveMark('');
   var nm=document.getElementById('cad-plan-name');if(nm)nm.value='';
   document.getElementById('cad-overlay').style.display='flex';
@@ -231,7 +228,7 @@ function _cadEditPlan(planId){
     _cadOpen=true;
     _cadShapes=(d.cadShapes&&d.cadShapes.length)?JSON.parse(JSON.stringify(d.cadShapes)):[];
     _cadUndoStack=[];_cadRedoStack=[];_cadDrawing=false;_cadStart=null;_cadMouse=null;_cadSel=null;_cadDrag=null;
-    _cadPlanId=planId;_cadBgImg=null;_cadDirty=false;clearTimeout(_cadAutoT);_cadSaveMark('');
+    _cadPlanId=planId;_cadDirty=false;clearTimeout(_cadAutoT);_cadSaveMark('');
     var nm=document.getElementById('cad-plan-name');if(nm)nm.value=d.name||'Plano CAD';
     document.getElementById('cad-overlay').style.display='flex';
     _showPlansOverlay(false);
@@ -241,16 +238,8 @@ function _cadEditPlan(planId){
     _cadSelectTool(_cadShapes.length?'select':'wall');
     _cadApplyTheme();
     setTimeout(function(){_cadResize();_cadRender();},40);
-    _cadBgClearBtn();
     if(!_cadShapes.length){
-      if(d.img){
-        var im=new Image();
-        im.onload=function(){_cadBgImg=im;_cadBgClearBtn();_cadRender();};
-        im.src=d.img;
-        _showToast('Plano de una versión anterior: dibuja las paredes/ventanas/puertas encima (la guía tenue es solo referencia). Se guarda solo.',false);
-      }else{
-        _showToast('Empieza a dibujar. Se guarda solo.',false);
-      }
+      _showToast('Este plano se dibujó en una versión anterior y no tiene un dibujo editable. Vuelve a dibujar las paredes/ventanas/puertas aquí — se guarda solo mientras dibujas.',false);
     }
   }).catch(function(e){_showToast('Error al abrir: '+(e.message||e),true);});
 }
@@ -261,7 +250,7 @@ function _cadCloseEditor(){
   _cadFlushSave();          /* guarda cualquier cambio pendiente antes de salir */
   _cadOpen=false;
   _cadDrawing=false;
-  _cadPlanId=null;_cadBgImg=null;_cadBgClearBtn();
+  _cadPlanId=null;
   _cadDirty=false;clearTimeout(_cadAutoT);_cadSaveMark('');
   _cadElevClose();
   document.getElementById('cad-overlay').style.display='none';
@@ -309,20 +298,6 @@ function _cadRender(){
   ctx.beginPath();ctx.moveTo(rx+ru,ry-5);ctx.lineTo(rx+ru,ry+5);ctx.stroke();
   ctx.font='10px Segoe UI,sans-serif';ctx.fillStyle=th.gridHi;ctx.textAlign='center';
   ctx.fillText(_fmtM(_pxToM(ru)),rx+ru/2,ry-8);ctx.textAlign='left';
-
-  /* guía tenue: dibujo de una versión anterior (plano sin figuras editables).
-     Es solo una referencia de fondo para calcar encima; no molesta. */
-  if(_cadBgImg&&_cadBgImg.width){
-    var _iw=_cadBgImg.width,_ih=_cadBgImg.height;
-    var _sc=Math.min(1,(w-20)/_iw,(h-40)/_ih);
-    var _dw=_iw*_sc,_dh=_ih*_sc,_dx=10,_dy=10;
-    ctx.save();
-    ctx.globalAlpha=0.2;ctx.drawImage(_cadBgImg,_dx,_dy,_dw,_dh);ctx.globalAlpha=1;
-    ctx.fillStyle=_cadDark?'rgba(226,232,240,.4)':'rgba(30,41,59,.45)';
-    ctx.font='11px Segoe UI,sans-serif';ctx.textAlign='left';ctx.textBaseline='alphabetic';
-    ctx.fillText('guía tenue (dibujo anterior) · dibuja encima · «Ocultar guía» para quitarla',_dx+4,_dy+_dh+15);
-    ctx.restore();
-  }
 
   /* figuras guardadas */
   _cadShapes.forEach(function(s){_cadDrawShape(ctx,s,false);});
@@ -744,7 +719,7 @@ function _cadSavePlan(){
   var nameEl=document.getElementById('cad-plan-name');
   var name=(nameEl?nameEl.value.trim():'')||'Plano CAD';
   /* Exportar siempre en modo CLARO (fondo blanco) para que sea legible como fondo de plano */
-  _cadDrawing=false;_cadMouse=null;_cadStart=null;_cadSel=null;_cadBgImg=null;_cadBgClearBtn();
+  _cadDrawing=false;_cadMouse=null;_cadStart=null;_cadSel=null;
   var wasDark=_cadDark;
   _cadDark=false;
   _cadRender();
@@ -991,10 +966,6 @@ function _cadInit(){
   if(elevClose)elevClose.addEventListener('click',_cadElevClose);
   var elevExt=document.getElementById('cad-elev-ext');
   if(elevExt)elevExt.addEventListener('change',_cadElevRender);
-
-  /* quitar la imagen de referencia (calco) */
-  var bgClr=document.getElementById('cad-bg-clear');
-  if(bgClr)bgClr.addEventListener('click',_cadClearBg);
 
   /* canvas */
   _cCanvas=document.getElementById('cad-canvas');
