@@ -472,29 +472,13 @@ function _renderPlansGrid(list){
 function _planCard(p,builtin){
   var card=document.createElement('div');card.className='plan-card';
   var thumb=p.img?('<img src="'+p.img+'" alt="">'):'<div class="plan-card-noimg">Sin imagen</div>';
-  /* Dos formas de retomar el plano:
-     · "Mapa / Evacuación" → editor de íconos de riesgo y evacuación.
-     · "Seguir dibujo"     → vuelve al editor CAD (paredes/ventanas/puertas),
-                              solo para planos dibujados ahí (p.cad). */
-  var openRow='<div class="plan-card-open">'
-    +'<button class="pc-open pc-map" type="button" title="Ubicar íconos de riesgo o elementos de evacuación sobre el plano">🗺 Mapa / Evacuación</button>'
-    +((!builtin&&p.cad)?'<button class="pc-open primary pc-cad" type="button" title="Volver al editor de dibujo para seguir con paredes, ventanas y puertas">📐 Seguir dibujo</button>':'')
-    +'</div>';
   card.innerHTML='<div class="plan-card-thumb">'+thumb+'</div>'
     +'<div class="plan-card-foot"><span class="plan-card-name" title="Abrir">'+_escHtml(p.name||'Plano')+'</span>'
     +'<div class="plan-card-acts">'
     +(builtin?'<span class="plan-tag">demo</span>':'<button class="pc-btn pc-ren" title="Renombrar">✎</button><button class="pc-btn pc-del" title="Eliminar">🗑</button>')
-    +'</div></div>'
-    +openRow;
+    +'</div></div>';
   card.querySelector('.plan-card-thumb').addEventListener('click',function(){_openPlan(p._id);});
   card.querySelector('.plan-card-name').addEventListener('click',function(){_openPlan(p._id);});
-  card.querySelector('.pc-map').addEventListener('click',function(e){e.stopPropagation();_openPlan(p._id);});
-  var cadB=card.querySelector('.pc-cad');
-  if(cadB)cadB.addEventListener('click',function(e){
-    e.stopPropagation();
-    if(typeof window._editCadPlan==='function')window._editCadPlan(p._id);
-    else _showToast('No se pudo abrir el editor de dibujo.',true);
-  });
   if(!builtin){
     card.querySelector('.pc-ren').addEventListener('click',function(e){e.stopPropagation();_renamePlan(p._id,p.name);});
     card.querySelector('.pc-del').addEventListener('click',function(e){e.stopPropagation();_deletePlan(p._id,p.name);});
