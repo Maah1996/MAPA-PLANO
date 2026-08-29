@@ -14,6 +14,8 @@ var _cadDrawing=false,_cadStart=null,_cadMouse=null;
 var _cCanvas=null,_cCtx=null;
 var _lastEP=null; /* último extremo al que se imantó el cursor (para la marca visual) */
 var _WIN_H_M=2.2; /* alto estándar de ventanas/ventanales (m); el usuario regula el ancho */
+var _DOOR_H_M=2.1; /* alto estándar de puertas (m) */
+var _WALL_H_M=2.5; /* alto estándar de muro para la vista de frentes (m) */
 var _cadSel=null;  /* figura seleccionada con la herramienta Mover */
 var _cadDrag=null; /* sesión de arrastre: {mode:'move'|'p1'|'p2', sx, sy, orig} */
 var _WIN_COL='#ffffff'; /* las ventanas siempre blancas */
@@ -161,6 +163,7 @@ function _cadOpenEditor(){
 function _cadCloseEditor(){
   _cadOpen=false;
   _cadDrawing=false;
+  _cadElevClose();
   document.getElementById('cad-overlay').style.display='none';
   _showPlansOverlay(true);
   _loadUserPlans();
@@ -583,6 +586,121 @@ function _cadSavePlan(){
   }).catch(function(e){_showToast('Error al guardar: '+e.message,true);});
 }
 
+/* ══════════════════════════════════════════════════════════
+   VISTA DE FRENTES (ALZADOS) — la cara de cada pared vista de
+   frente, con sus ventanas y puertas a su posición y altura real.
+   Todo 2D, derivado de _cadShapes. No modifica el plano.
+══════════════════════════════════════════════════════════ */
+function _round2(n){return Math.round(n*100)/100;}
+function _projT(ax,ay,bx,by,px,py){
+  var dx=bx-ax,dy=by-ay,l2=dx*dx+dy*dy;
+  if(l2===0)return 0;
+  return ((px-ax)*dx+(py-ay)*dy)/l2;
+}
+/* Asocia cada ventana/puerta a la pared sobre la que se apoya y calcula su
+   distancia desde el inicio de la pared (off) y su ancho (w), en metros. */
+function _cadOpeningsByWall(walls){
+  var res=walls.map(function(){return [];});res._orphans=0;
+  _cadShapes.forEach(function(s){
+    if(s.type!=='window'&&s.type!=='door')return;
+    var best=-1,bestD=1e9;
+    walls.forEach(function(w,wi){
+      var d1=_distSeg(s.x1,s.y1,w.x1,w.y1,w.x2,w.y2);
+      var d2=_distSeg(s.x2,s.y2,w.x1,w.y1,w.x2,w.y2);
+      if(d1<22&&d2<22&&(d1+d2)<bestD){bestD=d1+d2;best=wi;}
+    });
+    if(best<0){res._orphans++;return;}
+    var w=walls[best];
+    var wlen=Math.sqrt((w.x2-w.x1)*(w.x2-w.x1)+(w.y2-w.y1)*(w.y2-w.y1));
+    var t1=Math.max(0,Math.min(1,_projT(w.x1,w.y1,w.x2,w.y2,s.x1,s.y1)));
+    var t2=Math.max(0,Math.min(1,_projT(w.x1,w.y1,w.x2,w.y2,s.x2,s.y2)));
+    var ta=Math.min(t1,t2),tb=Math.max(t1,t2);
+    res[best].push({type:s.type,dbl:s.dbl,off:_pxToM(ta*wlen),w:_pxToM((tb-ta)*wlen)});
+  });
+  return res;
+}
+function _cadElevRender(){
+  var cv=document.getElementById('cad-elev-canvas');if(!cv)return;
+  var ctx=cv.getContext('2d');
+  var ext=!!(document.getElementById('cad-elev-ext')||{}).checked;
+  var walls=_cadShapes.filter(function(s){return s.type==='wall';});
+  var PXM=44,padL=54,padTop=14,rowGap=54,lblH=26;
+  var wallH=_WALL_H_M*PXM,rowH=lblH+wallH+rowGap;
+
+  if(!walls.length){
+    cv.width=560;cv.height=110;
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.fillStyle='#334155';ctx.font='14px Segoe UI,sans-serif';ctx.textAlign='left';
+    ctx.fillText('Dibuja al menos una pared para ver sus frentes.',22,58);
+    return;
+  }
+  var lensM=walls.map(function(w){return _pxToM(Math.sqrt((w.x2-w.x1)*(w.x2-w.x1)+(w.y2-w.y1)*(w.y2-w.y1)));});
+  var maxLen=Math.max.apply(null,lensM);
+  cv.width=Math.ceil(padL+maxLen*PXM+46);
+  cv.height=Math.ceil(padTop+walls.length*rowH+16);
+  ctx.fillStyle='#ffffff';ctx.fillRect(0,0,cv.width,cv.height);
+  var ops=_cadOpeningsByWall(walls);
+
+  walls.forEach(function(w,i){
+    var lenM=lensM[i];
+    var top=padTop+i*rowH+lblH,floor=top+wallH;
+    /* etiqueta */
+    ctx.fillStyle='#0f172a';ctx.font='bold 13px Segoe UI,sans-serif';ctx.textAlign='left';
+    ctx.fillText('Pared '+(i+1)+'  —  '+lenM+' m'+(ext?'   ·   cara exterior':'   ·   cara interior'),padL,top-9);
+    /* muro */
+    ctx.fillStyle='#eef2f7';ctx.strokeStyle='#1e293b';ctx.lineWidth=2;
+    ctx.fillRect(padL,top,lenM*PXM,wallH);ctx.strokeRect(padL,top,lenM*PXM,wallH);
+    /* piso */
+    ctx.strokeStyle='#0f172a';ctx.lineWidth=3;
+    ctx.beginPath();ctx.moveTo(padL-8,floor);ctx.lineTo(padL+lenM*PXM+8,floor);ctx.stroke();
+    /* cota de alto del muro */
+    ctx.strokeStyle='#94a3b8';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(padL-12,top);ctx.lineTo(padL-12,floor);ctx.stroke();
+    ctx.save();ctx.translate(padL-20,(top+floor)/2);ctx.rotate(-Math.PI/2);
+    ctx.fillStyle='#64748b';ctx.font='11px Segoe UI,sans-serif';ctx.textAlign='center';
+    ctx.fillText(_WALL_H_M+' m',0,0);ctx.restore();
+
+    ops[i].forEach(function(o){
+      var off=ext?(lenM-o.off-o.w):o.off;
+      var x=padL+off*PXM,ww=o.w*PXM;
+      if(o.type==='window'){
+        var head=_WALL_H_M-0.15,sill=Math.max(0.05,head-_WIN_H_M);
+        var ry=floor-head*PXM,rh=(head-sill)*PXM;
+        ctx.fillStyle='#ffffff';ctx.strokeStyle='#1e293b';ctx.lineWidth=2;
+        ctx.fillRect(x,ry,ww,rh);ctx.strokeRect(x,ry,ww,rh);
+        ctx.strokeStyle='#64748b';ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(x,ry+rh/2);ctx.lineTo(x+ww,ry+rh/2);ctx.stroke();
+        if(o.dbl){ctx.beginPath();ctx.moveTo(x+ww/2,ry);ctx.lineTo(x+ww/2,ry+rh);ctx.stroke();}
+        ctx.fillStyle='#0f172a';ctx.font='11px Segoe UI,sans-serif';ctx.textAlign='center';
+        ctx.fillText(o.w+' × '+_WIN_H_M+' m',x+ww/2,floor+16);
+        ctx.fillStyle='#64748b';
+        ctx.fillText('antepecho '+_round2(sill)+' m',x+ww/2,floor+30);
+      }else{
+        var dh=Math.min(_DOOR_H_M,_WALL_H_M-0.05);
+        var ry2=floor-dh*PXM,rh2=dh*PXM;
+        ctx.fillStyle='#e7c9a9';ctx.strokeStyle='#6b3f1d';ctx.lineWidth=2;
+        ctx.fillRect(x,ry2,ww,rh2);ctx.strokeRect(x,ry2,ww,rh2);
+        ctx.strokeStyle='#6b3f1d';ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(x+ww*0.14,ry2+6);ctx.lineTo(x+ww*0.14,floor-4);ctx.stroke();
+        ctx.fillStyle='#0f172a';ctx.font='11px Segoe UI,sans-serif';ctx.textAlign='center';
+        ctx.fillText(o.w+' × '+_DOOR_H_M+' m',x+ww/2,floor+16);
+      }
+    });
+  });
+  if(ops._orphans){
+    ctx.fillStyle='#b45309';ctx.font='12px Segoe UI,sans-serif';ctx.textAlign='left';
+    ctx.fillText(ops._orphans+' ventana(s)/puerta(s) no quedaron sobre ninguna pared y no se muestran aquí.',padL,cv.height-8);
+  }
+}
+function _cadElevOpen(){
+  var ov=document.getElementById('cad-elev-overlay');if(!ov)return;
+  ov.style.display='flex';
+  _cadElevRender();
+}
+function _cadElevClose(){
+  var ov=document.getElementById('cad-elev-overlay');if(ov)ov.style.display='none';
+}
+
 /* ── Aplicar tema visual ── */
 function _cadApplyTheme(){
   var th=_th();
@@ -673,6 +791,14 @@ function _cadInit(){
   var saveBtn=document.getElementById('cad-save-plan');
   if(saveBtn)saveBtn.addEventListener('click',_cadSavePlan);
 
+  /* ver frentes (alzados) */
+  var elevBtn=document.getElementById('cad-elev-btn');
+  if(elevBtn)elevBtn.addEventListener('click',_cadElevOpen);
+  var elevClose=document.getElementById('cad-elev-close');
+  if(elevClose)elevClose.addEventListener('click',_cadElevClose);
+  var elevExt=document.getElementById('cad-elev-ext');
+  if(elevExt)elevExt.addEventListener('change',_cadElevRender);
+
   /* canvas */
   _cCanvas=document.getElementById('cad-canvas');
   _cCtx=_cCanvas?_cCanvas.getContext('2d'):null;
@@ -694,7 +820,11 @@ function _cadInit(){
   /* atajos de teclado */
   document.addEventListener('keydown',function(e){
     if(!_cadOpen)return;
-    if(e.key==='Escape'){_endChain();if(_cadTool==='select'){_cadSel=null;_cadRender();}return;}
+    if(e.key==='Escape'){
+      var eo=document.getElementById('cad-elev-overlay');
+      if(eo&&eo.style.display!=='none'){_cadElevClose();return;}
+      _endChain();if(_cadTool==='select'){_cadSel=null;_cadRender();}return;
+    }
     if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();_cadUndo();return;}
     if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
     /* Borrar la figura seleccionada con la herramienta Mover */
