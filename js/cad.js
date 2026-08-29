@@ -22,8 +22,61 @@ var _cadPlanId=null; /* id del plano que se está editando (null = plano nuevo) 
 var _cadBgImg=null;  /* imagen del dibujo anterior (planos CAD viejos sin cadShapes), como calco de fondo */
 var _cadEraseHover=null; /* figura resaltada bajo el cursor con la herramienta Borrar */
 var _cadDelHit=null;     /* zona del botón ✕ de la figura seleccionada: {x,y,r} */
+var _cadAutoT=null,_cadDirty=false; /* autoguardado del dibujo CAD */
+var _cadRedoStack=[]; /* para Rehacer */
+/* Guarda el estado actual para Deshacer (y descarta lo que hubiera para Rehacer). */
+function _cadPushUndo(){_cadUndoStack.push(JSON.stringify(_cadShapes));if(_cadUndoStack.length>120)_cadUndoStack.shift();_cadRedoStack.length=0;}
 function _cadBgClearBtn(){var b=document.getElementById('cad-bg-clear');if(b)b.style.display=_cadBgImg?'':'none';}
 function _cadClearBg(){_cadBgImg=null;_cadBgClearBtn();_cadRender();}
+
+/* ── Autoguardado del dibujo CAD ──
+   Cada cambio (dibujar / mover / borrar / deshacer) programa un guardado.
+   Si el plano ya existe, actualiza sus figuras; si es nuevo, lo crea a los
+   pocos segundos del primer trazo. Así el trabajo no se pierde y el plano
+   queda SIEMPRE editable la próxima vez. */
+function _cadSaveMark(txt,isErr){
+  var el=document.getElementById('cad-save-mark');
+  if(!el)return;
+  el.textContent=txt||'';
+  el.style.color=isErr?'#fca5a5':'#86efac';
+  clearTimeout(el._t);
+  if(txt)el._t=setTimeout(function(){el.textContent='';},2600);
+}
+function _cadAutoSave(){
+  if(!_cadPlanId||_cadPlanId==='__nuevo__'||!_cadShapes.length)return;
+  _plansCol().doc(_cadPlanId).set({
+    cadShapes:JSON.parse(JSON.stringify(_cadShapes)),
+    cad:true,updatedAt:Date.now()
+  },{merge:true}).then(function(){
+    _cadDirty=false;_cadSaveMark('✓ guardado automáticamente');
+  }).catch(function(e){_cadSaveMark('✗ no se pudo autoguardar',true);});
+}
+function _cadAutoCreate(){
+  if(_cadPlanId||!_cadShapes.length)return;
+  _cadPlanId='__nuevo__'; /* candado para no crear dos veces */
+  var name=((document.getElementById('cad-plan-name')||{}).value||'').trim()||'Plano CAD';
+  _plansCol().add({
+    name:name,cad:true,builtin:false,title:name,
+    cadShapes:JSON.parse(JSON.stringify(_cadShapes)),
+    markers:[],zw:100,createdAt:Date.now(),updatedAt:Date.now()
+  }).then(function(ref){_cadPlanId=ref.id;_cadDirty=false;_cadSaveMark('✓ guardado automáticamente');})
+   .catch(function(e){_cadPlanId=null;_cadSaveMark('✗ no se pudo guardar',true);});
+}
+function _cadTouch(){
+  _cadDirty=true;
+  clearTimeout(_cadAutoT);
+  _cadAutoT=setTimeout(function(){
+    if(!_cadPlanId)_cadAutoCreate();
+    else _cadAutoSave();
+  },1400);
+}
+function _cadFlushSave(){
+  clearTimeout(_cadAutoT);
+  if(_cadDirty&&_cadShapes.length){
+    if(!_cadPlanId)_cadAutoCreate();
+    else _cadAutoSave();
+  }
+}
 var _WIN_COL='#ffffff'; /* las ventanas siempre blancas */
 var _DOOR_COL='#8b5a2b'; /* las puertas siempre café */
 
@@ -138,7 +191,7 @@ function _cadPickShape(px,py){
 /* Empieza una sesión de arrastre sobre la figura seleccionada. */
 function _cadBeginDrag(mode,p){
   if(!_cadSel)return;
-  _cadUndoStack.push(JSON.stringify(_cadShapes));
+  _cadPushUndo();
   _cadDrag={mode:mode,sx:p.x,sy:p.y,orig:JSON.parse(JSON.stringify(_cadSel))};
 }
 /* Cota en vivo mientras se mueve/edita la figura seleccionada. */
@@ -157,11 +210,13 @@ function _cadSelDimText(){
 /* ── Abrir editor ── */
 function _cadOpenEditor(){
   _cadOpen=true;
-  _cadShapes=[];_cadUndoStack=[];_cadDrawing=false;_cadStart=null;_cadMouse=null;
+  _cadShapes=[];_cadUndoStack=[];_cadRedoStack=[];_cadDrawing=false;_cadStart=null;_cadMouse=null;
   _cadSel=null;_cadDrag=null;_cadPlanId=null;_cadBgImg=null;_cadBgClearBtn();
+  _cadDirty=false;clearTimeout(_cadAutoT);_cadSaveMark('');
   var nm=document.getElementById('cad-plan-name');if(nm)nm.value='';
   document.getElementById('cad-overlay').style.display='flex';
   _showPlansOverlay(false);
+  _cadSelectTool('wall');
   _cadApplyTheme();
   setTimeout(_cadResize,40);
 }
@@ -175,26 +230,26 @@ function _cadEditPlan(planId){
     var d=doc.data();
     _cadOpen=true;
     _cadShapes=(d.cadShapes&&d.cadShapes.length)?JSON.parse(JSON.stringify(d.cadShapes)):[];
-    _cadUndoStack=[];_cadDrawing=false;_cadStart=null;_cadMouse=null;_cadSel=null;_cadDrag=null;
-    _cadPlanId=planId;_cadBgImg=null;
+    _cadUndoStack=[];_cadRedoStack=[];_cadDrawing=false;_cadStart=null;_cadMouse=null;_cadSel=null;_cadDrag=null;
+    _cadPlanId=planId;_cadBgImg=null;_cadDirty=false;clearTimeout(_cadAutoT);_cadSaveMark('');
     var nm=document.getElementById('cad-plan-name');if(nm)nm.value=d.name||'Plano CAD';
     document.getElementById('cad-overlay').style.display='flex';
     _showPlansOverlay(false);
     _cadElevClose();
+    /* Proactivo: si el plano ya tiene figuras, arranca en MOVER (listo para
+       seleccionar y borrar/arreglar); si está vacío, arranca en PARED. */
+    _cadSelectTool(_cadShapes.length?'select':'wall');
     _cadApplyTheme();
     setTimeout(function(){_cadResize();_cadRender();},40);
-    /* Planos CAD guardados ANTES de que se guardaran las figuras vectoriales:
-       no hay cadShapes, pero sí la imagen del dibujo → se muestra de calco de
-       fondo para volver a trazarla encima. */
     _cadBgClearBtn();
     if(!_cadShapes.length){
       if(d.img){
         var im=new Image();
         im.onload=function(){_cadBgImg=im;_cadBgClearBtn();_cadRender();};
         im.src=d.img;
-        _showToast('OJO: este plano se dibujó en una versión anterior. Lo que ves es una IMAGEN de referencia — no se puede editar ni borrar. Vuelve a trazar las paredes/ventanas/puertas encima y guarda; desde ahí sí será editable. (o usa "Quitar referencia" para empezar limpio)',false);
+        _showToast('Plano de una versión anterior: dibuja las paredes/ventanas/puertas encima (la guía tenue es solo referencia). Se guarda solo.',false);
       }else{
-        _showToast('Este plano no tiene un dibujo guardado; puedes empezar a dibujar.',false);
+        _showToast('Empieza a dibujar. Se guarda solo.',false);
       }
     }
   }).catch(function(e){_showToast('Error al abrir: '+(e.message||e),true);});
@@ -203,9 +258,11 @@ window._editCadPlan=_cadEditPlan;
 
 /* ── Cerrar editor ── */
 function _cadCloseEditor(){
+  _cadFlushSave();          /* guarda cualquier cambio pendiente antes de salir */
   _cadOpen=false;
   _cadDrawing=false;
   _cadPlanId=null;_cadBgImg=null;_cadBgClearBtn();
+  _cadDirty=false;clearTimeout(_cadAutoT);_cadSaveMark('');
   _cadElevClose();
   document.getElementById('cad-overlay').style.display='none';
   _showPlansOverlay(true);
@@ -253,31 +310,17 @@ function _cadRender(){
   ctx.font='10px Segoe UI,sans-serif';ctx.fillStyle=th.gridHi;ctx.textAlign='center';
   ctx.fillText(_fmtM(_pxToM(ru)),rx+ru/2,ry-8);ctx.textAlign='left';
 
-  /* calco de fondo: dibujo de una versión anterior (plano CAD sin cadShapes).
-     Es una IMAGEN de referencia: no se puede seleccionar, mover ni borrar.
-     Hay que volver a trazar las paredes/ventanas/puertas encima. */
+  /* guía tenue: dibujo de una versión anterior (plano sin figuras editables).
+     Es solo una referencia de fondo para calcar encima; no molesta. */
   if(_cadBgImg&&_cadBgImg.width){
     var _iw=_cadBgImg.width,_ih=_cadBgImg.height;
-    var _sc=Math.min(1,(w-20)/_iw,(h-64)/_ih);
-    var _dw=_iw*_sc,_dh=_ih*_sc,_dx=10,_dy=34;
+    var _sc=Math.min(1,(w-20)/_iw,(h-40)/_ih);
+    var _dw=_iw*_sc,_dh=_ih*_sc,_dx=10,_dy=10;
     ctx.save();
-    ctx.fillStyle='#ffffff';ctx.fillRect(_dx,_dy,_dw,_dh);
-    ctx.globalAlpha=0.45;ctx.drawImage(_cadBgImg,_dx,_dy,_dw,_dh);ctx.globalAlpha=1;
-    ctx.strokeStyle='rgba(240,168,41,.6)';ctx.setLineDash([6,4]);ctx.lineWidth=1.5;
-    ctx.strokeRect(_dx,_dy,_dw,_dh);ctx.setLineDash([]);
-    /* marca de agua diagonal */
-    ctx.save();
-    ctx.translate(_dx+_dw/2,_dy+_dh/2);ctx.rotate(-Math.atan2(_dh,_dw));
-    ctx.fillStyle='rgba(180,83,9,.22)';ctx.font='bold 34px Segoe UI,sans-serif';
-    ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText('REFERENCIA · NO EDITABLE',0,0);
-    ctx.restore();
-    ctx.restore();
-    /* franja fija arriba del lienzo */
-    ctx.save();
-    ctx.fillStyle='#f0a829';ctx.fillRect(0,0,w,26);
-    ctx.fillStyle='#1a1000';ctx.font='bold 12px Segoe UI,sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';
-    ctx.fillText('⚠  Imagen de referencia (dibujo de una versión anterior). No se puede editar ni borrar: vuelve a trazar las paredes/ventanas/puertas encima y guarda.',10,14);
+    ctx.globalAlpha=0.2;ctx.drawImage(_cadBgImg,_dx,_dy,_dw,_dh);ctx.globalAlpha=1;
+    ctx.fillStyle=_cadDark?'rgba(226,232,240,.4)':'rgba(30,41,59,.45)';
+    ctx.font='11px Segoe UI,sans-serif';ctx.textAlign='left';ctx.textBaseline='alphabetic';
+    ctx.fillText('guía tenue (dibujo anterior) · dibuja encima · «Ocultar guía» para quitarla',_dx+4,_dy+_dh+15);
     ctx.restore();
   }
 
@@ -523,7 +566,7 @@ function _cadOnDown(e){
   var end=_segEnd(p);
   var ddx=end.x-_cadStart.x,ddy=end.y-_cadStart.y;
   if(Math.sqrt(ddx*ddx+ddy*ddy)<3){_endChain();return;} /* clic en el mismo punto = terminar */
-  _cadUndoStack.push(JSON.stringify(_cadShapes));
+  _cadPushUndo();
   var ns=_cadMakeShape(_cadStart,end);
   var last=_cadShapes[_cadShapes.length-1];
   if(_cadTool==='wall'&&last&&_sameStyle(last,ns)&&_isCollinearContinuation(last,ns.x1,ns.y1,ns.x2,ns.y2)){
@@ -538,6 +581,7 @@ function _cadOnDown(e){
   }else{
     _endChain();                   /* ventana / puerta: una y listo */
   }
+  _cadTouch();
 }
 
 function _cadOnMove(e){
@@ -599,9 +643,11 @@ function _cadOnMove(e){
 function _cadOnUp(e){
   e.preventDefault();
   if(_cadTool==='select'){
+    var wasDragging=!!_cadDrag;
     _cadDrag=null;
     var dis=document.getElementById('cad-dim-info');if(dis)dis.style.display='none';
     _cadRender();
+    if(wasDragging)_cadTouch();   /* se movió/estiró una figura → autoguardar */
     return;
   }
   /* Pared/Ventana/Puerta se dibujan por clics (polilínea), no por arrastre:
@@ -613,11 +659,11 @@ function _cadOnUp(e){
   var s=_cadMakeShape(_cadStart,p);
   var dx=s.x2-s.x1,dy=s.y2-s.y1;
   if(Math.sqrt(dx*dx+dy*dy)<3){_cadStart=null;_cadRender();return;}
-  _cadUndoStack.push(JSON.stringify(_cadShapes));
+  _cadPushUndo();
   _cadShapes.push(s);_cadSel=s;
   _cadStart=null;
   var di=document.getElementById('cad-dim-info');if(di)di.style.display='none';
-  _cadRender();
+  _cadRender();_cadTouch();
 }
 
 /* ── Borrar una figura (usado por la herramienta Borrar, el botón ✕ de la
@@ -625,11 +671,11 @@ function _cadOnUp(e){
 function _cadDeleteShape(s){
   var ix=_cadShapes.indexOf(s);
   if(ix<0)return false;
-  _cadUndoStack.push(JSON.stringify(_cadShapes));
+  _cadPushUndo();
   _cadShapes.splice(ix,1);
   if(_cadSel===s)_cadSel=null;
   _cadDrag=null;_cadEraseHover=null;
-  _cadRender();
+  _cadRender();_cadTouch();
   return true;
 }
 /* ── Borrar la figura bajo el cursor (herramienta Borrar) ── */
@@ -658,28 +704,38 @@ function _distSeg(px,py,x1,y1,x2,y2){
 function _cadInsertText(p){
   var txt=prompt('Escribe el texto para el plano:','Habitación');
   if(!txt)return;
-  _cadUndoStack.push(JSON.stringify(_cadShapes));
+  _cadPushUndo();
   var _ts={type:'text',x1:p.x,y1:p.y,txt:txt,color:_cadStrokeColor,sz:14};
   _cadShapes.push(_ts);_cadSel=_ts;
-  _cadRender();
+  _cadRender();_cadTouch();
 }
 
-/* ── Deshacer ── */
+/* ── Deshacer / Rehacer ── */
 function _cadUndo(){
-  if(!_cadUndoStack.length)return;
+  if(!_cadUndoStack.length){_cadSaveMark('nada que deshacer',true);return;}
+  _cadRedoStack.push(JSON.stringify(_cadShapes));
   _cadShapes=JSON.parse(_cadUndoStack.pop());
   _cadDrawing=false;_cadStart=null;_cadSel=null;_cadDrag=null;
-  _cadRender();
+  _cadRender();_cadTouch();
+}
+function _cadRedo(){
+  if(!_cadRedoStack.length){_cadSaveMark('nada que rehacer',true);return;}
+  _cadUndoStack.push(JSON.stringify(_cadShapes));
+  _cadShapes=JSON.parse(_cadRedoStack.pop());
+  _cadDrawing=false;_cadStart=null;_cadSel=null;_cadDrag=null;
+  _cadRender();_cadTouch();
 }
 
 /* ── Limpiar todo ── */
 function _cadClear(){
   if(!_cadShapes.length)return;
   if(!confirm('¿Borrar todo el plano?'))return;
-  _cadUndoStack.push(JSON.stringify(_cadShapes));
+  _cadPushUndo();
   _cadShapes=[];
   _cadDrawing=false;_cadStart=null;_cadSel=null;_cadDrag=null;
   _cadRender();
+  /* "Limpiar todo" también se autoguarda si el plano ya existe */
+  if(_cadPlanId&&_cadPlanId!=='__nuevo__'){_cadDirty=true;clearTimeout(_cadAutoT);_plansCol().doc(_cadPlanId).set({cadShapes:[],updatedAt:Date.now()},{merge:true}).then(function(){_cadDirty=false;_cadSaveMark('✓ guardado automáticamente');}).catch(function(){_cadSaveMark('✗ no se pudo autoguardar',true);});}
 }
 
 /* ── Guardar plano ── */
@@ -702,17 +758,23 @@ function _cadSavePlan(){
     cadShapes:JSON.parse(JSON.stringify(_cadShapes)),
     updatedAt:Date.now()
   };
+  clearTimeout(_cadAutoT);
   var op;
-  if(_cadPlanId){
+  if(_cadPlanId&&_cadPlanId!=='__nuevo__'){
     op=_plansCol().doc(_cadPlanId).set(base,{merge:true});   /* actualiza el mismo plano */
   }else{
     base.markers=[];base.zw=100;base.createdAt=Date.now();
     op=_plansCol().add(base).then(function(ref){_cadPlanId=ref.id;});
   }
   op.then(function(){
+    _cadDirty=false;
     _showToast('Plano guardado: '+name);
     _cadCloseEditor();
-  }).catch(function(e){_showToast('Error al guardar: '+e.message,true);});
+  }).catch(function(e){
+    var msg=(e&&e.message)||e||'error desconocido';
+    _showToast('Error al guardar: '+msg,true);
+    alert('No se pudo guardar el plano:\n'+msg+'\n\nTu dibujo NO se ha perdido, sigue aquí. Revisa tu conexión e intenta "Guardar" de nuevo.');
+  });
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -908,9 +970,11 @@ function _cadInit(){
     var v=parseFloat(this.value);if(v>0)_cadScaleM=v;_cadRender();
   });
 
-  /* deshacer */
+  /* deshacer / rehacer */
   var undoBtn=document.getElementById('cad-undo');
   if(undoBtn)undoBtn.addEventListener('click',_cadUndo);
+  var redoBtn=document.getElementById('cad-redo');
+  if(redoBtn)redoBtn.addEventListener('click',_cadRedo);
 
   /* limpiar */
   var clearBtn=document.getElementById('cad-clear');
@@ -965,7 +1029,12 @@ function _cadInit(){
       if(eo&&eo.style.display!=='none'){_cadElevClose();return;}
       _endChain();if(_cadTool==='select'){_cadSel=null;_cadRender();}return;
     }
-    if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();_cadUndo();return;}
+    if((e.ctrlKey||e.metaKey)&&(e.key==='z'||e.key==='Z')){
+      e.preventDefault();
+      if(e.shiftKey)_cadRedo();else _cadUndo();
+      return;
+    }
+    if((e.ctrlKey||e.metaKey)&&(e.key==='y'||e.key==='Y')){e.preventDefault();_cadRedo();return;}
     if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
     /* Borrar la figura seleccionada con la herramienta Mover */
     if((e.key==='Delete'||e.key==='Backspace')&&_cadTool==='select'&&_cadSel){

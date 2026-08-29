@@ -170,14 +170,16 @@
     <label class="cad-lbl" id="cad-len-wrap" title="Largo exacto del próximo tramo (déjalo vacío para dibujar libre)">Largo <input type="text" id="cad-len-inp" inputmode="decimal" placeholder="—" style="width:52px;padding:2px 5px;border-radius:5px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:11px;font-family:inherit"> m</label>
     <label class="cad-lbl" id="cad-dbl-wrap" style="display:none" title="Ventanal / ventana de dos hojas"><input type="checkbox" id="cad-dbl" style="cursor:pointer"> Doble</label>
     <span class="cad-sep"></span>
-    <button id="cad-undo"  class="cad-sm-btn" type="button" title="Deshacer (Ctrl+Z)">↩</button>
-    <button id="cad-clear" class="cad-sm-btn" type="button" title="Limpiar todo">🗑</button>
+    <button id="cad-undo"  class="cad-sm-btn" type="button" title="Deshacer el último cambio (Ctrl+Z)" style="font-weight:700;background:#334155;color:#e2e8f0">↶ Deshacer</button>
+    <button id="cad-redo"  class="cad-sm-btn" type="button" title="Rehacer (Ctrl+Y)">↷ Rehacer</button>
+    <button id="cad-clear" class="cad-sm-btn" type="button" title="Borrar todo el plano">🗑 Limpiar</button>
     <span class="cad-sep"></span>
     <button id="cad-elev-btn" class="cad-sm-btn" type="button" title="Ver el frente de cada pared con sus ventanas y puertas">▤ Ver frentes</button>
-    <button id="cad-bg-clear" class="cad-sm-btn" type="button" style="display:none;border-color:rgba(248,113,113,.55);color:#fca5a5" title="Quitar la imagen de referencia y empezar con el lienzo limpio">✕ Quitar referencia</button>
+    <button id="cad-bg-clear" class="cad-sm-btn" type="button" style="display:none" title="Ocultar la guía tenue del dibujo anterior">Ocultar guía</button>
     <button id="cad-theme-btn" class="cad-sm-btn" type="button" style="margin-left:auto">☀</button>
     <span class="cad-sep"></span>
     <input type="text" id="cad-plan-name" placeholder="Nombre del plano" style="padding:5px 9px;border-radius:6px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;width:140px;font-family:inherit;outline:none">
+    <span id="cad-save-mark" style="font-size:11px;color:#86efac;min-width:12px;white-space:nowrap"></span>
     <button id="cad-save-plan" type="button" style="padding:5px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:#f0a829;color:#1a1000;font-family:inherit;white-space:nowrap">💾 Guardar</button>
   </div>
 
@@ -207,7 +209,7 @@
   <!-- Status bar inferior -->
   <div id="cad-statusbar" style="display:flex;align-items:center;gap:14px;padding:3px 12px;border-top:1px solid #1e293b;font-size:11px;flex-shrink:0;min-height:24px">
     <span id="cad-status">X: 0 m  Y: 0 m</span>
-    <span style="margin-left:auto;opacity:.4">Borrar una figura: herramienta Borrar (se pone roja al pasar el mouse) · o clic derecho sobre ella · o selecciónala con Mover y toca el botón rojo ✕ / Supr · M=Mover W=Pared R=Hab. V=Vent. D=Puerta T=Texto E=Borrar Ctrl+Z=Deshacer</span>
+    <span style="margin-left:auto;opacity:.45">Para borrar: clic derecho sobre la figura · o herramienta Borrar (se pone roja) · o Mover → clic en la figura → botón rojo ✕.  Deshacer: botón «↶ Deshacer» o Ctrl+Z.</span>
   </div>
 </div>
 
@@ -311,7 +313,7 @@
 <script src="js/evac_items.js?v=7"></script>
 <script src="js/evac_arrows.js?v=10"></script>
 <script src="js/save_load.js?v=22"></script>
-<script src="js/cad.js?v=16"></script>
+<script src="js/cad.js?v=18"></script>
 <script src="js/capture.js?v=23"></script>
 <script src="js/version_check.js?v=1"></script>
 </body>
