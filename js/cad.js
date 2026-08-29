@@ -22,6 +22,8 @@ var _cadPlanId=null; /* id del plano que se está editando (null = plano nuevo) 
 var _cadBgImg=null;  /* imagen del dibujo anterior (planos CAD viejos sin cadShapes), como calco de fondo */
 var _cadEraseHover=null; /* figura resaltada bajo el cursor con la herramienta Borrar */
 var _cadDelHit=null;     /* zona del botón ✕ de la figura seleccionada: {x,y,r} */
+function _cadBgClearBtn(){var b=document.getElementById('cad-bg-clear');if(b)b.style.display=_cadBgImg?'':'none';}
+function _cadClearBg(){_cadBgImg=null;_cadBgClearBtn();_cadRender();}
 var _WIN_COL='#ffffff'; /* las ventanas siempre blancas */
 var _DOOR_COL='#8b5a2b'; /* las puertas siempre café */
 
@@ -156,7 +158,7 @@ function _cadSelDimText(){
 function _cadOpenEditor(){
   _cadOpen=true;
   _cadShapes=[];_cadUndoStack=[];_cadDrawing=false;_cadStart=null;_cadMouse=null;
-  _cadSel=null;_cadDrag=null;_cadPlanId=null;_cadBgImg=null;
+  _cadSel=null;_cadDrag=null;_cadPlanId=null;_cadBgImg=null;_cadBgClearBtn();
   var nm=document.getElementById('cad-plan-name');if(nm)nm.value='';
   document.getElementById('cad-overlay').style.display='flex';
   _showPlansOverlay(false);
@@ -184,12 +186,13 @@ function _cadEditPlan(planId){
     /* Planos CAD guardados ANTES de que se guardaran las figuras vectoriales:
        no hay cadShapes, pero sí la imagen del dibujo → se muestra de calco de
        fondo para volver a trazarla encima. */
+    _cadBgClearBtn();
     if(!_cadShapes.length){
       if(d.img){
         var im=new Image();
-        im.onload=function(){_cadBgImg=im;_cadRender();};
+        im.onload=function(){_cadBgImg=im;_cadBgClearBtn();_cadRender();};
         im.src=d.img;
-        _showToast('Este dibujo es de una versión anterior: se muestra de fondo como calco. Vuelve a trazarlo encima y guarda.',false);
+        _showToast('OJO: este plano se dibujó en una versión anterior. Lo que ves es una IMAGEN de referencia — no se puede editar ni borrar. Vuelve a trazar las paredes/ventanas/puertas encima y guarda; desde ahí sí será editable. (o usa "Quitar referencia" para empezar limpio)',false);
       }else{
         _showToast('Este plano no tiene un dibujo guardado; puedes empezar a dibujar.',false);
       }
@@ -202,7 +205,7 @@ window._editCadPlan=_cadEditPlan;
 function _cadCloseEditor(){
   _cadOpen=false;
   _cadDrawing=false;
-  _cadPlanId=null;_cadBgImg=null;
+  _cadPlanId=null;_cadBgImg=null;_cadBgClearBtn();
   _cadElevClose();
   document.getElementById('cad-overlay').style.display='none';
   _showPlansOverlay(true);
@@ -250,18 +253,31 @@ function _cadRender(){
   ctx.font='10px Segoe UI,sans-serif';ctx.fillStyle=th.gridHi;ctx.textAlign='center';
   ctx.fillText(_fmtM(_pxToM(ru)),rx+ru/2,ry-8);ctx.textAlign='left';
 
-  /* calco de fondo: dibujo de una versión anterior (plano CAD sin cadShapes) */
+  /* calco de fondo: dibujo de una versión anterior (plano CAD sin cadShapes).
+     Es una IMAGEN de referencia: no se puede seleccionar, mover ni borrar.
+     Hay que volver a trazar las paredes/ventanas/puertas encima. */
   if(_cadBgImg&&_cadBgImg.width){
     var _iw=_cadBgImg.width,_ih=_cadBgImg.height;
-    var _sc=Math.min(1,(w-20)/_iw,(h-40)/_ih);
-    var _dw=_iw*_sc,_dh=_ih*_sc,_dx=10,_dy=10;
+    var _sc=Math.min(1,(w-20)/_iw,(h-64)/_ih);
+    var _dw=_iw*_sc,_dh=_ih*_sc,_dx=10,_dy=34;
     ctx.save();
     ctx.fillStyle='#ffffff';ctx.fillRect(_dx,_dy,_dw,_dh);
-    ctx.globalAlpha=0.85;ctx.drawImage(_cadBgImg,_dx,_dy,_dw,_dh);ctx.globalAlpha=1;
-    ctx.strokeStyle='rgba(240,168,41,.55)';ctx.setLineDash([6,4]);ctx.lineWidth=1;
+    ctx.globalAlpha=0.45;ctx.drawImage(_cadBgImg,_dx,_dy,_dw,_dh);ctx.globalAlpha=1;
+    ctx.strokeStyle='rgba(240,168,41,.6)';ctx.setLineDash([6,4]);ctx.lineWidth=1.5;
     ctx.strokeRect(_dx,_dy,_dw,_dh);ctx.setLineDash([]);
-    ctx.fillStyle='#b45309';ctx.font='12px Segoe UI,sans-serif';ctx.textAlign='left';
-    ctx.fillText('Dibujo anterior (referencia) — vuelve a trazarlo encima y guarda',_dx+6,_dy+_dh+16);
+    /* marca de agua diagonal */
+    ctx.save();
+    ctx.translate(_dx+_dw/2,_dy+_dh/2);ctx.rotate(-Math.atan2(_dh,_dw));
+    ctx.fillStyle='rgba(180,83,9,.22)';ctx.font='bold 34px Segoe UI,sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('REFERENCIA · NO EDITABLE',0,0);
+    ctx.restore();
+    ctx.restore();
+    /* franja fija arriba del lienzo */
+    ctx.save();
+    ctx.fillStyle='#f0a829';ctx.fillRect(0,0,w,26);
+    ctx.fillStyle='#1a1000';ctx.font='bold 12px Segoe UI,sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText('⚠  Imagen de referencia (dibujo de una versión anterior). No se puede editar ni borrar: vuelve a trazar las paredes/ventanas/puertas encima y guarda.',10,14);
     ctx.restore();
   }
 
@@ -672,7 +688,7 @@ function _cadSavePlan(){
   var nameEl=document.getElementById('cad-plan-name');
   var name=(nameEl?nameEl.value.trim():'')||'Plano CAD';
   /* Exportar siempre en modo CLARO (fondo blanco) para que sea legible como fondo de plano */
-  _cadDrawing=false;_cadMouse=null;_cadStart=null;_cadSel=null;_cadBgImg=null;
+  _cadDrawing=false;_cadMouse=null;_cadStart=null;_cadSel=null;_cadBgImg=null;_cadBgClearBtn();
   var wasDark=_cadDark;
   _cadDark=false;
   _cadRender();
@@ -911,6 +927,10 @@ function _cadInit(){
   if(elevClose)elevClose.addEventListener('click',_cadElevClose);
   var elevExt=document.getElementById('cad-elev-ext');
   if(elevExt)elevExt.addEventListener('change',_cadElevRender);
+
+  /* quitar la imagen de referencia (calco) */
+  var bgClr=document.getElementById('cad-bg-clear');
+  if(bgClr)bgClr.addEventListener('click',_cadClearBg);
 
   /* canvas */
   _cCanvas=document.getElementById('cad-canvas');
