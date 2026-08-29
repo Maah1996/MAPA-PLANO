@@ -91,6 +91,25 @@ function _endChain(){
   _cadRender();
 }
 
+/* ¿Dos figuras del mismo tipo y estilo? (para poder fusionarlas) */
+function _sameStyle(a,b){
+  return !!a&&!!b&&a.type===b.type&&a.color===b.color&&(a.lw||3)===(b.lw||3)&&(a.dbl?1:0)===(b.dbl?1:0);
+}
+/* ¿El tramo (sx,sy)->(ex,ey) es la MISMA recta y sentido que 'last', y parte
+   justo de su punto final? Entonces alargar 'last' en vez de crear otro tramo,
+   para que una línea recta continua quede con UNA sola medida, no dos. */
+function _isCollinearContinuation(last,sx,sy,ex,ey){
+  if(!last)return false;
+  if(Math.abs(last.x2-sx)>0.5||Math.abs(last.y2-sy)>0.5)return false;
+  var v1x=last.x2-last.x1,v1y=last.y2-last.y1;
+  var v2x=ex-sx,v2y=ey-sy;
+  var m1=Math.sqrt(v1x*v1x+v1y*v1y),m2=Math.sqrt(v2x*v2x+v2y*v2y);
+  if(m1<1||m2<1)return false;
+  var cross=Math.abs(v1x*v2y-v1y*v2x)/(m1*m2);   /* ~sin(ángulo entre ambos) */
+  var dot=(v1x*v2x+v1y*v2y)/(m1*m2);              /* ~cos(ángulo) */
+  return cross<0.05&&dot>0;                       /* misma recta, mismo sentido */
+}
+
 /* ── Abrir editor ── */
 function _cadOpenEditor(){
   _cadOpen=true;
@@ -156,7 +175,12 @@ function _cadRender(){
 
   /* preview mientras se dibuja */
   if(_cadDrawing&&_cadStart&&_cadMouse){
-    _cadDrawShape(ctx,_cadMakeShape(_cadStart,_segEnd(_cadMouse)),true);
+    var _pv=_cadMakeShape(_cadStart,_segEnd(_cadMouse));
+    var _last=_cadShapes[_cadShapes.length-1];
+    if(_last&&_sameStyle(_last,_pv)&&_isCollinearContinuation(_last,_pv.x1,_pv.y1,_pv.x2,_pv.y2)){
+      _pv.x1=_last.x1;_pv.y1=_last.y1;   /* previsualiza el tramo COMPLETO unido, con una sola medida */
+    }
+    _cadDrawShape(ctx,_pv,true);
   }
 
   /* cursor guía */
@@ -307,7 +331,13 @@ function _cadOnDown(e){
   var ddx=end.x-_cadStart.x,ddy=end.y-_cadStart.y;
   if(Math.sqrt(ddx*ddx+ddy*ddy)<3){_endChain();return;} /* clic en el mismo punto = terminar */
   _cadUndoStack.push(JSON.stringify(_cadShapes));
-  _cadShapes.push(_cadMakeShape(_cadStart,end));
+  var ns=_cadMakeShape(_cadStart,end);
+  var last=_cadShapes[_cadShapes.length-1];
+  if(last&&_sameStyle(last,ns)&&_isCollinearContinuation(last,ns.x1,ns.y1,ns.x2,ns.y2)){
+    last.x2=ns.x2;last.y2=ns.y2;   /* alargar el mismo tramo → una sola medida */
+  }else{
+    _cadShapes.push(ns);
+  }
   _cadStart={x:end.x,y:end.y};
   _cadMouse=p;
   _cadRender();
@@ -329,7 +359,15 @@ function _cadOnMove(e){
       di.textContent=_fmtM(wm)+' × '+_fmtM(hm)+'  =  '+Math.round(wm*hm*100)/100+' m²';
     }else{
       var pe=_segEnd(p);
-      di.textContent=_fmtM(_pxToM(Math.sqrt((pe.x-_cadStart.x)*(pe.x-_cadStart.x)+(pe.y-_cadStart.y)*(pe.y-_cadStart.y))));
+      var segLen=Math.sqrt((pe.x-_cadStart.x)*(pe.x-_cadStart.x)+(pe.y-_cadStart.y)*(pe.y-_cadStart.y));
+      var mLast=_cadShapes[_cadShapes.length-1];
+      var mNs=_cadMakeShape(_cadStart,pe);
+      if(mLast&&_sameStyle(mLast,mNs)&&_isCollinearContinuation(mLast,mNs.x1,mNs.y1,mNs.x2,mNs.y2)){
+        var mll=Math.sqrt((mLast.x2-mLast.x1)*(mLast.x2-mLast.x1)+(mLast.y2-mLast.y1)*(mLast.y2-mLast.y1));
+        di.textContent=_fmtM(_pxToM(mll+segLen));   /* total del tramo unido */
+      }else{
+        di.textContent=_fmtM(_pxToM(segLen));
+      }
     }
     di.style.display='';
   }else if(di){di.style.display='none';}
