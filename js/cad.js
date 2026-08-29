@@ -724,12 +724,12 @@ function _cadRedo(){
   _cadRender();_cadTouch();
 }
 
-/* ── Limpiar todo ── */
+/* ── Limpiar todo (figuras + el dibujo de fondo de un plano viejo) ── */
 function _cadClear(){
-  if(!_cadShapes.length)return;
-  if(!confirm('¿Borrar todo el plano?'))return;
+  if(!_cadShapes.length&&!_cadRefImg)return;
+  if(!confirm('¿Borrar todo el plano (incluido el dibujo de fondo)?'))return;
   _cadPushUndo();
-  _cadShapes=[];
+  _cadShapes=[];_cadRefImg=null;
   _cadDrawing=false;_cadStart=null;_cadSel=null;_cadDrag=null;
   _cadRender();
   /* "Limpiar todo" también se autoguarda si el plano ya existe */
