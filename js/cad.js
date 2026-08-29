@@ -12,6 +12,7 @@ var _cadStrokeColor='#1e40af',_cadLineW=3;
 var _cadShapes=[],_cadUndoStack=[];
 var _cadDrawing=false,_cadStart=null,_cadMouse=null;
 var _cCanvas=null,_cCtx=null;
+var _cadPlanId=null; /* id del plano que se está editando (null = plano nuevo) */
 
 /* ── Paletas de color oscuro/claro ── */
 var _cadTheme={
@@ -42,20 +43,43 @@ function _getPos(e){
          rx:src.clientX-r.left,ry:src.clientY-r.top};
 }
 
-/* ── Abrir editor ── */
+/* ── Abrir editor (plano NUEVO) ── */
 function _cadOpenEditor(){
   _cadOpen=true;
   _cadShapes=[];_cadUndoStack=[];_cadDrawing=false;_cadStart=null;_cadMouse=null;
+  _cadPlanId=null;
+  var nm=document.getElementById('cad-plan-name');if(nm)nm.value='';
   document.getElementById('cad-overlay').style.display='flex';
   _showPlansOverlay(false);
   _cadApplyTheme();
   setTimeout(_cadResize,40);
 }
 
+/* ── Abrir editor para SEGUIR EDITANDO un plano ya guardado ──
+   Carga sus figuras y, al guardar, actualiza ese mismo plano. */
+function _cadEditPlan(planId){
+  if(!planId||typeof _plansCol!=='function'){_showToast('No se pudo abrir el plano.',true);return;}
+  _plansCol().doc(planId).get().then(function(doc){
+    if(!doc.exists){_showToast('El plano ya no existe.',true);return;}
+    var d=doc.data();
+    _cadOpen=true;
+    _cadShapes=(d.cadShapes&&d.cadShapes.length)?JSON.parse(JSON.stringify(d.cadShapes)):[];
+    _cadUndoStack=[];_cadDrawing=false;_cadStart=null;_cadMouse=null;
+    _cadPlanId=planId;
+    var nm=document.getElementById('cad-plan-name');if(nm)nm.value=d.name||'Plano CAD';
+    document.getElementById('cad-overlay').style.display='flex';
+    _showPlansOverlay(false);
+    _cadApplyTheme();
+    setTimeout(function(){_cadResize();_cadRender();},40);
+    if(!_cadShapes.length)_showToast('Este plano no tiene un dibujo editable guardado; empieza a dibujar.',false);
+  }).catch(function(e){_showToast('Error al abrir: '+(e.message||e),true);});
+}
+
 /* ── Cerrar editor ── */
 function _cadCloseEditor(){
   _cadOpen=false;
   _cadDrawing=false;
+  _cadPlanId=null;
   document.getElementById('cad-overlay').style.display='none';
   _showPlansOverlay(true);
   _loadUserPlans();
@@ -340,14 +364,24 @@ function _cadSavePlan(){
   var dataUrl=_cCanvas.toDataURL('image/jpeg',0.92);
   _cadDark=wasDark;
   _cadRender();
-  _plansCol().add({
-    name:name,img:dataUrl,builtin:false,cad:true,
-    markers:[],zw:100,title:name,
-    createdAt:Date.now(),updatedAt:Date.now()
-  }).then(function(ref){
+  /* Se guardan también las figuras (cadShapes) para poder reabrir el plano
+     y seguir editándolo. */
+  var base={
+    name:name,img:dataUrl,builtin:false,cad:true,title:name,
+    cadShapes:JSON.parse(JSON.stringify(_cadShapes)),
+    updatedAt:Date.now()
+  };
+  var op;
+  if(_cadPlanId){
+    op=_plansCol().doc(_cadPlanId).set(base,{merge:true});   /* actualiza el mismo plano */
+  }else{
+    base.markers=[];base.zw=100;base.createdAt=Date.now();
+    op=_plansCol().add(base).then(function(ref){_cadPlanId=ref.id;});
+  }
+  op.then(function(){
     _showToast('Plano guardado: '+name);
     _cadCloseEditor();
-  }).catch(function(e){_showToast('Error al guardar: '+e.message,true);});
+  }).catch(function(e){_showToast('Error al guardar: '+(e.message||e),true);});
 }
 
 /* ── Aplicar tema visual ── */
@@ -462,6 +496,7 @@ function _cadInit(){
 
 /* Exponer apertura globalmente */
 window._openCadEditor=_cadOpenEditor;
+window._editCadPlan=_cadEditPlan;
 
 _cadInit();
 

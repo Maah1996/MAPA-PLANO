@@ -472,14 +472,19 @@ function _renderPlansGrid(list){
 function _planCard(p,builtin){
   var card=document.createElement('div');card.className='plan-card';
   var thumb=p.img?('<img src="'+p.img+'" alt="">'):'<div class="plan-card-noimg">Sin imagen</div>';
+  /* Los planos dibujados en el editor CAD (p.cad) traen un botón para volver a
+     ese editor y seguir editando el dibujo. */
+  var cadBtn=(!builtin&&p.cad)?'<button class="pc-btn pc-cad" title="Seguir editando el dibujo" style="width:auto;padding:0 9px;font-size:11px;white-space:nowrap">✏ Seguir editando</button>':'';
   card.innerHTML='<div class="plan-card-thumb">'+thumb+'</div>'
     +'<div class="plan-card-foot"><span class="plan-card-name" title="Abrir">'+_escHtml(p.name||'Plano')+'</span>'
     +'<div class="plan-card-acts">'
-    +(builtin?'<span class="plan-tag">demo</span>':'<button class="pc-btn pc-ren" title="Renombrar">✎</button><button class="pc-btn pc-del" title="Eliminar">🗑</button>')
+    +(builtin?'<span class="plan-tag">demo</span>':cadBtn+'<button class="pc-btn pc-ren" title="Renombrar">✎</button><button class="pc-btn pc-del" title="Eliminar">🗑</button>')
     +'</div></div>';
   card.querySelector('.plan-card-thumb').addEventListener('click',function(){_openPlan(p._id);});
   card.querySelector('.plan-card-name').addEventListener('click',function(){_openPlan(p._id);});
   if(!builtin){
+    var cb=card.querySelector('.pc-cad');
+    if(cb)cb.addEventListener('click',function(e){e.stopPropagation();if(typeof window._editCadPlan==='function')window._editCadPlan(p._id);});
     card.querySelector('.pc-ren').addEventListener('click',function(e){e.stopPropagation();_renamePlan(p._id,p.name);});
     card.querySelector('.pc-del').addEventListener('click',function(e){e.stopPropagation();_deletePlan(p._id,p.name);});
   }
