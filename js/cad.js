@@ -21,6 +21,10 @@ var _cadDrag=null; /* sesión de arrastre: {mode:'move'|'p1'|'p2', sx, sy, orig}
 var _cadPlanId=null; /* id del plano que se está editando (null = plano nuevo) */
 var _cadEraseHover=null; /* figura resaltada bajo el cursor con la herramienta Borrar */
 var _cadDelHit=null;     /* zona del botón ✕ de la figura seleccionada: {x,y,r} */
+var _cadRefImg=null;     /* miniatura de referencia (dibujo de un plano de versión anterior) */
+function _cadRefBtn(){var b=document.getElementById('cad-ref-hide');if(b)b.style.display=_cadRefImg?'':'none';}
+function _cadRefHide(){_cadRefImg=null;_cadRefBtn();_cadRender();}
+function _cadLegacyNote(show){var n=document.getElementById('cad-legacy-note');if(n)n.style.display=show?'flex':'none';}
 var _cadAutoT=null,_cadDirty=false; /* autoguardado del dibujo CAD */
 var _cadRedoStack=[]; /* para Rehacer */
 /* Guarda el estado actual para Deshacer (y descarta lo que hubiera para Rehacer). */
@@ -61,6 +65,7 @@ function _cadAutoCreate(){
 }
 function _cadTouch(){
   _cadDirty=true;
+  _cadLegacyNote(false); /* ya empezó a dibujar: el aviso deja de estorbar */
   clearTimeout(_cadAutoT);
   _cadAutoT=setTimeout(function(){
     if(!_cadPlanId)_cadAutoCreate();
@@ -209,6 +214,7 @@ function _cadOpenEditor(){
   _cadOpen=true;
   _cadShapes=[];_cadUndoStack=[];_cadRedoStack=[];_cadDrawing=false;_cadStart=null;_cadMouse=null;
   _cadSel=null;_cadDrag=null;_cadPlanId=null;
+  _cadRefImg=null;_cadRefBtn();_cadLegacyNote(false);
   _cadDirty=false;clearTimeout(_cadAutoT);_cadSaveMark('');
   var nm=document.getElementById('cad-plan-name');if(nm)nm.value='';
   document.getElementById('cad-overlay').style.display='flex';
@@ -229,6 +235,7 @@ function _cadEditPlan(planId){
     _cadShapes=(d.cadShapes&&d.cadShapes.length)?JSON.parse(JSON.stringify(d.cadShapes)):[];
     _cadUndoStack=[];_cadRedoStack=[];_cadDrawing=false;_cadStart=null;_cadMouse=null;_cadSel=null;_cadDrag=null;
     _cadPlanId=planId;_cadDirty=false;clearTimeout(_cadAutoT);_cadSaveMark('');
+    _cadRefImg=null;_cadRefBtn();_cadLegacyNote(false);
     var nm=document.getElementById('cad-plan-name');if(nm)nm.value=d.name||'Plano CAD';
     document.getElementById('cad-overlay').style.display='flex';
     _showPlansOverlay(false);
@@ -239,7 +246,15 @@ function _cadEditPlan(planId){
     _cadApplyTheme();
     setTimeout(function(){_cadResize();_cadRender();},40);
     if(!_cadShapes.length){
-      _showToast('Este plano se dibujó en una versión anterior y no tiene un dibujo editable. Vuelve a dibujar las paredes/ventanas/puertas aquí — se guarda solo mientras dibujas.',false);
+      /* Plano viejo: no hay figuras editables, solo la imagen. Se muestra
+         una MINIATURA de referencia en la esquina + un aviso claro. */
+      if(d.img){
+        var im=new Image();
+        im.onload=function(){_cadRefImg=im;_cadRefBtn();_cadRender();};
+        im.src=d.img;
+        _cadLegacyNote(true);
+      }
+      _showToast('Este plano es de una versión anterior: vuelve a trazarlo con las herramientas. Se guarda solo.',false);
     }
   }).catch(function(e){_showToast('Error al abrir: '+(e.message||e),true);});
 }
@@ -251,6 +266,7 @@ function _cadCloseEditor(){
   _cadOpen=false;
   _cadDrawing=false;
   _cadPlanId=null;
+  _cadRefImg=null;_cadRefBtn();_cadLegacyNote(false);
   _cadDirty=false;clearTimeout(_cadAutoT);_cadSaveMark('');
   _cadElevClose();
   document.getElementById('cad-overlay').style.display='none';
@@ -301,6 +317,21 @@ function _cadRender(){
 
   /* figuras guardadas */
   _cadShapes.forEach(function(s){_cadDrawShape(ctx,s,false);});
+
+  /* miniatura de referencia (plano de versión anterior): un recuadrito
+     pequeño y acotado en la esquina, NO cubre el espacio de trabajo. */
+  if(_cadRefImg&&_cadRefImg.width){
+    var _rw0=_cadRefImg.width,_rh0=_cadRefImg.height;
+    var _rsc=Math.min(300/_rw0,210/_rh0);
+    var _rw=Math.round(_rw0*_rsc),_rh=Math.round(_rh0*_rsc),_rx=14,_ry=14;
+    ctx.save();
+    ctx.fillStyle='#ffffff';ctx.fillRect(_rx,_ry,_rw,_rh);
+    ctx.globalAlpha=0.9;ctx.drawImage(_cadRefImg,_rx,_ry,_rw,_rh);ctx.globalAlpha=1;
+    ctx.strokeStyle='#f0a829';ctx.lineWidth=2;ctx.strokeRect(_rx-1,_ry-1,_rw+2,_rh+2);
+    ctx.fillStyle='#f0a829';ctx.font='bold 10px Segoe UI,sans-serif';ctx.textAlign='left';ctx.textBaseline='alphabetic';
+    ctx.fillText('REFERENCIA (dibujo anterior) · «Ocultar referencia»',_rx,_ry-4);
+    ctx.restore();
+  }
 
   /* herramienta Borrar: halo rojo sobre lo que está por borrarse */
   if(_cadTool==='erase'&&_cadEraseHover){
@@ -719,7 +750,7 @@ function _cadSavePlan(){
   var nameEl=document.getElementById('cad-plan-name');
   var name=(nameEl?nameEl.value.trim():'')||'Plano CAD';
   /* Exportar siempre en modo CLARO (fondo blanco) para que sea legible como fondo de plano */
-  _cadDrawing=false;_cadMouse=null;_cadStart=null;_cadSel=null;
+  _cadDrawing=false;_cadMouse=null;_cadStart=null;_cadSel=null;_cadRefImg=null;_cadRefBtn();
   var wasDark=_cadDark;
   _cadDark=false;
   _cadRender();
@@ -966,6 +997,12 @@ function _cadInit(){
   if(elevClose)elevClose.addEventListener('click',_cadElevClose);
   var elevExt=document.getElementById('cad-elev-ext');
   if(elevExt)elevExt.addEventListener('change',_cadElevRender);
+
+  /* referencia (plano de versión anterior) */
+  var refHide=document.getElementById('cad-ref-hide');
+  if(refHide)refHide.addEventListener('click',_cadRefHide);
+  var legacyOk=document.getElementById('cad-legacy-ok');
+  if(legacyOk)legacyOk.addEventListener('click',function(){_cadLegacyNote(false);});
 
   /* canvas */
   _cCanvas=document.getElementById('cad-canvas');
