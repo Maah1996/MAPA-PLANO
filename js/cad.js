@@ -19,6 +19,7 @@ var _WALL_H_M=2.5; /* alto estándar de muro para la vista de frentes (m) */
 var _cadSel=null;  /* figura seleccionada con la herramienta Mover */
 var _cadDrag=null; /* sesión de arrastre: {mode:'move'|'p1'|'p2', sx, sy, orig} */
 var _cadPlanId=null; /* id del plano que se está editando (null = plano nuevo) */
+var _cadBgImg=null;  /* imagen del dibujo anterior (planos CAD viejos sin cadShapes), como calco de fondo */
 var _WIN_COL='#ffffff'; /* las ventanas siempre blancas */
 var _DOOR_COL='#8b5a2b'; /* las puertas siempre café */
 
@@ -153,7 +154,7 @@ function _cadSelDimText(){
 function _cadOpenEditor(){
   _cadOpen=true;
   _cadShapes=[];_cadUndoStack=[];_cadDrawing=false;_cadStart=null;_cadMouse=null;
-  _cadSel=null;_cadDrag=null;_cadPlanId=null;
+  _cadSel=null;_cadDrag=null;_cadPlanId=null;_cadBgImg=null;
   var nm=document.getElementById('cad-plan-name');if(nm)nm.value='';
   document.getElementById('cad-overlay').style.display='flex';
   _showPlansOverlay(false);
@@ -171,14 +172,26 @@ function _cadEditPlan(planId){
     _cadOpen=true;
     _cadShapes=(d.cadShapes&&d.cadShapes.length)?JSON.parse(JSON.stringify(d.cadShapes)):[];
     _cadUndoStack=[];_cadDrawing=false;_cadStart=null;_cadMouse=null;_cadSel=null;_cadDrag=null;
-    _cadPlanId=planId;
+    _cadPlanId=planId;_cadBgImg=null;
     var nm=document.getElementById('cad-plan-name');if(nm)nm.value=d.name||'Plano CAD';
     document.getElementById('cad-overlay').style.display='flex';
     _showPlansOverlay(false);
     _cadElevClose();
     _cadApplyTheme();
     setTimeout(function(){_cadResize();_cadRender();},40);
-    if(!_cadShapes.length)_showToast('Este plano no tiene un dibujo guardado; puedes empezar a dibujar.',false);
+    /* Planos CAD guardados ANTES de que se guardaran las figuras vectoriales:
+       no hay cadShapes, pero sí la imagen del dibujo → se muestra de calco de
+       fondo para volver a trazarla encima. */
+    if(!_cadShapes.length){
+      if(d.img){
+        var im=new Image();
+        im.onload=function(){_cadBgImg=im;_cadRender();};
+        im.src=d.img;
+        _showToast('Este dibujo es de una versión anterior: se muestra de fondo como calco. Vuelve a trazarlo encima y guarda.',false);
+      }else{
+        _showToast('Este plano no tiene un dibujo guardado; puedes empezar a dibujar.',false);
+      }
+    }
   }).catch(function(e){_showToast('Error al abrir: '+(e.message||e),true);});
 }
 window._editCadPlan=_cadEditPlan;
@@ -187,7 +200,7 @@ window._editCadPlan=_cadEditPlan;
 function _cadCloseEditor(){
   _cadOpen=false;
   _cadDrawing=false;
-  _cadPlanId=null;
+  _cadPlanId=null;_cadBgImg=null;
   _cadElevClose();
   document.getElementById('cad-overlay').style.display='none';
   _showPlansOverlay(true);
@@ -234,6 +247,21 @@ function _cadRender(){
   ctx.beginPath();ctx.moveTo(rx+ru,ry-5);ctx.lineTo(rx+ru,ry+5);ctx.stroke();
   ctx.font='10px Segoe UI,sans-serif';ctx.fillStyle=th.gridHi;ctx.textAlign='center';
   ctx.fillText(_fmtM(_pxToM(ru)),rx+ru/2,ry-8);ctx.textAlign='left';
+
+  /* calco de fondo: dibujo de una versión anterior (plano CAD sin cadShapes) */
+  if(_cadBgImg&&_cadBgImg.width){
+    var _iw=_cadBgImg.width,_ih=_cadBgImg.height;
+    var _sc=Math.min(1,(w-20)/_iw,(h-40)/_ih);
+    var _dw=_iw*_sc,_dh=_ih*_sc,_dx=10,_dy=10;
+    ctx.save();
+    ctx.fillStyle='#ffffff';ctx.fillRect(_dx,_dy,_dw,_dh);
+    ctx.globalAlpha=0.85;ctx.drawImage(_cadBgImg,_dx,_dy,_dw,_dh);ctx.globalAlpha=1;
+    ctx.strokeStyle='rgba(240,168,41,.55)';ctx.setLineDash([6,4]);ctx.lineWidth=1;
+    ctx.strokeRect(_dx,_dy,_dw,_dh);ctx.setLineDash([]);
+    ctx.fillStyle='#b45309';ctx.font='12px Segoe UI,sans-serif';ctx.textAlign='left';
+    ctx.fillText('Dibujo anterior (referencia) — vuelve a trazarlo encima y guarda',_dx+6,_dy+_dh+16);
+    ctx.restore();
+  }
 
   /* figuras guardadas */
   _cadShapes.forEach(function(s){_cadDrawShape(ctx,s,false);});
@@ -594,7 +622,7 @@ function _cadSavePlan(){
   var nameEl=document.getElementById('cad-plan-name');
   var name=(nameEl?nameEl.value.trim():'')||'Plano CAD';
   /* Exportar siempre en modo CLARO (fondo blanco) para que sea legible como fondo de plano */
-  _cadDrawing=false;_cadMouse=null;_cadStart=null;_cadSel=null;
+  _cadDrawing=false;_cadMouse=null;_cadStart=null;_cadSel=null;_cadBgImg=null;
   var wasDark=_cadDark;
   _cadDark=false;
   _cadRender();
