@@ -20,6 +20,8 @@ var _cadSel=null;  /* figura seleccionada con la herramienta Mover */
 var _cadDrag=null; /* sesión de arrastre: {mode:'move'|'p1'|'p2', sx, sy, orig} */
 var _cadPlanId=null; /* id del plano que se está editando (null = plano nuevo) */
 var _cadBgImg=null;  /* imagen del dibujo anterior (planos CAD viejos sin cadShapes), como calco de fondo */
+var _cadEraseHover=null; /* figura resaltada bajo el cursor con la herramienta Borrar */
+var _cadDelHit=null;     /* zona del botón ✕ de la figura seleccionada: {x,y,r} */
 var _WIN_COL='#ffffff'; /* las ventanas siempre blancas */
 var _DOOR_COL='#8b5a2b'; /* las puertas siempre café */
 
@@ -266,6 +268,23 @@ function _cadRender(){
   /* figuras guardadas */
   _cadShapes.forEach(function(s){_cadDrawShape(ctx,s,false);});
 
+  /* herramienta Borrar: halo rojo sobre lo que está por borrarse */
+  if(_cadTool==='erase'&&_cadEraseHover){
+    var eh=_cadEraseHover;
+    ctx.save();
+    ctx.strokeStyle='#ef4444';ctx.globalAlpha=0.5;ctx.lineCap='round';
+    ctx.lineWidth=(eh.lw||3)+8;
+    if(eh.type==='room'){
+      var erx=Math.min(eh.x1,eh.x2),ery=Math.min(eh.y1,eh.y2);
+      ctx.strokeRect(erx,ery,Math.abs(eh.x2-eh.x1),Math.abs(eh.y2-eh.y1));
+    }else if(eh.type==='text'){
+      ctx.globalAlpha=0.32;ctx.fillStyle='#ef4444';ctx.fillRect(eh.x1-4,eh.y1-16,130,22);
+    }else{
+      ctx.beginPath();ctx.moveTo(eh.x1,eh.y1);ctx.lineTo(eh.x2,eh.y2);ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   /* preview mientras se dibuja */
   if(_cadDrawing&&_cadStart&&_cadMouse){
     var _pv=_cadMakeShape(_cadStart,_segEnd(_cadMouse));
@@ -276,7 +295,8 @@ function _cadRender(){
     _cadDrawShape(ctx,_pv,true);
   }
 
-  /* figura seleccionada (herramienta Mover): contorno + manijas en los extremos */
+  /* figura seleccionada (herramienta Mover): contorno + manijas + botón ✕ */
+  _cadDelHit=null;
   if(_cadTool==='select'&&_cadSel){
     var ss=_cadSel;
     ctx.save();
@@ -296,6 +316,20 @@ function _cadRender(){
         ctx.beginPath();ctx.rect(pt[0]-4,pt[1]-4,8,8);ctx.fill();ctx.stroke();
       });
     }
+    /* botón rojo ✕ para borrar la figura seleccionada, sobre su centro */
+    var _bx,_by;
+    if(ss.type==='room'){_bx=Math.max(ss.x1,ss.x2)+4;_by=Math.min(ss.y1,ss.y2)-4;}
+    else if(ss.type==='text'){_bx=ss.x1+126;_by=ss.y1-12;}
+    else {_bx=(ss.x1+ss.x2)/2;_by=Math.min(ss.y1,ss.y2)-24;}
+    _by=Math.max(15,_by);_bx=Math.max(15,Math.min(w-15,_bx));
+    _cadDelHit={x:_bx,y:_by,r:12};
+    ctx.fillStyle='#dc2626';ctx.strokeStyle='#fff';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(_bx,_by,12,0,6.283);ctx.fill();ctx.stroke();
+    ctx.strokeStyle='#fff';ctx.lineWidth=2.6;ctx.lineCap='round';
+    ctx.beginPath();
+    ctx.moveTo(_bx-4.5,_by-4.5);ctx.lineTo(_bx+4.5,_by+4.5);
+    ctx.moveTo(_bx+4.5,_by-4.5);ctx.lineTo(_bx-4.5,_by+4.5);
+    ctx.stroke();
     ctx.restore();
   }
 
@@ -446,6 +480,11 @@ function _cadOnDown(e){
   e.preventDefault();
   var p=_getPos(e);
   if(_cadTool==='select'){
+    /* 0) ¿tocó el botón rojo ✕? → borrar la figura seleccionada */
+    if(_cadDelHit&&_cadSel){
+      var _dd=Math.sqrt((p.rx-_cadDelHit.x)*(p.rx-_cadDelHit.x)+(p.ry-_cadDelHit.y)*(p.ry-_cadDelHit.y));
+      if(_dd<=_cadDelHit.r+4){_cadDeleteShape(_cadSel);return;}
+    }
     /* 1) ¿tomó una manija del extremo de la figura ya seleccionada? → editar extremo */
     if(_cadSel&&_cadSel.type!=='text'){
       if(Math.sqrt((p.rx-_cadSel.x1)*(p.rx-_cadSel.x1)+(p.ry-_cadSel.y1)*(p.ry-_cadSel.y1))<10){_cadBeginDrag('p1',p);return;}
@@ -492,6 +531,10 @@ function _cadOnMove(e){
   /* actualizar status bar */
   var sb=document.getElementById('cad-status');
   if(sb)sb.textContent='X: '+_fmtM(_pxToM(p.x))+'  Y: '+_fmtM(_pxToM(p.y));
+
+  /* Herramienta Borrar: resaltar en rojo lo que se borrará al hacer clic */
+  if(_cadTool==='erase'){_cadEraseHover=_cadPickShape(p.rx,p.ry);}
+  else if(_cadEraseHover){_cadEraseHover=null;}
 
   /* Herramienta Mover: arrastrar la figura entera o uno de sus extremos */
   if(_cadTool==='select'&&_cadDrag&&_cadSel){
@@ -561,19 +604,26 @@ function _cadOnUp(e){
   _cadRender();
 }
 
-/* ── Borrar figura bajo el cursor ── */
+/* ── Borrar una figura (usado por la herramienta Borrar, el botón ✕ de la
+   selección, la tecla Supr y el clic derecho sobre una figura) ── */
+function _cadDeleteShape(s){
+  var ix=_cadShapes.indexOf(s);
+  if(ix<0)return false;
+  _cadUndoStack.push(JSON.stringify(_cadShapes));
+  _cadShapes.splice(ix,1);
+  if(_cadSel===s)_cadSel=null;
+  _cadDrag=null;_cadEraseHover=null;
+  _cadRender();
+  return true;
+}
+/* ── Borrar la figura bajo el cursor (herramienta Borrar) ── */
 function _cadErase(p){
-  for(var i=_cadShapes.length-1;i>=0;i--){
-    if(_cadHit(_cadShapes[i],p.x,p.y)){
-      _cadUndoStack.push(JSON.stringify(_cadShapes));
-      _cadShapes.splice(i,1);
-      _cadRender();return;
-    }
-  }
+  var s=_cadPickShape(p.rx,p.ry);
+  if(s)_cadDeleteShape(s);
 }
 
 function _cadHit(s,x,y){
-  var tol=14;
+  var tol=16;
   if(s.type==='room'){
     var rx=Math.min(s.x1,s.x2),ry=Math.min(s.y1,s.y2);
     return x>=rx-tol&&x<=rx+Math.abs(s.x2-s.x1)+tol&&y>=ry-tol&&y<=ry+Math.abs(s.y2-s.y1)+tol;
@@ -786,7 +836,7 @@ function _cadApplyTheme(){
 function _cadSelectTool(tool){
   if(tool!==_cadTool){
     _endChain();
-    _cadDrag=null;
+    _cadDrag=null;_cadEraseHover=null;
     if(_cadTool==='select')_cadSel=null; /* al salir de Mover, quitar la selección */
   }
   _cadTool=tool;
@@ -870,11 +920,18 @@ function _cadInit(){
     _cCanvas.addEventListener('mousemove',_cadOnMove);
     _cCanvas.addEventListener('mouseup',_cadOnUp);
     _cCanvas.addEventListener('mouseleave',function(){
-      _cadMouse=null;_lastEP=null;
+      _cadMouse=null;_lastEP=null;_cadEraseHover=null;
       var di=document.getElementById('cad-dim-info');if(di)di.style.display='none';
       _cadRender();
     });
-    _cCanvas.addEventListener('contextmenu',function(ev){ev.preventDefault();_endChain();});
+    /* Clic derecho SOBRE una figura = borrarla; en zona vacía = terminar la línea */
+    _cCanvas.addEventListener('contextmenu',function(ev){
+      ev.preventDefault();
+      var pr=_getPos(ev);
+      var hit=_cadPickShape(pr.rx,pr.ry);
+      if(hit){_cadDeleteShape(hit);_showToast('Elemento borrado',false);}
+      else _endChain();
+    });
     _cCanvas.addEventListener('touchstart',_cadOnDown,{passive:false});
     _cCanvas.addEventListener('touchmove',_cadOnMove,{passive:false});
     _cCanvas.addEventListener('touchend',_cadOnUp,{passive:false});
@@ -892,11 +949,7 @@ function _cadInit(){
     if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
     /* Borrar la figura seleccionada con la herramienta Mover */
     if((e.key==='Delete'||e.key==='Backspace')&&_cadTool==='select'&&_cadSel){
-      e.preventDefault();
-      _cadUndoStack.push(JSON.stringify(_cadShapes));
-      var ix=_cadShapes.indexOf(_cadSel);if(ix>=0)_cadShapes.splice(ix,1);
-      _cadSel=null;_cadDrag=null;_cadRender();
-      return;
+      e.preventDefault();_cadDeleteShape(_cadSel);return;
     }
     var map={m:'select',w:'wall',r:'room',v:'window',d:'door',t:'text',e:'erase'};
     if(map[e.key])_cadSelectTool(map[e.key]);

@@ -192,7 +192,7 @@
       <button class="cad-tb cad-tool-ic" data-cad-tool="door"   type="button" title="Puerta (D)">🚪<span>Puerta</span></button>
       <button class="cad-tb cad-tool-ic" data-cad-tool="text"   type="button" title="Texto (T)">𝗧<span>Texto</span></button>
       <div style="flex:1"></div>
-      <button class="cad-tb cad-tool-ic" data-cad-tool="erase"  type="button" title="Borrar elemento (E)" style="border-color:rgba(248,113,113,.4)">✕<span>Borrar</span></button>
+      <button class="cad-tb cad-tool-ic" data-cad-tool="erase"  type="button" title="Borrar (E) — pasa el mouse por una figura (se pone roja) y haz clic para borrarla" style="border-color:rgba(248,113,113,.55);color:#fca5a5">✕<span>Borrar</span></button>
     </div>
 
     <!-- Canvas -->
@@ -206,7 +206,7 @@
   <!-- Status bar inferior -->
   <div id="cad-statusbar" style="display:flex;align-items:center;gap:14px;padding:3px 12px;border-top:1px solid #1e293b;font-size:11px;flex-shrink:0;min-height:24px">
     <span id="cad-status">X: 0 m  Y: 0 m</span>
-    <span style="margin-left:auto;opacity:.4">Pared: clic tras clic encadena (Esc corta) · Ventana/Puerta: de a una · Mover: arrastra la figura o tira de sus extremos, Supr borra · M=Mover W=Pared R=Hab. V=Vent. D=Puerta T=Texto E=Borrar Ctrl+Z=Deshacer</span>
+    <span style="margin-left:auto;opacity:.4">Borrar una figura: herramienta Borrar (se pone roja al pasar el mouse) · o clic derecho sobre ella · o selecciónala con Mover y toca el botón rojo ✕ / Supr · M=Mover W=Pared R=Hab. V=Vent. D=Puerta T=Texto E=Borrar Ctrl+Z=Deshacer</span>
   </div>
 </div>
 
@@ -310,7 +310,7 @@
 <script src="js/evac_items.js?v=7"></script>
 <script src="js/evac_arrows.js?v=10"></script>
 <script src="js/save_load.js?v=22"></script>
-<script src="js/cad.js?v=14"></script>
+<script src="js/cad.js?v=15"></script>
 <script src="js/capture.js?v=23"></script>
 <script src="js/version_check.js?v=1"></script>
 </body>
