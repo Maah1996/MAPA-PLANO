@@ -12,6 +12,7 @@ var _cadStrokeColor='#1e40af',_cadLineW=3;
 var _cadShapes=[],_cadUndoStack=[];
 var _cadDrawing=false,_cadStart=null,_cadMouse=null;
 var _cCanvas=null,_cCtx=null;
+var _lastEP=null; /* último extremo al que se imantó el cursor (para la marca visual) */
 
 /* ── Paletas de color oscuro/claro ── */
 var _cadTheme={
@@ -38,8 +39,56 @@ function _getPos(e){
      e.changedTouches. Con mouse no existe ninguno de los dos y cae en 'e'. */
   var src=(e.touches&&e.touches.length)?e.touches[0]
          :((e.changedTouches&&e.changedTouches.length)?e.changedTouches[0]:e);
-  return{x:_snapV(src.clientX-r.left),y:_snapV(src.clientY-r.top),
-         rx:src.clientX-r.left,ry:src.clientY-r.top};
+  var rx=src.clientX-r.left,ry=src.clientY-r.top;
+  var x=_snapV(rx),y=_snapV(ry);
+  /* Imantar al extremo de una figura ya dibujada, para empalmar/continuar
+     líneas sin tener que apuntar al pixel exacto. */
+  var ep=_nearestEndpoint(rx,ry);
+  _lastEP=ep;
+  if(ep){x=ep.x;y=ep.y;}
+  return{x:x,y:y,rx:rx,ry:ry};
+}
+
+/* Extremo de figura más cercano al cursor dentro de 12 px (o null). */
+function _nearestEndpoint(x,y){
+  var best=null,bd=12;
+  for(var i=0;i<_cadShapes.length;i++){
+    var s=_cadShapes[i];if(s.type==='text')continue;
+    var pts=[[s.x1,s.y1],[s.x2,s.y2]];
+    for(var j=0;j<2;j++){
+      var d=Math.sqrt((x-pts[j][0])*(x-pts[j][0])+(y-pts[j][1])*(y-pts[j][1]));
+      if(d<bd){bd=d;best={x:pts[j][0],y:pts[j][1]};}
+    }
+  }
+  return best;
+}
+
+/* Largo fijo (m) tecleado en la barra → px. Vacío/0 = dibujo libre. */
+function _typedLenPx(){
+  var el=document.getElementById('cad-len-inp');
+  if(!el)return 0;
+  var v=parseFloat(String(el.value||'').replace(',','.'));
+  if(!v||v<=0)return 0;
+  return v/_cadScaleM*_cadGridPx;
+}
+
+/* Punto final del segmento en curso: si hay largo fijo, se bloquea a esa
+   distancia exacta en la dirección del cursor; si no, es el cursor. */
+function _segEnd(p){
+  if(!_cadStart||_cadTool==='room')return p;
+  var L=_typedLenPx();
+  if(L>0){
+    var dx=p.x-_cadStart.x,dy=p.y-_cadStart.y,d=Math.sqrt(dx*dx+dy*dy)||1;
+    return{x:Math.round(_cadStart.x+dx/d*L),y:Math.round(_cadStart.y+dy/d*L)};
+  }
+  return p;
+}
+
+/* Cortar la cadena de dibujo (Esc / clic derecho / cambiar de herramienta). */
+function _endChain(){
+  _cadDrawing=false;_cadStart=null;
+  var di=document.getElementById('cad-dim-info');if(di)di.style.display='none';
+  _cadRender();
 }
 
 /* ── Abrir editor ── */
@@ -107,7 +156,7 @@ function _cadRender(){
 
   /* preview mientras se dibuja */
   if(_cadDrawing&&_cadStart&&_cadMouse){
-    _cadDrawShape(ctx,_cadMakeShape(_cadStart,_cadMouse),true);
+    _cadDrawShape(ctx,_cadMakeShape(_cadStart,_segEnd(_cadMouse)),true);
   }
 
   /* cursor guía */
@@ -120,12 +169,20 @@ function _cadRender(){
     ctx.fillStyle='#f0a829';
     ctx.beginPath();ctx.arc(_cadMouse.x,_cadMouse.y,3,0,6.28);ctx.fill();
   }
+
+  /* marca verde cuando el cursor está imantado a un extremo existente */
+  if(_lastEP){
+    ctx.strokeStyle='#22c55e';ctx.lineWidth=2;
+    ctx.strokeRect(_lastEP.x-5,_lastEP.y-5,10,10);
+  }
 }
 
 /* ── Construir objeto figura ── */
 function _cadMakeShape(a,b){
-  return{type:_cadTool,x1:a.x,y1:a.y,x2:b.x,y2:b.y,
+  var s={type:_cadTool,x1:a.x,y1:a.y,x2:b.x,y2:b.y,
          color:_cadStrokeColor,lw:parseInt(_cadLineW)||3};
+  if(_cadTool==='window'){var db=document.getElementById('cad-dbl');if(db&&db.checked)s.dbl=1;}
+  return s;
 }
 
 /* ── Dibujar una figura en el canvas ── */
@@ -152,10 +209,12 @@ function _cadDrawShape(ctx,s,preview){
 
   }else if(s.type==='window'){
     var dx=s.x2-s.x1,dy=s.y2-s.y1,len=Math.sqrt(dx*dx+dy*dy)||1;
-    var nx=-dy/len*7,ny=dx/len*7;
-    /* 3 líneas paralelas = símbolo ventana */
+    var half=s.dbl?9:7;
+    var nx=-dy/len*half,ny=dx/len*half;
     ctx.strokeStyle=s.color;ctx.lineWidth=s.lw||2;
-    [[0,0],[nx,ny],[-nx,-ny]].forEach(function(off){
+    /* líneas paralelas = símbolo ventana (3 simple, 4 para ventanal doble) */
+    var offs=s.dbl?[[nx,ny],[nx/3,ny/3],[-nx/3,-ny/3],[-nx,-ny]]:[[0,0],[nx,ny],[-nx,-ny]];
+    offs.forEach(function(off){
       ctx.beginPath();
       ctx.moveTo(s.x1+off[0],s.y1+off[1]);
       ctx.lineTo(s.x2+off[0],s.y2+off[1]);
@@ -164,6 +223,11 @@ function _cadDrawShape(ctx,s,preview){
     /* extremos */
     ctx.beginPath();ctx.moveTo(s.x1+nx,s.y1+ny);ctx.lineTo(s.x1-nx,s.y1-ny);ctx.stroke();
     ctx.beginPath();ctx.moveTo(s.x2+nx,s.y2+ny);ctx.lineTo(s.x2-nx,s.y2-ny);ctx.stroke();
+    /* montante central (dos hojas) para el ventanal doble */
+    if(s.dbl){
+      var mx=(s.x1+s.x2)/2,my=(s.y1+s.y2)/2;
+      ctx.beginPath();ctx.moveTo(mx+nx,my+ny);ctx.lineTo(mx-nx,my-ny);ctx.stroke();
+    }
     _cadLblLine(ctx,s,th);
 
   }else if(s.type==='door'){
@@ -234,7 +298,18 @@ function _cadOnDown(e){
   var p=_getPos(e);
   if(_cadTool==='erase'){_cadErase(p);return;}
   if(_cadTool==='text'){_cadInsertText(p);return;}
-  _cadDrawing=true;_cadStart=p;_cadMouse=p;
+  if(_cadTool==='room'){_cadDrawing=true;_cadStart=p;_cadMouse=p;_cadRender();return;}
+  /* Pared / Ventana / Puerta = polilínea: cada clic fija un punto y el
+     siguiente segmento arranca desde ahí, así se "continúa" la línea sin
+     borrar. Esc / clic derecho / cambiar de herramienta corta la cadena. */
+  if(!_cadStart){_cadStart={x:p.x,y:p.y};_cadDrawing=true;_cadMouse=p;_cadRender();return;}
+  var end=_segEnd(p);
+  var ddx=end.x-_cadStart.x,ddy=end.y-_cadStart.y;
+  if(Math.sqrt(ddx*ddx+ddy*ddy)<3){_endChain();return;} /* clic en el mismo punto = terminar */
+  _cadUndoStack.push(JSON.stringify(_cadShapes));
+  _cadShapes.push(_cadMakeShape(_cadStart,end));
+  _cadStart={x:end.x,y:end.y};
+  _cadMouse=p;
   _cadRender();
 }
 
@@ -253,7 +328,8 @@ function _cadOnMove(e){
       var wm=_pxToM(Math.abs(dx)),hm=_pxToM(Math.abs(dy));
       di.textContent=_fmtM(wm)+' × '+_fmtM(hm)+'  =  '+Math.round(wm*hm*100)/100+' m²';
     }else{
-      di.textContent=_fmtM(_pxToM(Math.sqrt(dx*dx+dy*dy)));
+      var pe=_segEnd(p);
+      di.textContent=_fmtM(_pxToM(Math.sqrt((pe.x-_cadStart.x)*(pe.x-_cadStart.x)+(pe.y-_cadStart.y)*(pe.y-_cadStart.y))));
     }
     di.style.display='';
   }else if(di){di.style.display='none';}
@@ -262,6 +338,9 @@ function _cadOnMove(e){
 
 function _cadOnUp(e){
   e.preventDefault();
+  /* Pared/Ventana/Puerta se dibujan por clics (polilínea), no por arrastre:
+     el mouseup no cierra el segmento. Solo Habitación usa arrastre. */
+  if(_cadTool!=='room')return;
   if(!_cadDrawing||!_cadStart)return;
   var p=_getPos(e);
   _cadDrawing=false;
@@ -315,6 +394,7 @@ function _cadInsertText(p){
 function _cadUndo(){
   if(!_cadUndoStack.length)return;
   _cadShapes=JSON.parse(_cadUndoStack.pop());
+  _cadDrawing=false;_cadStart=null;
   _cadRender();
 }
 
@@ -324,6 +404,7 @@ function _cadClear(){
   if(!confirm('¿Borrar todo el plano?'))return;
   _cadUndoStack.push(JSON.stringify(_cadShapes));
   _cadShapes=[];
+  _cadDrawing=false;_cadStart=null;
   _cadRender();
 }
 
@@ -370,9 +451,14 @@ function _cadApplyTheme(){
 
 /* ── Seleccionar herramienta ── */
 function _cadSelectTool(tool){
+  if(tool!==_cadTool)_endChain();
   _cadTool=tool;
   var cur={wall:'crosshair',room:'crosshair',window:'crosshair',door:'crosshair',text:'text',erase:'cell'}[tool]||'crosshair';
   if(_cCanvas)_cCanvas.style.cursor=cur;
+  var lenWrap=document.getElementById('cad-len-wrap');
+  if(lenWrap)lenWrap.style.display=(tool==='wall'||tool==='window'||tool==='door')?'':'none';
+  var dblWrap=document.getElementById('cad-dbl-wrap');
+  if(dblWrap)dblWrap.style.display=(tool==='window')?'':'none';
   _cadApplyTheme();
 }
 
@@ -439,10 +525,11 @@ function _cadInit(){
     _cCanvas.addEventListener('mousemove',_cadOnMove);
     _cCanvas.addEventListener('mouseup',_cadOnUp);
     _cCanvas.addEventListener('mouseleave',function(){
-      _cadMouse=null;
+      _cadMouse=null;_lastEP=null;
       var di=document.getElementById('cad-dim-info');if(di)di.style.display='none';
       _cadRender();
     });
+    _cCanvas.addEventListener('contextmenu',function(ev){ev.preventDefault();_endChain();});
     _cCanvas.addEventListener('touchstart',_cadOnDown,{passive:false});
     _cCanvas.addEventListener('touchmove',_cadOnMove,{passive:false});
     _cCanvas.addEventListener('touchend',_cadOnUp,{passive:false});
@@ -451,6 +538,7 @@ function _cadInit(){
   /* atajos de teclado */
   document.addEventListener('keydown',function(e){
     if(!_cadOpen)return;
+    if(e.key==='Escape'){_endChain();return;}
     if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();_cadUndo();return;}
     if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
     var map={w:'wall',r:'room',v:'window',d:'door',t:'text',e:'erase'};
@@ -458,6 +546,9 @@ function _cadInit(){
   });
 
   window.addEventListener('resize',function(){if(_cadOpen)_cadResize();});
+
+  /* inicializa visibilidad de los campos que dependen de la herramienta */
+  _cadSelectTool(_cadTool);
 }
 
 /* Exponer apertura globalmente */

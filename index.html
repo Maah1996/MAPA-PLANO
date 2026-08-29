@@ -167,6 +167,9 @@
     <label class="cad-lbl" title="Ajustar al grid"><input type="checkbox" id="cad-snap-chk" checked style="cursor:pointer"> Snap</label>
     <label class="cad-lbl" title="Metros reales por cuadro">1▦= <input type="number" id="cad-scale-inp" value="1" min="0.1" max="100" step="0.1" style="width:44px;padding:2px 5px;border-radius:5px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:11px;font-family:inherit"> m</label>
     <span class="cad-sep"></span>
+    <label class="cad-lbl" id="cad-len-wrap" title="Largo exacto del próximo tramo (déjalo vacío para dibujar libre)">Largo <input type="text" id="cad-len-inp" inputmode="decimal" placeholder="—" style="width:52px;padding:2px 5px;border-radius:5px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:11px;font-family:inherit"> m</label>
+    <label class="cad-lbl" id="cad-dbl-wrap" style="display:none" title="Ventanal / ventana de dos hojas"><input type="checkbox" id="cad-dbl" style="cursor:pointer"> Doble</label>
+    <span class="cad-sep"></span>
     <button id="cad-undo"  class="cad-sm-btn" type="button" title="Deshacer (Ctrl+Z)">↩</button>
     <button id="cad-clear" class="cad-sm-btn" type="button" title="Limpiar todo">🗑</button>
     <button id="cad-theme-btn" class="cad-sm-btn" type="button" style="margin-left:auto">☀</button>
@@ -200,7 +203,7 @@
   <!-- Status bar inferior -->
   <div id="cad-statusbar" style="display:flex;align-items:center;gap:14px;padding:3px 12px;border-top:1px solid #1e293b;font-size:11px;flex-shrink:0;min-height:24px">
     <span id="cad-status">X: 0 m  Y: 0 m</span>
-    <span style="margin-left:auto;opacity:.4">W=Pared · R=Hab. · V=Vent. · D=Puerta · T=Texto · E=Borrar · Ctrl+Z=Deshacer</span>
+    <span style="margin-left:auto;opacity:.4">Clic tras clic para encadenar · Esc / clic derecho = terminar la línea · W=Pared · R=Hab. · V=Vent. · D=Puerta · T=Texto · E=Borrar · Ctrl+Z=Deshacer</span>
   </div>
 </div>
 
@@ -290,7 +293,7 @@
 <script src="js/evac_items.js?v=7"></script>
 <script src="js/evac_arrows.js?v=10"></script>
 <script src="js/save_load.js?v=21"></script>
-<script src="js/cad.js?v=7"></script>
+<script src="js/cad.js?v=8"></script>
 <script src="js/capture.js?v=23"></script>
 <script src="js/version_check.js?v=1"></script>
 </body>
