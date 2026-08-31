@@ -269,6 +269,8 @@ function addMarker(risk,color,xPct,yPct){
     +'<button class="mkr-sz" data-a="add" title="Agrandar ícono">+</button>'
     +'<button class="mkr-sz" data-a="rl" title="Girar a la izquierda">↺</button>'
     +'<button class="mkr-sz" data-a="rr" title="Girar a la derecha">↻</button>'
+    +'<button class="mkr-sz mkr-cp" data-a="cp" title="Copiar ícono">&#10063;</button>'
+    +'<button class="mkr-sz mkr-pt" data-a="pt" title="Pegar copia (Ctrl+V)"'+(window._markerClipboard?'':' style="opacity:.35"')+'>&#10064;</button>'
     +'</div><div class="del" title="Eliminar">×</div>';
   m.addEventListener('mousedown',function(e){if(e.target.classList.contains('del')||e.target.classList.contains('mlabel')||e.target.classList.contains('mkr-sz'))return;e.preventDefault();var pos=_toLocalPct(e.clientX,e.clientY);m._dragOffX=pos.x-parseFloat(m.style.left);m._dragOffY=pos.y-parseFloat(m.style.top);movingMarker=m;window.addEventListener('mousemove',onMove);window.addEventListener('mouseup',onUp);});
   m.querySelector('.del').addEventListener('click',function(e){e.stopPropagation();m.remove();_renderLegendSummary();});
@@ -292,6 +294,10 @@ function addMarker(risk,color,xPct,yPct){
         document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(mm){
           if((mm.dataset.itemIsEvac==='1')===grp&&(mm.dataset.mode||'riesgos')===grpMode&&String(mm.dataset.plan||1)===grpPlan){mm.dataset.markerScale=s;var nn=mm.querySelector('.mkr-num');if(nn)nn.textContent=parseFloat(s).toFixed(1)+'×';}
         });
+      }else if(a==='cp'){
+        _copyMarker(m); return;
+      }else if(a==='pt'){
+        _pasteMarker(); return;
       }else{
         /* GIRO = INDIVIDUAL: solo rota este ícono. */
         var r=(parseFloat(m.dataset.markerRot||0)+(a==='rr'?15:-15)+360)%360;
@@ -310,6 +316,57 @@ function addMarker(risk,color,xPct,yPct){
   if(!window.__mkrSelInit){window.__mkrSelInit=1;document.addEventListener('mousedown',function(e){if(e.target.closest&&e.target.closest('.marker'))return;document.querySelectorAll('.marker.mkr-sel').forEach(function(mm){mm.classList.remove('mkr-sel');});});}
   _renderLegendSummary();
   return m;
+}
+
+/* ── Copiar / Pegar íconos ───────────────────────────────────────────────
+   Reconstruye el "risk" desde el itemId guardado (igual que al cargar un
+   plano) y crea una copia idéntica con un pequeño desfase. Sirve para
+   íconos de riesgo, elementos de evacuación y "Estoy aquí", en ambos modos.
+   Botones ❏/❐ en la barra del ícono + atajos Ctrl+C / Ctrl+V. */
+function _riskFromClip(cb){
+  if(cb.isSpecial||cb.itemId==='estoy_aqui')return _EA_ITEM;
+  if(cb.isEvac){
+    var r=null,list=(typeof EVAC_ITEMS!=='undefined'?EVAC_ITEMS:[]);
+    list.forEach(function(it){if(it.id===cb.itemId)r=Object.assign({},it,{_isEvac:true});});
+    return r;
+  }
+  var rr=null;RISKS.forEach(function(it){if(it.id===cb.itemId)rr=it;});return rr;
+}
+function _copyMarker(m){
+  if(!m)return;
+  window._markerClipboard={
+    itemId:m.dataset.itemId||'',itemColor:m.dataset.itemColor||'',
+    isEvac:m.dataset.itemIsEvac==='1',isSpecial:(m.dataset.itemId==='estoy_aqui'),
+    markerRot:m.dataset.markerRot||'0',
+    label:(m.querySelector('.mlabel')||{}).innerText||'',
+    left:parseFloat(m.style.left)||50,top:parseFloat(m.style.top)||50
+  };
+  document.querySelectorAll('.mkr-sz[data-a="pt"]').forEach(function(b){b.style.opacity='';});
+  if(typeof _showToast==='function')_showToast('Ícono copiado — usa Pegar (❐) o Ctrl+V');
+}
+function _pasteMarker(){
+  var cb=window._markerClipboard;if(!cb)return;
+  var risk=_riskFromClip(cb);if(!risk)return;
+  var nx=Math.max(2,Math.min(96,(cb.left||50)+3));
+  var ny=Math.max(2,Math.min(96,(cb.top||50)+3));
+  var clr=cb.itemColor||(cb.isEvac?'#217a47':(cb.isSpecial?'#ff6600':LEVELS[currentLevel].color));
+  var nm=addMarker(risk,clr,nx,ny);
+  if(nm){
+    if(cb.markerRot&&cb.markerRot!=='0')nm.dataset.markerRot=cb.markerRot;
+    if(cb.label){var l=nm.querySelector('.mlabel');if(l)l.innerText=cb.label;}
+    document.querySelectorAll('.marker.mkr-sel').forEach(function(mm){if(mm!==nm)mm.classList.remove('mkr-sel');});
+    nm.classList.add('mkr-sel');
+    if(typeof _scaleMarkers==='function')_scaleMarkers();
+  }
+  cb.left=nx;cb.top=ny;   /* el próximo Pegar cae más abajo-derecha */
+}
+if(!window.__mkrCopyKeys){window.__mkrCopyKeys=1;
+  document.addEventListener('keydown',function(e){
+    if(e.target&&(e.target.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName||'')))return;
+    var k=(e.key||'').toLowerCase();
+    if((e.ctrlKey||e.metaKey)&&k==='c'){var s=document.querySelector('.marker.mkr-sel');if(s){_copyMarker(s);e.preventDefault();}}
+    else if((e.ctrlKey||e.metaKey)&&k==='v'){if(window._markerClipboard){_pasteMarker();e.preventDefault();}}
+  });
 }
 
 /* ── Zoom / Pan ── */
