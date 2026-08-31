@@ -1,0 +1,32 @@
+#!/bin/sh
+# ─────────────────────────────────────────────────────────────────────────────
+# Cache-bust automático.
+# Cuando un commit toca un archivo de js/ o css/, este hook actualiza su
+# ?v=<timestamp> en los HTML (index.html / admin.html / afiche.html) y lo
+# vuelve a agregar al commit. Así el navegador de cada usuario descarga la
+# versión nueva sola (junto con version_check.js), sin Ctrl+F5 ni vaciar caché.
+#
+# Se activa con:  git config core.hooksPath .githooks   (ya configurado en
+# _GITHUB_LIVE; si se clona de nuevo el repo, hay que correrlo otra vez).
+# ─────────────────────────────────────────────────────────────────────────────
+stamp=$(date +%Y%m%d%H%M)
+
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+assets=$(printf '%s\n' "$staged" | grep -E '^(js|css)/[A-Za-z0-9_.-]+\.(js|css)$' || true)
+[ -z "$assets" ] && exit 0
+
+htmls="index.html admin.html afiche.html"
+touched=0
+for a in $assets; do
+  esc=$(printf '%s' "$a" | sed 's/[.[\*^$/&]/\\&/g')
+  for h in $htmls; do
+    [ -f "$h" ] || continue
+    grep -q "\"$a" "$h" || continue
+    sed -E -i "s#(\"$esc)(\?v=[0-9]+)?\"#\1?v=$stamp\"#g" "$h"
+    git add "$h"
+    touched=1
+  done
+done
+
+[ "$touched" = 1 ] && echo "[pre-commit] cache-bust ?v=$stamp aplicado a los HTML (cambió js/ o css/)"
+exit 0
