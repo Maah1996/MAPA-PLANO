@@ -378,7 +378,12 @@ function _applyZoom(){
   document.getElementById('zoom-pct').textContent=Math.round(_zw)+'%';
   if(typeof _scaleMarkers==='function')_scaleMarkers();
   if(typeof _scaleArrows==='function')_scaleArrows();
-  if(_planRot!==0)_applyPlanRotation();
+  /* SIEMPRE re-sincronizar la rotación del DOM con _planRot: al cambiar de modo
+     (Mapa de Riesgos <-> Plano de Evacuación) cada modo trae su propia rotación
+     guardada; si el modo nuevo tiene rotación 0 pero el markerLayer quedó con el
+     transform:rotate(...) del modo anterior, _toLocalPct calcula mal y los
+     íconos/leyenda se arrastran en un eje girado respecto del mouse. */
+  _applyPlanRotation();
   setTimeout(_centerView,0);
   if(window.__mplLegSync)window.__mplLegSync();
 }
