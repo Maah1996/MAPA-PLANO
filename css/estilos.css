@@ -192,7 +192,10 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 
 /* Markers */
 .marker{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;cursor:move;z-index:5}
-.marker .mlabel{margin-top:6px;font-size:10px;font-family:inherit;background:rgba(10,17,26,.85);color:#e8e4d8;border:1px solid var(--brd);border-radius:4px;padding:1px 5px;max-width:130px;text-align:center;line-height:1.3;outline:none;white-space:nowrap}
+/* Etiqueta FUERA del flujo: así la caja del marker == el ícono y translate(-50%,-50%)
+   centra el ícono exacto sobre el punto donde se suelta/arrastra (antes la caja
+   incluía la etiqueta y el ícono quedaba ~10px arriba del cursor, más con zoom). */
+.marker .mlabel{position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);font-size:10px;font-family:inherit;background:rgba(10,17,26,.85);color:#e8e4d8;border:1px solid var(--brd);border-radius:4px;padding:1px 5px;max-width:130px;text-align:center;line-height:1.3;outline:none;white-space:nowrap}
 .marker .mlabel:empty{background:transparent;border-color:transparent;padding:0}
 .marker .mlabel:focus{background:var(--surf2);border-color:var(--acc)}
 .marker .del{position:absolute;top:-9px;right:-9px;width:18px;height:18px;border-radius:50%;background:var(--rojo);color:#fff;border:2px solid var(--bg);font-size:12px;line-height:14px;text-align:center;cursor:pointer;display:none;font-weight:bold;z-index:6}
