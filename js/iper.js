@@ -544,37 +544,38 @@
 
     renderSaved();   // pinta las IPER ya guardadas en este equipo
 
-    // Cartilla de pictogramas (PDF anclado en la página)
+    /* Cajones laterales derechos (uno a la vez): Cartilla de pictogramas / Leer los códigos.
+       No tapan la lista: el panel se ensancha y el cuerpo lleva padding-right. */
     var pdfWrap = el('iper-pdf-wrap');
     var pdfFrame = el('iper-pdf-frame');
-    var PDF_SRC = 'docs/cartilla-pictogramas.pdf';
-    function showPdf() {
-      if (!pdfFrame.getAttribute('src')) pdfFrame.setAttribute('src', PDF_SRC);
-      pdfWrap.style.display = 'block';
-      pdfWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-    function hidePdf() { pdfWrap.style.display = 'none'; }
-    el('iper-pdf-btn').addEventListener('click', function () {
-      if (pdfWrap.style.display === 'block') hidePdf(); else showPdf();
-    });
-    el('iper-pdf-hide').addEventListener('click', hidePdf);
-
-    // "Leer los códigos" (B1, A2, I2…) — cajón lateral, no tapa la lista
     var codesWrap = el('iper-codes-wrap');
     var iperPanel = el('iper-panel');
-    function hideCodes() {
+    var PDF_SRC = 'docs/cartilla-pictogramas.pdf';
+
+    function closeDrawers() {
+      pdfWrap.style.display = 'none';
       codesWrap.style.display = 'none';
-      if (iperPanel) iperPanel.classList.remove('codes-open');
+      if (iperPanel) iperPanel.classList.remove('pdf-open', 'codes-open');
     }
-    function showCodes() {
-      codesWrap.style.display = 'flex';
-      if (iperPanel) iperPanel.classList.add('codes-open');
-      var b = el('iper-codes-body'); if (b) b.scrollTop = 0;
+    function toggleDrawer(which) {
+      var openWrap = which === 'pdf' ? pdfWrap : codesWrap;
+      var yaAbierto = openWrap.style.display === 'flex';
+      closeDrawers();
+      if (yaAbierto) return;                 // segundo clic = cerrar
+      if (which === 'pdf') {
+        if (!pdfFrame.getAttribute('src')) pdfFrame.setAttribute('src', PDF_SRC);
+        pdfWrap.style.display = 'flex';
+        if (iperPanel) iperPanel.classList.add('pdf-open');
+      } else {
+        codesWrap.style.display = 'flex';
+        if (iperPanel) iperPanel.classList.add('codes-open');
+        var b = el('iper-codes-body'); if (b) b.scrollTop = 0;
+      }
     }
-    el('iper-codes-btn').addEventListener('click', function () {
-      if (codesWrap.style.display === 'flex') hideCodes(); else showCodes();
-    });
-    el('iper-codes-hide').addEventListener('click', hideCodes);
+    el('iper-pdf-btn').addEventListener('click', function () { toggleDrawer('pdf'); });
+    el('iper-codes-btn').addEventListener('click', function () { toggleDrawer('codes'); });
+    el('iper-pdf-hide').addEventListener('click', closeDrawers);
+    el('iper-codes-hide').addEventListener('click', closeDrawers);
   }
 
   if (document.readyState === 'loading') {
