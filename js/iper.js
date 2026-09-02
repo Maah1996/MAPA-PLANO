@@ -558,6 +558,16 @@
       if (pdfWrap.style.display === 'block') hidePdf(); else showPdf();
     });
     el('iper-pdf-hide').addEventListener('click', hidePdf);
+
+    // "Leer los códigos" (B1, A2, I2…)
+    var codesWrap = el('iper-codes-wrap');
+    function hideCodes() { codesWrap.style.display = 'none'; }
+    el('iper-codes-btn').addEventListener('click', function () {
+      if (codesWrap.style.display === 'block') { hideCodes(); return; }
+      codesWrap.style.display = 'block';
+      codesWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    el('iper-codes-hide').addEventListener('click', hideCodes);
   }
 
   if (document.readyState === 'loading') {

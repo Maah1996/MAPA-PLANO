@@ -18,7 +18,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-<link rel="stylesheet" href="css/estilos.css?v=202609021912">
+<link rel="stylesheet" href="css/estilos.css?v=202609021947">
 </head>
 <body>
 
@@ -231,6 +231,7 @@
     <div id="iper-head">
       <span id="iper-h-title">📋 IPER → Lista de riesgos</span>
       <span style="flex:1"></span>
+      <button id="iper-codes-btn" type="button" title="Qué significan los códigos B1, I2, A2…">🔑 Leer los códigos</button>
       <button id="iper-pdf-btn" type="button" title="Catálogo oficial de riesgos de Mutual de Seguridad">📖 Cartilla de pictogramas</button>
       <button id="iper-close" type="button" title="Cerrar">✕</button>
     </div>
@@ -253,6 +254,63 @@
           <button id="iper-pdf-hide" type="button">Ocultar</button>
         </div>
         <iframe id="iper-pdf-frame" title="Cartilla de pictogramas Mutual" src=""></iframe>
+      </div>
+
+      <div id="iper-codes-wrap" style="display:none">
+        <div id="iper-codes-head">
+          <span>🔑 Cómo leer los códigos del riesgo <b>(B1, A2, I2, F3…)</b></span>
+          <span style="flex:1"></span>
+          <button id="iper-codes-hide" type="button">Ocultar</button>
+        </div>
+        <div id="iper-codes-body">
+          <p class="ic-lead">
+            En la matriz IPER cada riesgo lleva un código: <b>una letra</b> = la familia del peligro,
+            <b>un número</b> = el riesgo específico dentro de esa familia. Es la codificación del
+            <b>Clasificador de Peligros y Riesgos de las Mutualidades / SUSESO</b>, la misma que ordena la cartilla de pictogramas.
+          </p>
+
+          <div class="ic-sub">La letra = familia del peligro</div>
+          <div class="ic-grid">
+            <div class="ic-fam"><span class="ic-badge">A</span><span>Caída de personas</span></div>
+            <div class="ic-fam"><span class="ic-badge">B</span><span>Contacto con objetos</span></div>
+            <div class="ic-fam"><span class="ic-badge">C</span><span>Contacto con seres vivos</span></div>
+            <div class="ic-fam"><span class="ic-badge">E</span><span>Contactos térmicos</span></div>
+            <div class="ic-fam"><span class="ic-badge">F</span><span>Energía eléctrica</span></div>
+            <div class="ic-fam"><span class="ic-badge">G</span><span>Sustancias químicas</span></div>
+            <div class="ic-fam"><span class="ic-badge">I</span><span>Vehículos en movimiento</span></div>
+            <div class="ic-fam"><span class="ic-badge">P</span><span>Agentes físicos (ruido, calor…)</span></div>
+            <div class="ic-fam"><span class="ic-badge">R·S·T</span><span>Músculo-esquelético (carga · repetitivo · posturas)</span></div>
+            <div class="ic-fam"><span class="ic-badge">EM</span><span>Psicosocial (Exigencias e<b>M</b>ocionales, CEAL-SM)</span></div>
+          </div>
+
+          <div class="ic-sub">El número = el riesgo dentro de la familia</div>
+          <div class="ic-ex">
+            <div><code>A1</code> Caídas al mismo nivel</div>
+            <div><code>A2</code> Caídas a distinto nivel</div>
+            <div><code>A3</code> Caídas de altura</div>
+            <div><code>B1</code> Atrapamiento</div>
+            <div><code>B2</code> Caída de objetos</div>
+            <div><code>B3</code> Cortes por objetos / herramientas corto punzantes</div>
+            <div><code>B4</code> Choque contra objetos</div>
+            <div><code>E1</code> Contacto térmico por calor</div>
+            <div><code>E2</code> Contacto térmico por frío</div>
+            <div><code>F1</code> Contacto eléctrico directo, baja tensión</div>
+            <div><code>F3</code> Contacto eléctrico indirecto, baja tensión</div>
+            <div><code>G1</code> Sustancias cáusticas o corrosivas</div>
+            <div><code>G2</code> Otras sustancias químicas</div>
+            <div><code>I1</code> Atropellos o golpes con vehículos</div>
+            <div><code>I2</code> Choque, colisión o volcamiento</div>
+            <div><code>P1</code> Exposición a ruido &nbsp;·&nbsp; <code>P6</code> Exposición a calor</div>
+          </div>
+
+          <div class="ic-note">
+            <b>¿De dónde salen?</b> Los códigos que trae tu IPER (A1, B1, B3, F3, I1…) los puso quien
+            armó la matriz o la plantilla de la Mutual. Los riesgos que se agregaron después con código
+            (A3, B2, E2, F1, G1) siguen esa misma serie. Algunos riesgos nuevos (Explosiones, Incendios,
+            polvo de harina, biológico, sismo…) quedaron <b>sin código</b> a propósito, para no inventar uno
+            equivocado. El check <b>“Quitar los códigos (A2)”</b> los saca de la vista si te estorban.
+          </div>
+        </div>
       </div>
 
       <div id="iper-drop">
@@ -364,7 +422,7 @@
 <script src="js/evac_arrows.js?v=202609020957"></script>
 <script src="js/save_load.js?v=22"></script>
 <script src="js/cad.js?v=8"></script>
-<script src="js/iper.js?v=202609021912"></script>
+<script src="js/iper.js?v=202609021947"></script>
 <script src="js/capture.js?v=202609020957"></script>
 <script src="js/version_check.js?v=202608311145"></script>
 </body>
