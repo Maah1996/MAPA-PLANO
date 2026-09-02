@@ -14,10 +14,11 @@
 <meta name="twitter:card" content="summary">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-<link rel="stylesheet" href="css/estilos.css?v=202608311257">
+<link rel="stylesheet" href="css/estilos.css?v=202609021833">
 </head>
 <body>
 
@@ -224,6 +225,57 @@
   </div>
 </div>
 
+<!-- ══════════ PANEL IPER → LISTA DE RIESGOS (Paso 1) ══════════ -->
+<div id="iper-overlay" style="display:none">
+  <div id="iper-panel">
+    <div id="iper-head">
+      <span id="iper-h-title">📋 IPER → Lista de riesgos</span>
+      <span style="flex:1"></span>
+      <button id="iper-close" type="button" title="Cerrar">✕</button>
+    </div>
+
+    <div id="iper-body">
+      <p id="iper-intro">
+        Sube tu matriz <b>IPER en Excel (.xlsx)</b>. El programa lee las columnas
+        <b>“Riesgo específico”</b> y <b>“Clasificación del riesgo”</b>, junta los riesgos
+        repetidos (se queda con la clasificación más alta) y arma la lista para llenar
+        el mapa de riesgos.
+      </p>
+
+      <div id="iper-drop">
+        <div id="iper-drop-txt">Arrastra aquí el archivo .xlsx o</div>
+        <button id="iper-pick" type="button">Elegir archivo…</button>
+        <input type="file" id="iper-file" accept=".xlsx,.xlsm,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none">
+      </div>
+
+      <div id="iper-error" style="display:none"></div>
+
+      <div id="iper-result" style="display:none">
+        <div id="iper-bar">
+          <span id="iper-summary"></span>
+          <span style="flex:1"></span>
+          <label class="iper-opt"><input type="checkbox" id="iper-strip"> Quitar los códigos <i>(A2)</i></label>
+          <button id="iper-copy" type="button">Copiar tabla</button>
+          <button id="iper-csv" type="button">Exportar CSV</button>
+        </div>
+        <div id="iper-tablewrap">
+          <table id="iper-table">
+            <thead>
+              <tr>
+                <th style="width:34px">N°</th>
+                <th style="width:32%">Nombre del riesgo</th>
+                <th style="width:150px">Clasificación</th>
+                <th>Explicación</th>
+              </tr>
+            </thead>
+            <tbody id="iper-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <header>
   <h1>PrevenRiesgo — Editor</h1>
   <p>Mapas de riesgo y planos de evacuación según la Guía DS N°44/2024. Arrastra los íconos sobre tu plano.</p>
@@ -242,6 +294,8 @@
       <h2>2 · Arrastra el riesgo</h2>
       <div class="icons" id="icons"></div>
       <div id="evac-en-riesgos"></div>
+      <h2>3 · Desde tu matriz IPER</h2>
+      <button type="button" id="iper-open-btn" class="iper-open-btn">📋 Subir IPER → lista de riesgos</button>
     </div>
     <div id="evac-palette" style="display:none">
       <h2 style="color:#86efac;border-color:#166531">Arrastra el elemento</h2>
@@ -291,6 +345,7 @@
 <script src="js/evac_arrows.js?v=202609020957"></script>
 <script src="js/save_load.js?v=22"></script>
 <script src="js/cad.js?v=8"></script>
+<script src="js/iper.js?v=202609021833"></script>
 <script src="js/capture.js?v=202609020957"></script>
 <script src="js/version_check.js?v=202608311145"></script>
 </body>
