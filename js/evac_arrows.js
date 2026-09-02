@@ -55,7 +55,7 @@ function addEvacArrow(angle,xPct,yPct,initW,initH){
 }
 
 function _scaleArrows(){var ml=document.getElementById('markerLayer'),mlW=ml.offsetWidth||800;document.querySelectorAll('.evac-arrow').forEach(function(arr){if(arr.dataset.wpct)arr.style.width=(parseFloat(arr.dataset.wpct)/100*mlW)+'px';if(arr.dataset.hpct)arr.style.height=(parseFloat(arr.dataset.hpct)/100*mlW)+'px';_updateArrowInner(arr);});}
-function _scaleMarkers(){var sc=_zw/100;document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){var ms=parseFloat(m.dataset.markerScale||1);var mr=parseFloat(m.dataset.markerRot||0);m.style.transform='translate(-50%,-50%) scale('+(sc*ms)+') rotate('+mr+'deg)';m.style.transformOrigin='50% 50%';});}
+function _scaleMarkers(){var sc=_zw/100;var pr=(typeof _planRot!=='undefined'?_planRot:0);document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){var ms=parseFloat(m.dataset.markerScale||1);var mr=parseFloat(m.dataset.markerRot||0);/* rotate(mr - pr): contrarresta el giro del plano para que el ícono se vea SIEMPRE derecho (igual que en la paleta), conservando su giro individual mr. Las flechas de evacuación (.evac-arrow) SÍ giran con el plano y no pasan por aquí. */m.style.transform='translate(-50%,-50%) scale('+(sc*ms)+') rotate('+(mr-pr)+'deg)';m.style.transformOrigin='50% 50%';});}
 
 /* ── Float Panel profesional ── */
 function _initArrowFloatPanel(){

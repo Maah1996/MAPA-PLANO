@@ -244,7 +244,7 @@ function onUp(e){
     if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom){
       var pos=_toLocalPct(e.clientX,e.clientY);
       if(draggingNew._isArrow)addEvacArrow(draggingNew.angle,pos.x,pos.y);
-      else{var clr=draggingNew._isEvac?(draggingNew.color||'#217a47'):(draggingNew._isSpecial?'#ff6600':LEVELS[currentLevel].color);addMarker(draggingNew,clr,pos.x,pos.y);}
+      else{var clr=draggingNew._isEvac?(draggingNew.color||'#217a47'):(draggingNew._isSpecial?'#ff6600':LEVELS[currentLevel].color);addMarker(draggingNew,clr,pos.x,pos.y);if(typeof _scaleMarkers==='function')_scaleMarkers();}
     }
     if(ghost)ghost.remove();ghost=null;draggingNew=null;
   }
@@ -429,6 +429,9 @@ function _applyPlanRotation(){
   ml.style.transform=_planRot===0?'':'rotate('+_planRot+'deg)';
   ml.style.transformOrigin='center center';
   document.getElementById('rot-deg').textContent=_planRot+'°';
+  /* Re-aplicar la contra-rotación de los íconos: así al girar el plano los
+     íconos de riesgo/evacuación siguen viéndose derechos (las flechas no). */
+  if(typeof _scaleMarkers==='function')_scaleMarkers();
   /* Los márgenes (para alcanzar el plano rotado) los calcula _centerView */
   setTimeout(_centerView,0);
 }
