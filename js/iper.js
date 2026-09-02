@@ -103,6 +103,125 @@
   /* --- Estado ------------------------------------------------------------- */
   var _rows = [];        // riesgos procesados (para exportar / re-render)
   var _stripCodes = false;
+  var _fuente = '';      // nombre de la IPER que se está mostrando
+
+  /* --- IPER guardadas (localStorage de este equipo) ---------------------- */
+  var LS_KEY = 'iper_guardadas_v1';
+  var LS_MAX = 25;
+
+  function savedLoad() {
+    try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; }
+    catch (e) { return []; }
+  }
+  function savedStore(list) {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(list)); return true; }
+    catch (e) { return false; }
+  }
+  function fechaCorta(iso) {
+    try {
+      var d = new Date(iso);
+      return d.toLocaleDateString('es-CL') + ' ' +
+        d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+    } catch (e) { return iso || ''; }
+  }
+
+  // guarda (o actualiza si ya existe una con el mismo nombre) la IPER recién leída
+  function guardarActual(nombre, meta) {
+    var list = savedLoad();
+    var nm = String(nombre || 'IPER').trim() || 'IPER';
+    var i = -1;
+    for (var k = 0; k < list.length; k++) {
+      if ((list[k].nombre || '').toLowerCase() === nm.toLowerCase()) { i = k; break; }
+    }
+    var entry = {
+      id: (i >= 0 ? list[i].id : 'i' + Date.now().toString(36)),
+      nombre: nm,
+      fecha: new Date().toISOString(),
+      totalFilas: meta ? meta.totalFilas : 0,
+      distintos: meta ? meta.distintos : _rows.length,
+      rows: _rows
+    };
+    if (i >= 0) list[i] = entry; else list.unshift(entry);
+    if (list.length > LS_MAX) list = list.slice(0, LS_MAX);
+    if (!savedStore(list)) {
+      setError('No se pudo guardar la IPER en este equipo (almacenamiento lleno o bloqueado).');
+    }
+    renderSaved();
+  }
+
+  function verGuardada(id) {
+    var e = savedLoad().filter(function (x) { return x.id === id; })[0];
+    if (!e) return;
+    _rows = (e.rows || []).slice();
+    _fuente = e.nombre;
+    setError('');
+    el('iper-drop-txt').textContent = 'Consultando “' + e.nombre + '”  ·  guardada ' + fechaCorta(e.fecha);
+    render();
+    renderSaved();
+  }
+
+  function renombrarGuardada(id) {
+    var list = savedLoad();
+    var e = list.filter(function (x) { return x.id === id; })[0];
+    if (!e) return;
+    var nv = window.prompt('Nuevo nombre para esta IPER:', e.nombre);
+    if (nv === null) return;
+    nv = nv.trim();
+    if (!nv) return;
+    e.nombre = nv;
+    savedStore(list);
+    if (_fuente && _fuente === e.nombre) _fuente = nv;
+    renderSaved();
+  }
+
+  function borrarGuardada(id) {
+    var list = savedLoad();
+    var e = list.filter(function (x) { return x.id === id; })[0];
+    if (!e) return;
+    if (!window.confirm('¿Borrar la IPER guardada “' + e.nombre + '”? Esto no borra el archivo Excel original.')) return;
+    savedStore(list.filter(function (x) { return x.id !== id; }));
+    renderSaved();
+  }
+
+  function renderSaved() {
+    var wrap = el('iper-saved-wrap');
+    var box = el('iper-saved');
+    if (!wrap || !box) return;
+    var list = savedLoad();
+    if (!list.length) { wrap.style.display = 'none'; box.innerHTML = ''; return; }
+    wrap.style.display = 'block';
+    box.innerHTML = '';
+    list.forEach(function (e) {
+      var row = document.createElement('div');
+      row.className = 'iper-saved-row' + (_fuente && _fuente === e.nombre ? ' active' : '');
+
+      var info = document.createElement('div');
+      info.className = 'iper-saved-info';
+      var nm = document.createElement('div');
+      nm.className = 'iper-saved-name';
+      nm.textContent = e.nombre;
+      var mt = document.createElement('div');
+      mt.className = 'iper-saved-meta';
+      mt.textContent = (e.distintos || (e.rows ? e.rows.length : 0)) + ' riesgos  ·  guardada ' + fechaCorta(e.fecha);
+      info.appendChild(nm);
+      info.appendChild(mt);
+
+      var acts = document.createElement('div');
+      acts.className = 'iper-saved-acts';
+      var bVer = document.createElement('button'); bVer.type = 'button'; bVer.textContent = 'Ver';
+      bVer.addEventListener('click', function () { verGuardada(e.id); });
+      var bRen = document.createElement('button'); bRen.type = 'button'; bRen.textContent = 'Renombrar';
+      bRen.addEventListener('click', function () { renombrarGuardada(e.id); });
+      var bDel = document.createElement('button'); bDel.type = 'button'; bDel.textContent = 'Borrar';
+      bDel.className = 'danger';
+      bDel.addEventListener('click', function () { borrarGuardada(e.id); });
+      acts.appendChild(bVer); acts.appendChild(bRen); acts.appendChild(bDel);
+
+      row.appendChild(info);
+      row.appendChild(acts);
+      box.appendChild(row);
+    });
+  }
 
   /* --- Lectura del .xlsx ------------------------------------------------- */
   function parseWorkbook(data) {
@@ -299,9 +418,11 @@
           setError('Encontré la matriz (fila de títulos ' + out.filaTitulos + ') pero no hay filas con "Riesgo específico" cargado.');
           el('iper-result').style.display = 'none';
         } else {
+          _fuente = file.name;
           el('iper-drop-txt').textContent = file.name + '  —  ' + out.totalFilas +
             ' filas leídas, ' + out.distintos + ' riesgos distintos';
           render();
+          guardarActual(file.name, out);   // se guarda en este equipo para consultarla luego
         }
       } catch (err) {
         setError(err && err.message ? err.message : String(err));
@@ -420,6 +541,8 @@
 
     el('iper-copy').addEventListener('click', copyTable);
     el('iper-csv').addEventListener('click', exportCSV);
+
+    renderSaved();   // pinta las IPER ya guardadas en este equipo
 
     // Cartilla de pictogramas (PDF anclado en la página)
     var pdfWrap = el('iper-pdf-wrap');

@@ -18,7 +18,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-<link rel="stylesheet" href="css/estilos.css?v=202609021859">
+<link rel="stylesheet" href="css/estilos.css?v=202609021912">
 </head>
 <body>
 
@@ -261,6 +261,11 @@
         <input type="file" id="iper-file" accept=".xlsx,.xlsm,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none">
       </div>
 
+      <div id="iper-saved-wrap" style="display:none">
+        <div class="iper-saved-h">IPER guardadas en este equipo <span>(no necesitas volver a subir el archivo)</span></div>
+        <div id="iper-saved"></div>
+      </div>
+
       <div id="iper-error" style="display:none"></div>
 
       <div id="iper-result" style="display:none">
@@ -359,7 +364,7 @@
 <script src="js/evac_arrows.js?v=202609020957"></script>
 <script src="js/save_load.js?v=22"></script>
 <script src="js/cad.js?v=8"></script>
-<script src="js/iper.js?v=202609021859"></script>
+<script src="js/iper.js?v=202609021912"></script>
 <script src="js/capture.js?v=202609020957"></script>
 <script src="js/version_check.js?v=202608311145"></script>
 </body>
