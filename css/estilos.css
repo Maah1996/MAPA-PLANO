@@ -417,6 +417,7 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 #iper-table tr:nth-child(even) td{background:rgba(255,255,255,.015)}
 .iper-c-num{text-align:center;color:var(--txt2);font-weight:700}
 .iper-c-lug{font-weight:600;line-height:1.35;color:var(--txt)}
+.iper-peligro{font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--txt2);font-weight:700;margin-bottom:2px;line-height:1.3}
 .iper-name{font-weight:700;line-height:1.35}
 .iper-sub{margin-top:3px;font-size:10.5px;color:var(--txt2);line-height:1.4}
 .iper-c-exp{line-height:1.5;color:var(--txt2);max-width:420px}

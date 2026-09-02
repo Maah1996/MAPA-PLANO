@@ -18,7 +18,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-<link rel="stylesheet" href="css/estilos.css?v=202609021850">
+<link rel="stylesheet" href="css/estilos.css?v=202609021859">
 </head>
 <body>
 
@@ -237,11 +237,12 @@
 
     <div id="iper-body">
       <p id="iper-intro">
-        Sube tu matriz <b>IPER en Excel (.xlsx)</b>. El programa lee las columnas
-        <b>“Riesgo específico”</b> y <b>“Clasificación del riesgo”</b>, junta los riesgos
-        repetidos (se queda con la clasificación más alta) y arma la lista para llenar
-        el mapa de riesgos. Usa la <b>Cartilla de pictogramas</b> (arriba) para revisar
-        qué riesgos del catálogo Mutual corresponden a cada sección.
+        Sube tu matriz <b>IPER en Excel (.xlsx)</b>. El programa arma el nombre del riesgo
+        con las columnas <b>“Peligro / factor de riesgo”</b> y <b>“Riesgo específico”</b>, y el
+        nivel con <b>“Clasificación del riesgo”</b>. Junta los riesgos repetidos (se queda con
+        la clasificación más alta) y arma la lista para llenar el mapa de riesgos. Usa la
+        <b>Cartilla de pictogramas</b> (arriba) para revisar qué riesgos del catálogo Mutual
+        corresponden a cada sección.
       </p>
 
       <div id="iper-pdf-wrap" style="display:none">
@@ -358,7 +359,7 @@
 <script src="js/evac_arrows.js?v=202609020957"></script>
 <script src="js/save_load.js?v=22"></script>
 <script src="js/cad.js?v=8"></script>
-<script src="js/iper.js?v=202609021850"></script>
+<script src="js/iper.js?v=202609021859"></script>
 <script src="js/capture.js?v=202609020957"></script>
 <script src="js/version_check.js?v=202608311145"></script>
 </body>

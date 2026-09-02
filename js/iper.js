@@ -151,15 +151,17 @@
     for (var r = hdr + 1; r < grid.length; r++) {
       var row = grid[r];
       if (!row) continue;
-      var rn = cRiesgo >= 0 ? row[cRiesgo] : '';
-      if (rn === null || rn === undefined || String(rn).trim() === '') continue;
+      var esp = cRiesgo >= 0 && row[cRiesgo] ? String(row[cRiesgo]).replace(/\s+/g, ' ').trim() : '';
+      var peligro = cPeligro >= 0 && row[cPeligro] ? String(row[cPeligro]).replace(/\s+/g, ' ').trim() : '';
+      // El nombre del riesgo se arma con "Peligro / factor de riesgo" + "Riesgo específico".
+      // Si sólo viene uno de los dos, se usa ese.
+      var name = esp || peligro;
+      if (!name) continue;
 
       total++;
-      var name = String(rn).replace(/\s+/g, ' ').trim();
       var key = name.toUpperCase();
       var nivel = nivelDeClasificacion(cClass >= 0 ? row[cClass] : '');
       var lugar = cLugar >= 0 && row[cLugar] ? String(row[cLugar]).trim() : '';
-      var peligro = cPeligro >= 0 && row[cPeligro] ? String(row[cPeligro]).trim() : '';
       var tarea = cTarea >= 0 && row[cTarea] ? String(row[cTarea]).trim() : '';
 
       if (!map[key]) {
@@ -206,6 +208,16 @@
 
       var tdName = document.createElement('td');
       tdName.className = 'iper-c-name';
+      // "Peligro / factor de riesgo" (encabezado) + "Riesgo específico" (nombre)
+      var pelTxt = (rec.peligros || []).filter(function (p) {
+        return p && p.toUpperCase() !== rec.name.toUpperCase();
+      }).join(' · ');
+      if (pelTxt) {
+        var pf = document.createElement('div');
+        pf.className = 'iper-peligro';
+        pf.textContent = pelTxt;
+        tdName.appendChild(pf);
+      }
       var strong = document.createElement('div');
       strong.className = 'iper-name';
       strong.textContent = nombre;
@@ -312,12 +324,15 @@
       var nombre = _stripCodes ? sinCodigo(rec.name) : rec.name;
       var cls = rec.nivel ? (rec.nivel + ' - ' + nv.label) : 'Sin clasificar';
       var lug = seccionesDe(rec).join(' · ') || '';
-      return [String(i + 1), nombre, lug, cls, nv.exp];
+      var pel = (rec.peligros || []).filter(function (p) {
+        return p && p.toUpperCase() !== rec.name.toUpperCase();
+      }).join(' · ');
+      return [String(i + 1), pel, nombre, lug, cls, nv.exp];
     });
   }
 
   function copyTable() {
-    var head = ['N°', 'Nombre del riesgo', 'Lugar del riesgo', 'Clasificación del riesgo', 'Explicación'];
+    var head = ['N°', 'Peligro / factor de riesgo', 'Riesgo específico', 'Lugar del riesgo', 'Clasificación del riesgo', 'Explicación'];
     var txt = [head].concat(tableRows())
       .map(function (r) { return r.join('\t'); }).join('\n');
     var done = function () { flash('iper-copy', '✓ Copiado'); };
@@ -340,7 +355,7 @@
   }
 
   function exportCSV() {
-    var head = ['N', 'Nombre del riesgo', 'Lugar del riesgo', 'Clasificacion del riesgo', 'Explicacion'];
+    var head = ['N', 'Peligro / factor de riesgo', 'Riesgo especifico', 'Lugar del riesgo', 'Clasificacion del riesgo', 'Explicacion'];
     var esc = function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; };
     var lines = [head].concat(tableRows())
       .map(function (r) { return r.map(esc).join(';'); }).join('\r\n');
