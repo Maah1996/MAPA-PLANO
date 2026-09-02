@@ -559,13 +559,20 @@
     });
     el('iper-pdf-hide').addEventListener('click', hidePdf);
 
-    // "Leer los códigos" (B1, A2, I2…)
+    // "Leer los códigos" (B1, A2, I2…) — cajón lateral, no tapa la lista
     var codesWrap = el('iper-codes-wrap');
-    function hideCodes() { codesWrap.style.display = 'none'; }
+    var iperPanel = el('iper-panel');
+    function hideCodes() {
+      codesWrap.style.display = 'none';
+      if (iperPanel) iperPanel.classList.remove('codes-open');
+    }
+    function showCodes() {
+      codesWrap.style.display = 'flex';
+      if (iperPanel) iperPanel.classList.add('codes-open');
+      var b = el('iper-codes-body'); if (b) b.scrollTop = 0;
+    }
     el('iper-codes-btn').addEventListener('click', function () {
-      if (codesWrap.style.display === 'block') { hideCodes(); return; }
-      codesWrap.style.display = 'block';
-      codesWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (codesWrap.style.display === 'flex') hideCodes(); else showCodes();
     });
     el('iper-codes-hide').addEventListener('click', hideCodes);
   }
