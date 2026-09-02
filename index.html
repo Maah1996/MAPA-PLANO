@@ -18,7 +18,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-<link rel="stylesheet" href="css/estilos.css?v=202609021833">
+<link rel="stylesheet" href="css/estilos.css?v=202609021850">
 </head>
 <body>
 
@@ -231,6 +231,7 @@
     <div id="iper-head">
       <span id="iper-h-title">📋 IPER → Lista de riesgos</span>
       <span style="flex:1"></span>
+      <button id="iper-pdf-btn" type="button" title="Catálogo oficial de riesgos de Mutual de Seguridad">📖 Cartilla de pictogramas</button>
       <button id="iper-close" type="button" title="Cerrar">✕</button>
     </div>
 
@@ -239,8 +240,19 @@
         Sube tu matriz <b>IPER en Excel (.xlsx)</b>. El programa lee las columnas
         <b>“Riesgo específico”</b> y <b>“Clasificación del riesgo”</b>, junta los riesgos
         repetidos (se queda con la clasificación más alta) y arma la lista para llenar
-        el mapa de riesgos.
+        el mapa de riesgos. Usa la <b>Cartilla de pictogramas</b> (arriba) para revisar
+        qué riesgos del catálogo Mutual corresponden a cada sección.
       </p>
+
+      <div id="iper-pdf-wrap" style="display:none">
+        <div id="iper-pdf-head">
+          <span>Cartilla de pictogramas — Mutual de Seguridad (catálogo oficial de riesgos)</span>
+          <span style="flex:1"></span>
+          <a id="iper-pdf-open" href="docs/cartilla-pictogramas.pdf" target="_blank" rel="noopener">Abrir en pestaña ↗</a>
+          <button id="iper-pdf-hide" type="button">Ocultar</button>
+        </div>
+        <iframe id="iper-pdf-frame" title="Cartilla de pictogramas Mutual" src=""></iframe>
+      </div>
 
       <div id="iper-drop">
         <div id="iper-drop-txt">Arrastra aquí el archivo .xlsx o</div>
@@ -263,8 +275,9 @@
             <thead>
               <tr>
                 <th style="width:34px">N°</th>
-                <th style="width:32%">Nombre del riesgo</th>
-                <th style="width:150px">Clasificación</th>
+                <th style="width:26%">Nombre del riesgo</th>
+                <th style="width:130px">Lugar del riesgo</th>
+                <th style="width:140px">Clasificación</th>
                 <th>Explicación</th>
               </tr>
             </thead>
@@ -345,7 +358,7 @@
 <script src="js/evac_arrows.js?v=202609020957"></script>
 <script src="js/save_load.js?v=22"></script>
 <script src="js/cad.js?v=8"></script>
-<script src="js/iper.js?v=202609021833"></script>
+<script src="js/iper.js?v=202609021850"></script>
 <script src="js/capture.js?v=202609020957"></script>
 <script src="js/version_check.js?v=202608311145"></script>
 </body>

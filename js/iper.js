@@ -64,6 +64,42 @@
     return String(name).replace(/\s*\([A-Z]{1,3}\d{0,2}\)\s*$/, '').trim();
   }
 
+  /* --- Secciones / lugares de trabajo -----------------------------------------
+   * La IPER trae el "Lugar de trabajo específico" con nombres libres. Aquí se
+   * normalizan a las secciones del local. Si un lugar no coincide, se muestra
+   * tal cual viene en el Excel.
+   * ------------------------------------------------------------------------- */
+  var SECCIONES = [
+    { re: /(panaderi)/i,                         label: 'Panadería' },
+    { re: /(pasteleri|reposteri)/i,              label: 'Pastelería' },
+    { re: /(cocina|coccion|línea de|linea de)/i, label: 'Cocina' },
+    { re: /(produccion|producción|elaboracion|elaboración|planta|operacion|operación)/i, label: 'Sala de operaciones' },
+    { re: /(sala de venta|local de venta|mesón|meson|mostrador|atencion|atención|publico|público|cliente)/i, label: 'Sala de ventas' },
+    { re: /(bodega|almacen|almacén|despensa)/i,  label: 'Bodega' },
+    { re: /(aseo|limpieza)/i,                    label: 'Aseo' },
+    { re: /(bano|baño|servicio higien|sshh)/i,   label: 'Baños' },
+    { re: /(oficina|administr|casa matriz|matriz)/i, label: 'Administración' },
+    { re: /(via publica|vía pública|calle|ruta|reparto|delivery|despacho)/i, label: 'Vía pública / reparto' }
+  ];
+
+  function normSeccion(lugar) {
+    var t = String(lugar || '').trim();
+    if (!t) return '';
+    for (var i = 0; i < SECCIONES.length; i++) {
+      if (SECCIONES[i].re.test(t)) return SECCIONES[i].label;
+    }
+    return t; // desconocido: se deja el texto original de la IPER
+  }
+
+  function seccionesDe(rec) {
+    var set = [];
+    (rec.lugares || []).forEach(function (l) {
+      var s = normSeccion(l);
+      if (s && set.indexOf(s) < 0) set.push(s);
+    });
+    return set;
+  }
+
   /* --- Estado ------------------------------------------------------------- */
   var _rows = [];        // riesgos procesados (para exportar / re-render)
   var _stripCodes = false;
@@ -174,14 +210,26 @@
       strong.className = 'iper-name';
       strong.textContent = nombre;
       tdName.appendChild(strong);
-      var meta = [];
-      if (rec.veces > 1) meta.push(rec.veces + ' filas en la IPER');
-      if (rec.lugares.length) meta.push('Lugar: ' + rec.lugares.join(' · '));
-      if (meta.length) {
+      if (rec.veces > 1) {
         var sub = document.createElement('div');
         sub.className = 'iper-sub';
-        sub.textContent = meta.join('   |   ');
+        sub.textContent = rec.veces + ' filas en la IPER';
         tdName.appendChild(sub);
+      }
+
+      var tdLug = document.createElement('td');
+      tdLug.className = 'iper-c-lug';
+      var secs = seccionesDe(rec);
+      tdLug.textContent = secs.length ? secs.join(' · ') : '—';
+      if (secs.length) {
+        // si la sección normalizada difiere del texto original, mostrarlo como ayuda
+        var raw = (rec.lugares || []).join(' · ');
+        if (raw && raw.toLowerCase() !== secs.join(' · ').toLowerCase()) {
+          var sl = document.createElement('div');
+          sl.className = 'iper-sub';
+          sl.textContent = raw;
+          tdLug.appendChild(sl);
+        }
       }
 
       var tdCls = document.createElement('td');
@@ -199,6 +247,7 @@
 
       tr.appendChild(tdN);
       tr.appendChild(tdName);
+      tr.appendChild(tdLug);
       tr.appendChild(tdCls);
       tr.appendChild(tdExp);
       tb.appendChild(tr);
@@ -262,12 +311,13 @@
       var nv = NIVELES[rec.nivel] || { label: 'Sin clasificar', exp: '' };
       var nombre = _stripCodes ? sinCodigo(rec.name) : rec.name;
       var cls = rec.nivel ? (rec.nivel + ' - ' + nv.label) : 'Sin clasificar';
-      return [String(i + 1), nombre, cls, nv.exp];
+      var lug = seccionesDe(rec).join(' · ') || '';
+      return [String(i + 1), nombre, lug, cls, nv.exp];
     });
   }
 
   function copyTable() {
-    var head = ['N°', 'Nombre del riesgo', 'Clasificación del riesgo', 'Explicación'];
+    var head = ['N°', 'Nombre del riesgo', 'Lugar del riesgo', 'Clasificación del riesgo', 'Explicación'];
     var txt = [head].concat(tableRows())
       .map(function (r) { return r.join('\t'); }).join('\n');
     var done = function () { flash('iper-copy', '✓ Copiado'); };
@@ -290,7 +340,7 @@
   }
 
   function exportCSV() {
-    var head = ['N', 'Nombre del riesgo', 'Clasificacion del riesgo', 'Explicacion'];
+    var head = ['N', 'Nombre del riesgo', 'Lugar del riesgo', 'Clasificacion del riesgo', 'Explicacion'];
     var esc = function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; };
     var lines = [head].concat(tableRows())
       .map(function (r) { return r.map(esc).join(';'); }).join('\r\n');
@@ -355,6 +405,21 @@
 
     el('iper-copy').addEventListener('click', copyTable);
     el('iper-csv').addEventListener('click', exportCSV);
+
+    // Cartilla de pictogramas (PDF anclado en la página)
+    var pdfWrap = el('iper-pdf-wrap');
+    var pdfFrame = el('iper-pdf-frame');
+    var PDF_SRC = 'docs/cartilla-pictogramas.pdf';
+    function showPdf() {
+      if (!pdfFrame.getAttribute('src')) pdfFrame.setAttribute('src', PDF_SRC);
+      pdfWrap.style.display = 'block';
+      pdfWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    function hidePdf() { pdfWrap.style.display = 'none'; }
+    el('iper-pdf-btn').addEventListener('click', function () {
+      if (pdfWrap.style.display === 'block') hidePdf(); else showPdf();
+    });
+    el('iper-pdf-hide').addEventListener('click', hidePdf);
   }
 
   if (document.readyState === 'loading') {
