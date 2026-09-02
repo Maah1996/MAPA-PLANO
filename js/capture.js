@@ -213,18 +213,15 @@ async function _capturePlan(scaleFactor){
   /* 3. Escala de íconos: como en la captura el markerLayer se resetea a 100%
         de ancho (ver paso 5), los íconos deben usar SOLO markerScale (ms),
         no _zw/100*ms — si no, quedan proporcionalmente chicos o grandes según
-        el zoom que tenía la pantalla al exportar.
-        rotate(mr - _capPR): los íconos se ven SIEMPRE derechos (igual que en
-        pantalla). Como el canvas final se gira _planRot grados (paso 5), aquí
-        se contrarresta ese giro; queda visible solo la rotación individual mr.
-        Las flechas de evacuación (.evac-arrow) NO pasan por acá: giran con el plano. */
-  var _capPR=(typeof _planRot!=='undefined'?_planRot:0);
+        el zoom que tenía la pantalla al exportar. Se preserva la rotación
+        individual (markerRot); el canvas final se gira _planRot grados (paso 5),
+        así el ícono queda con la misma orientación que en pantalla. */
   document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){
     m._origTr=m.style.transform;
     m._origOrg=m.style.transformOrigin;
     var ms=parseFloat(m.dataset.markerScale||1);
     var mr=parseFloat(m.dataset.markerRot||0);
-    m.style.transform='translate(-50%,-50%) scale('+ms+') rotate('+(mr-_capPR)+'deg)';
+    m.style.transform='translate(-50%,-50%) scale('+ms+') rotate('+mr+'deg)';
     m.style.transformOrigin='50% 50%';
   });
 

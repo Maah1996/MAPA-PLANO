@@ -244,7 +244,13 @@ function onUp(e){
     if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom){
       var pos=_toLocalPct(e.clientX,e.clientY);
       if(draggingNew._isArrow)addEvacArrow(draggingNew.angle,pos.x,pos.y);
-      else{var clr=draggingNew._isEvac?(draggingNew.color||'#217a47'):(draggingNew._isSpecial?'#ff6600':LEVELS[currentLevel].color);addMarker(draggingNew,clr,pos.x,pos.y);if(typeof _scaleMarkers==='function')_scaleMarkers();}
+      else{var clr=draggingNew._isEvac?(draggingNew.color||'#217a47'):(draggingNew._isSpecial?'#ff6600':LEVELS[currentLevel].color);var _nm=addMarker(draggingNew,clr,pos.x,pos.y);
+        /* El ícono ENTRA derecho (vertical, igual que en la paleta) aunque el
+           plano esté girado: se le pre-carga markerRot = -_planRot, que anula
+           el giro heredado del plano en el momento de soltarlo. De ahí en más
+           el ícono gira CON el plano (hereda el rotate de #markerLayer). */
+        if(_nm&&typeof _planRot!=='undefined'&&_planRot!==0)_nm.dataset.markerRot=String(((-_planRot)%360+360)%360);
+        if(typeof _scaleMarkers==='function')_scaleMarkers();}
     }
     if(ghost)ghost.remove();ghost=null;draggingNew=null;
   }
@@ -429,9 +435,6 @@ function _applyPlanRotation(){
   ml.style.transform=_planRot===0?'':'rotate('+_planRot+'deg)';
   ml.style.transformOrigin='center center';
   document.getElementById('rot-deg').textContent=_planRot+'°';
-  /* Re-aplicar la contra-rotación de los íconos: así al girar el plano los
-     íconos de riesgo/evacuación siguen viéndose derechos (las flechas no). */
-  if(typeof _scaleMarkers==='function')_scaleMarkers();
   /* Los márgenes (para alcanzar el plano rotado) los calcula _centerView */
   setTimeout(_centerView,0);
 }
