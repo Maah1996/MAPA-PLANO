@@ -78,6 +78,8 @@
     { re: /(bodega|almacen|almacén|despensa)/i,  label: 'Bodega' },
     { re: /(aseo|limpieza)/i,                    label: 'Aseo' },
     { re: /(bano|baño|servicio higien|sshh)/i,   label: 'Baños' },
+    { re: /(vestuario|camarin|camerino|casillero)/i, label: 'Vestuario' },
+    { re: /(parqueadero|estacionamiento|parking)/i, label: 'Parqueadero / Estacionamiento' },
     { re: /(oficina|administr|casa matriz|matriz)/i, label: 'Administración' },
     { re: /(via publica|vía pública|calle|ruta|reparto|delivery|despacho)/i, label: 'Vía pública / reparto' }
   ];
@@ -142,6 +144,8 @@
     'Bodega':                 ['caida_objetos', 'sobrecarga', 'caida_distinto'],
     'Aseo':                   ['quimicos', 'caida_mismo'],
     'Baños':                  ['caida_mismo'],
+    'Vestuario':              ['caida_mismo'],
+    'Parqueadero / Estacionamiento': ['vehiculos', 'sismo'],
     'Administración':         ['electrico'],
     'Vía pública / reparto':  ['vehiculos']
   };
