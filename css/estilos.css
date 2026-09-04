@@ -462,4 +462,9 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 .iper-sugg-info{flex:1;min-width:0}
 .iper-sugg-name{font-size:12.5px;font-weight:700;color:var(--txt)}
 .iper-sugg-why{font-size:11px;color:var(--txt2);margin-top:2px;line-height:1.4}
+.iper-sugg-add{flex:0 0 auto;align-self:center;padding:6px 12px;border-radius:6px;border:1px solid rgba(255,140,0,.5);background:rgba(255,140,0,.12);color:#ff8c00;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:.12s}
+.iper-sugg-add:hover{background:#ff8c00;color:#1a1000;border-color:#ff8c00}
+
+@keyframes iperRowNew{0%{background:rgba(255,140,0,.35)}100%{background:transparent}}
+.iper-row-new td{animation:iperRowNew 2.2s ease-out}
 

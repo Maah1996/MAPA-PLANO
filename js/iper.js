@@ -222,14 +222,54 @@
       info.appendChild(why);
       row.appendChild(info);
 
+      var addBtn = document.createElement('button');
+      addBtn.type = 'button';
+      addBtn.className = 'iper-sugg-add';
+      addBtn.textContent = '＋ Agregar a la lista';
+      addBtn.addEventListener('click', function () { agregarRiesgoSugerido(nombre, f.secciones); });
+      row.appendChild(addBtn);
+
       box.appendChild(row);
     });
+  }
+
+  // agrega un riesgo sugerido a _rows como si fuera una fila mas de la IPER
+  // (sin clasificacion propia -- queda "Sin clasificar" hasta que el
+  // prevencionista lo evalue) y lo deja guardado junto con el resto
+  function agregarRiesgoSugerido(nombre, secciones) {
+    var yaExiste = _rows.some(function (r) { return norm(r.name) === norm(nombre); });
+    if (yaExiste) return;
+    var nuevo = {
+      name: nombre,
+      nivel: 0,
+      veces: 1,
+      lugares: (secciones || []).slice(),
+      peligros: ['Agregado por el programa — falta evaluar probabilidad y consecuencia'],
+      tareas: []
+    };
+    _rows.push(nuevo);
+    _rows.sort(function (a, b) {
+      if (b.nivel !== a.nivel) return b.nivel - a.nivel;
+      return a.name.localeCompare(b.name, 'es');
+    });
+    _totalFilas = (typeof _totalFilas === 'number' ? _totalFilas : _rows.length) + 1;
+    render();
+    if (_fuente) guardarActual(_fuente, { totalFilas: _totalFilas, distintos: _rows.length });
+
+    var idx = _rows.indexOf(nuevo);
+    var tr = el('iper-tbody').children[idx];
+    if (tr) {
+      tr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      tr.classList.add('iper-row-new');
+      setTimeout(function () { tr.classList.remove('iper-row-new'); }, 2200);
+    }
   }
 
   /* --- Estado ------------------------------------------------------------- */
   var _rows = [];        // riesgos procesados (para exportar / re-render)
   var _stripCodes = false;
   var _fuente = '';      // nombre de la IPER que se está mostrando
+  var _totalFilas = 0;   // filas leídas del Excel + riesgos agregados manualmente después
 
   /* --- IPER guardadas (localStorage de este equipo) ---------------------- */
   var LS_KEY = 'iper_guardadas_v1';
@@ -280,6 +320,7 @@
     if (!e) return;
     _rows = (e.rows || []).slice();
     _fuente = e.nombre;
+    _totalFilas = e.totalFilas || _rows.length;
     setError('');
     el('iper-drop-txt').textContent = 'Consultando “' + e.nombre + '”  ·  guardada ' + fechaCorta(e.fecha);
     render();
@@ -552,6 +593,7 @@
           el('iper-result').style.display = 'none';
         } else {
           _fuente = file.name;
+          _totalFilas = out.totalFilas;
           el('iper-drop-txt').textContent = file.name + '  —  ' + out.totalFilas +
             ' filas leídas, ' + out.distintos + ' riesgos distintos';
           render();
