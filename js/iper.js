@@ -188,8 +188,13 @@
     var box = el('iper-saved');
     if (!wrap || !box) return;
     var list = savedLoad();
-    if (!list.length) { wrap.style.display = 'none'; box.innerHTML = ''; return; }
     wrap.style.display = 'block';
+    if (!list.length) {
+      box.innerHTML = '<div class="iper-saved-empty">Aún no hay ninguna IPER guardada en este navegador. ' +
+        'Al subir un archivo se guarda aquí para consultarla después sin volver a subirla — pero solo queda ' +
+        'guardada en este equipo y este navegador, no se sincroniza con otros dispositivos.</div>';
+      return;
+    }
     box.innerHTML = '';
     list.forEach(function (e) {
       var row = document.createElement('div');

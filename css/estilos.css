@@ -428,6 +428,7 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 .iper-saved-acts button{padding:5px 10px;border-radius:5px;border:1px solid var(--brd);background:var(--surf2);color:var(--txt);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;transition:.12s}
 .iper-saved-acts button:hover{border-color:var(--acc)}
 .iper-saved-acts button.danger:hover{border-color:var(--rojo);color:#ffb4ab}
+.iper-saved-empty{padding:10px 12px;font-size:11.5px;color:var(--txt2);line-height:1.5}
 
 #iper-result{display:none;flex-direction:column;gap:10px}
 #iper-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
