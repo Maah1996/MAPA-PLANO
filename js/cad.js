@@ -31,8 +31,6 @@ function _th(){return _cadDark?_cadTheme.dark:_cadTheme.light;}
 function _snapV(v){return _cadSnapEnabled?Math.round(v/_cadGridPx)*_cadGridPx:v;}
 function _pxToM(px){return Math.round(Math.abs(px)/_cadGridPx*_cadScaleM*100)/100;}
 function _fmtM(m){return m+' m';}
-function _distPts(x1,y1,x2,y2){return Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));}
-
 function _getPos(e){
   var r=_cCanvas.getBoundingClientRect();
   /* En 'touchend' e.touches viene vacío (el dedo ya se levantó); hay que usar

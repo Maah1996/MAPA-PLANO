@@ -198,7 +198,7 @@ async function _capturePlan(scaleFactor){
   var ml=document.getElementById('markerLayer');
 
   /* 1. Ocultar controles UI (incluida la barra de arrastre de la leyenda) */
-  document.querySelectorAll('.del,.mkr-size,.arr-del,.arr-resize,.leg-resize,.afp-toggle,#arr-float-panel,#mkr-float-panel,.mpl-drag').forEach(function(d){d.style.display='none';});
+  document.querySelectorAll('.del,.mkr-size,.arr-del,.arr-resize,.leg-resize,.afp-toggle,#arr-float-panel,.mpl-drag').forEach(function(d){d.style.display='none';});
   /* Quitar el recuadro punteado de selección para que no salga en el PNG/PDF. */
   document.querySelectorAll('.marker.mkr-sel').forEach(function(m){m.classList.remove('mkr-sel');});
 

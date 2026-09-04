@@ -193,14 +193,6 @@ function _showVerify(user){
   _setStatusVerifyBtns(true);
   _showStatusOverlay(true);
 }
-function _showPending(msg){
-  _showLanding(false);_showLoginOverlay(false);_showPlansOverlay(false);
-  document.getElementById('status-icon').textContent='⏳';
-  document.getElementById('status-title').textContent='Cuenta pendiente';
-  document.getElementById('status-msg').textContent=msg||'Tu cuenta aún no está lista para ingresar. Contacta al administrador.';
-  _setStatusVerifyBtns(false);
-  _showStatusOverlay(true);
-}
 function _showDisabled(){
   _showLanding(false);_showLoginOverlay(false);_showPlansOverlay(false);
   document.getElementById('status-icon').textContent='🔒';
