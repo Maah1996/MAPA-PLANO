@@ -100,6 +100,128 @@
     return set;
   }
 
+  /* --- Riesgos que se esperan según el tipo de lugar --------------------------
+   * Sugerencia automática (NO reemplaza el criterio del prevencionista): si la
+   * matriz menciona un lugar de cierto tipo (p.ej. "Cocina") y ninguna fila de
+   * la IPER cubre un riesgo típico de ese lugar (p.ej. "Incendio"), se propone
+   * al final del listado. Usa los mismos ids/nombres/glifos de RISKS (core.js,
+   * cargado antes que este módulo) para que el nombre y el ícono coincidan con
+   * la paleta del mapa; si por algún motivo no está disponible, se omite el
+   * ícono sin romper nada (módulo aislado).
+   * ------------------------------------------------------------------------- */
+  // por cada riesgo de la paleta: palabras/expresiones que, si aparecen en el
+  // nombre o el "peligro/factor" de una fila de la IPER, cuentan como "ya cubierto"
+  var RIESGO_KEYWORDS = {
+    incendio:            /INCENDIO|FUEGO|CONATO/,
+    explosion:            /EXPLOSION|GAS LICUADO|FUGA DE GAS|\bGLP\b/,
+    calor:                /TERMICO CALOR|GOLPE DE CALOR|ALTA TEMPERATURA|ESTRES TERMICO/,
+    frio:                 /TERMICO FRIO|CAMARA DE FRIO|BAJA TEMPERATURA|FRIO EXTREMO/,
+    cortes:               /CORTE/,
+    atrapamiento:         /ATRAPAMIENTO|ENGANCHE|ENGRANAJE/,
+    caida_mismo:          /CAIDA.*MISMO NIVEL|RESBAL/,
+    caida_distinto:       /CAIDA.*DISTINTO NIVEL|CAIDA DE ALTURA|TRABAJO EN ALTURA/,
+    caida_objetos:        /CAIDA DE OBJETO/,
+    electrico:            /ELECTRIC/,
+    ruido:                /RUIDO/,
+    polvo:                /POLVO|AEROSOL|MATERIAL PARTICULADO|HARINA/,
+    quimicos:             /QUIMIC|CORROSIV|SUSTANCIA PELIGROSA|CAUSTIC/,
+    vehiculos:            /ATROPELLO|VEHICUL|TRANSITO/,
+    sismo:                /SISMO|TERREMOTO|INUNDACION/,
+    psicosocial:          /PSICOSOCIAL|ESTRES LABORAL|ACOSO|CARGA MENTAL/,
+    sobrecarga:           /SOBRECARGA|MANEJO MANUAL|SOBREESFUERZO|CARGA FISICA|POSTURA/,
+    superficie_caliente:  /SUPERFICIE CALIENTE|QUEMADURA/
+  };
+  // por cada sección normalizada (misma etiqueta que SECCIONES arriba): riesgos
+  // típicos que se esperaría encontrar si la IPER cubre ese tipo de lugar
+  var SECCION_RIESGOS = {
+    'Panadería':              ['incendio', 'calor', 'superficie_caliente', 'electrico', 'polvo'],
+    'Pastelería':             ['incendio', 'calor', 'superficie_caliente', 'electrico', 'cortes'],
+    'Cocina':                 ['incendio', 'calor', 'superficie_caliente', 'electrico', 'cortes'],
+    'Sala de operaciones':    ['electrico', 'atrapamiento', 'ruido', 'sobrecarga'],
+    'Sala de ventas':         ['caida_mismo'],
+    'Bodega':                 ['caida_objetos', 'sobrecarga', 'caida_distinto'],
+    'Aseo':                   ['quimicos', 'caida_mismo'],
+    'Baños':                  ['caida_mismo'],
+    'Administración':         ['electrico'],
+    'Vía pública / reparto':  ['vehiculos']
+  };
+
+  // ids de riesgo que YA aparecen en la IPER subida (según nombre/peligro de cada fila)
+  function riesgosCubiertos(rows) {
+    var set = {};
+    rows.forEach(function (rec) {
+      var texto = norm(rec.name) + ' ' + norm((rec.peligros || []).join(' '));
+      Object.keys(RIESGO_KEYWORDS).forEach(function (id) {
+        if (!set[id] && RIESGO_KEYWORDS[id].test(texto)) set[id] = true;
+      });
+    });
+    return set;
+  }
+
+  // secciones normalizadas que aparecen en algún lugar de la IPER subida
+  function seccionesEncontradas(rows) {
+    var set = {};
+    rows.forEach(function (rec) {
+      seccionesDe(rec).forEach(function (s) { set[s] = true; });
+    });
+    return Object.keys(set);
+  }
+
+  // riesgos esperados por las secciones presentes que no aparecen en la IPER
+  function detectarFaltantes(rows) {
+    var cubiertos = riesgosCubiertos(rows);
+    var secciones = seccionesEncontradas(rows);
+    var faltanMap = {};
+    secciones.forEach(function (sec) {
+      var esperados = SECCION_RIESGOS[sec];
+      if (!esperados) return;
+      esperados.forEach(function (id) {
+        if (cubiertos[id]) return;
+        if (!faltanMap[id]) faltanMap[id] = { id: id, secciones: [] };
+        if (faltanMap[id].secciones.indexOf(sec) < 0) faltanMap[id].secciones.push(sec);
+      });
+    });
+    return Object.keys(faltanMap).map(function (id) { return faltanMap[id]; })
+      .sort(function (a, b) { return b.secciones.length - a.secciones.length; });
+  }
+
+  function renderSuggest(rows) {
+    var wrap = el('iper-suggest-wrap');
+    var box = el('iper-suggest');
+    if (!wrap || !box) return;
+    var faltan = detectarFaltantes(rows);
+    if (!faltan.length) { wrap.style.display = 'none'; box.innerHTML = ''; return; }
+    wrap.style.display = 'block';
+    box.innerHTML = '';
+    faltan.forEach(function (f) {
+      var meta = (typeof RISKS !== 'undefined') ? RISKS.filter(function (r) { return r.id === f.id; })[0] : null;
+      var nombre = meta ? meta.name : f.id;
+
+      var row = document.createElement('div');
+      row.className = 'iper-sugg-row';
+
+      var ico = document.createElement('div');
+      ico.className = 'iper-sugg-ico';
+      if (meta && typeof iconSVG === 'function') ico.innerHTML = iconSVG(meta.g, '#ff8c00', 26);
+      row.appendChild(ico);
+
+      var info = document.createElement('div');
+      info.className = 'iper-sugg-info';
+      var nm = document.createElement('div');
+      nm.className = 'iper-sugg-name';
+      nm.textContent = nombre;
+      var why = document.createElement('div');
+      why.className = 'iper-sugg-why';
+      why.textContent = 'Tu matriz menciona ' + f.secciones.join(', ') +
+        ', pero no encontré este riesgo en ninguna fila.';
+      info.appendChild(nm);
+      info.appendChild(why);
+      row.appendChild(info);
+
+      box.appendChild(row);
+    });
+  }
+
   /* --- Estado ------------------------------------------------------------- */
   var _rows = [];        // riesgos procesados (para exportar / re-render)
   var _stripCodes = false;
@@ -402,6 +524,8 @@
       : '';
 
     el('iper-result').style.display = _rows.length ? 'flex' : 'none';
+
+    try { renderSuggest(_rows); } catch (e) { /* sugerencia es un extra, no debe romper la tabla */ }
   }
 
   function handleFile(file) {

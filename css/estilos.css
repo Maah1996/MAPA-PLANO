@@ -452,3 +452,14 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 .iper-c-exp{line-height:1.5;color:var(--txt2);max-width:420px}
 .iper-chip{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:800;white-space:nowrap;letter-spacing:.2px}
 
+#iper-suggest-wrap{border:1px solid rgba(255,140,0,.35);border-radius:8px;overflow:hidden;background:rgba(255,140,0,.05)}
+.iper-suggest-h{padding:9px 12px;background:rgba(255,140,0,.12);border-bottom:1px solid rgba(255,140,0,.3);font-size:11.5px;font-weight:700;color:#ff8c00}
+.iper-suggest-h span{font-weight:400;color:var(--txt2);text-transform:none;letter-spacing:0}
+.iper-sugg-row{display:flex;align-items:flex-start;gap:10px;padding:9px 12px;border-bottom:1px solid rgba(255,140,0,.18)}
+.iper-sugg-row:last-child{border-bottom:none}
+.iper-sugg-ico{flex:0 0 26px;width:26px;height:26px}
+.iper-sugg-ico svg{width:26px;height:26px;display:block}
+.iper-sugg-info{flex:1;min-width:0}
+.iper-sugg-name{font-size:12.5px;font-weight:700;color:var(--txt)}
+.iper-sugg-why{font-size:11px;color:var(--txt2);margin-top:2px;line-height:1.4}
+
