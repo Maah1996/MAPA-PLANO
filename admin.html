@@ -7,6 +7,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js?v=202609050922"></script>
 <style>
 :root{--bg:#0f1923;--surf:#162030;--surf2:#1e2d40;--brd:#2a3d54;--acc:#c8a84b;--txt:#e8e4d8;--txt2:#8fa3b8;--verde:#217a47;--rojo:#c0392b}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -254,14 +255,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 <div id="toast"></div>
 
 <script>
-var firebaseConfig={
-  apiKey:'AIzaSyDi6CPHzqfAvRbofkB4cW4bFRWb9VcU9kQ',
-  authDomain:'mapa-plano-montichef.firebaseapp.com',
-  projectId:'mapa-plano-montichef',
-  storageBucket:'mapa-plano-montichef.firebasestorage.app',
-  messagingSenderId:'18469178569',
-  appId:'1:18469178569:web:92d72ee3e0e0e399619118'
-};
+/* firebaseConfig ahora viene de js/firebase-config.js (fuente única) */
 if(!firebase.apps.length){firebase.initializeApp(firebaseConfig);}
 var _db=firebase.firestore(),_auth=firebase.auth();
 var ADMIN_EMAIL='marcoaraya1973@gmail.com';

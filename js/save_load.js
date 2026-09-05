@@ -1,14 +1,8 @@
 /* ══════════════════════════════════════════════════════════
    FIREBASE
+   (firebaseConfig ahora vive en js/firebase-config.js, cargado
+   antes que este archivo en index.html — fuente única)
 ══════════════════════════════════════════════════════════ */
-var firebaseConfig = {
-  apiKey: 'AIzaSyDi6CPHzqfAvRbofkB4cW4bFRWb9VcU9kQ',
-  authDomain: 'mapa-plano-montichef.firebaseapp.com',
-  projectId: 'mapa-plano-montichef',
-  storageBucket: 'mapa-plano-montichef.firebasestorage.app',
-  messagingSenderId: '18469178569',
-  appId: '1:18469178569:web:92d72ee3e0e0e399619118'
-};
 if(!firebase.apps.length){firebase.initializeApp(firebaseConfig);}
 var _db=firebase.firestore(),_auth=firebase.auth(),_currentUser=null,_userPerms=null;
 /* Cache offline: si la red está lenta o entrecortada justo al iniciar sesión,
