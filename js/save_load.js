@@ -661,6 +661,7 @@ function _parseEditParams(){
 }
 function _enterAdminEdit(ctx){
   _planOwnerUid=ctx.uid;
+  if(typeof window._iperCloudInit==='function')window._iperCloudInit();
   _db.collection('users').doc(ctx.uid).get().then(function(userDoc){
     var uname=userDoc.exists?(userDoc.data().name||userDoc.data().email||'usuario'):'usuario';
     _editCtx={uid:ctx.uid,user:uname};
@@ -685,6 +686,7 @@ function _grantAccess(){
 }
 function _enterApp(){
   _grantAccess();
+  if(typeof window._iperCloudInit==='function')window._iperCloudInit();
   var ec=_parseEditParams();
   if(ec&&_isAdminEmail(_currentUser.email)){setTimeout(function(){_enterAdminEdit(ec);},150);return;}
   _updateResumeBtn();

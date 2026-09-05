@@ -3,7 +3,11 @@
  * Sube la matriz IPER (.xlsx) y genera un listado de riesgos en 3 columnas:
  *   NOMBRE DEL RIESGO · CLASIFICACIÓN (con color) · EXPLICACIÓN
  *
- * Módulo 100% aislado: NO toca core.js / save_load.js / capture.js / cad.js.
+ * Módulo aislado de core.js / capture.js / cad.js. Con save_load.js tiene
+ * UNA sola dependencia opcional (lee _db/_ownerUid si existen, para guardar
+ * las IPER en Firestore además de en este equipo) — todo detrás de "typeof",
+ * así que si no están disponibles el módulo sigue andando solo con
+ * localStorage, como antes.
  * Depende de SheetJS (XLSX), cargado desde cdnjs en index.html.
  * ========================================================================== */
 (function () {
@@ -271,18 +275,63 @@
   var _fuente = '';      // nombre de la IPER que se está mostrando
   var _totalFilas = 0;   // filas leídas del Excel + riesgos agregados manualmente después
 
-  /* --- IPER guardadas (localStorage de este equipo) ---------------------- */
+  /* --- IPER guardadas -------------------------------------------------------
+     Fuente principal: Firestore (users/{uid}/iper/{id}), para que no dependan
+     de un solo navegador/equipo (localStorage se puede perder: el navegador
+     puede desalojarlo solo, sin que el usuario haga nada). Se mantiene además
+     una copia en localStorage de este equipo como caché/respaldo, para que la
+     lista se vea al instante y la app siga sirviendo algo sin conexión.
+     _iperCloudInit() lo llama save_load.js (fuera de este módulo, por eso el
+     acceso a _db/_ownerUid va con "typeof" — si por algo no están disponibles,
+     el módulo sigue funcionando solo con localStorage, como antes. ------------- */
   var LS_KEY = 'iper_guardadas_v1';
+  var LS_MIGRADO_KEY = 'iper_migrado_v1';
   var LS_MAX = 25;
+  var _cloudList = null; // null = todavía no se intentó cargar desde Firestore
 
-  function savedLoad() {
+  function _localLoad() {
     try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; }
     catch (e) { return []; }
   }
-  function savedStore(list) {
+  function _localStore(list) {
     try { localStorage.setItem(LS_KEY, JSON.stringify(list)); return true; }
     catch (e) { return false; }
   }
+  function _cloudDisponible() {
+    return typeof _db !== 'undefined' && typeof _ownerUid === 'function' && !!_ownerUid();
+  }
+  function _iperCol() {
+    return _db.collection('users').doc(_ownerUid()).collection('iper');
+  }
+  // Se muestra la lista de la nube en cuanto se pudo cargar; mientras tanto
+  // (o si no hay nube disponible) se usa la copia de este equipo.
+  function savedLoad() {
+    return _cloudList !== null ? _cloudList : _localLoad();
+  }
+  // Llamado por save_load.js (_enterApp / _enterAdminEdit) apenas se sabe qué
+  // cuenta está activa. Trae las IPER guardadas en Firestore y, si es la
+  // primera vez que este equipo se conecta y tenía IPER solo locales (de
+  // antes de este cambio), las sube para que dejen de depender de un solo
+  // navegador.
+  function _iperCloudInit() {
+    if (!_cloudDisponible()) return;
+    _iperCol().orderBy('fecha', 'desc').limit(LS_MAX).get().then(function (snap) {
+      var list = [];
+      snap.forEach(function (doc) { list.push(doc.data()); });
+      if (!list.length && !localStorage.getItem(LS_MIGRADO_KEY)) {
+        var local = _localLoad();
+        if (local.length) {
+          local.forEach(function (e) { _iperCol().doc(e.id).set(e).catch(function () {}); });
+          list = local;
+        }
+      }
+      try { localStorage.setItem(LS_MIGRADO_KEY, '1'); } catch (e) {}
+      _cloudList = list;
+      renderSaved();
+    }).catch(function () { /* sin conexión: se sigue viendo la copia de este equipo */ });
+  }
+  window._iperCloudInit = _iperCloudInit;
+
   function fechaCorta(iso) {
     try {
       var d = new Date(iso);
@@ -293,7 +342,7 @@
 
   // guarda (o actualiza si ya existe una con el mismo nombre) la IPER recién leída
   function guardarActual(nombre, meta) {
-    var list = savedLoad();
+    var list = savedLoad().slice();
     var nm = String(nombre || 'IPER').trim() || 'IPER';
     var i = -1;
     for (var k = 0; k < list.length; k++) {
@@ -309,8 +358,14 @@
     };
     if (i >= 0) list[i] = entry; else list.unshift(entry);
     if (list.length > LS_MAX) list = list.slice(0, LS_MAX);
-    if (!savedStore(list)) {
+    if (_cloudList !== null) _cloudList = list;
+    if (!_localStore(list)) {
       setError('No se pudo guardar la IPER en este equipo (almacenamiento lleno o bloqueado).');
+    }
+    if (_cloudDisponible()) {
+      _iperCol().doc(entry.id).set(entry).catch(function () {
+        setError('Se guardó en este equipo, pero no se pudo respaldar en la nube (revisa tu conexión).');
+      });
     }
     renderSaved();
   }
@@ -328,7 +383,7 @@
   }
 
   function renombrarGuardada(id) {
-    var list = savedLoad();
+    var list = savedLoad().slice();
     var e = list.filter(function (x) { return x.id === id; })[0];
     if (!e) return;
     var nv = window.prompt('Nuevo nombre para esta IPER:', e.nombre);
@@ -336,7 +391,9 @@
     nv = nv.trim();
     if (!nv) return;
     e.nombre = nv;
-    savedStore(list);
+    if (_cloudList !== null) _cloudList = list;
+    _localStore(list);
+    if (_cloudDisponible()) _iperCol().doc(e.id).update({ nombre: nv }).catch(function () {});
     if (_fuente && _fuente === e.nombre) _fuente = nv;
     renderSaved();
   }
@@ -346,7 +403,10 @@
     var e = list.filter(function (x) { return x.id === id; })[0];
     if (!e) return;
     if (!window.confirm('¿Borrar la IPER guardada “' + e.nombre + '”? Esto no borra el archivo Excel original.')) return;
-    savedStore(list.filter(function (x) { return x.id !== id; }));
+    var nueva = list.filter(function (x) { return x.id !== id; });
+    if (_cloudList !== null) _cloudList = nueva;
+    _localStore(nueva);
+    if (_cloudDisponible()) _iperCol().doc(id).delete().catch(function () {});
     renderSaved();
   }
 
