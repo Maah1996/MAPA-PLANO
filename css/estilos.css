@@ -204,22 +204,27 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 .marker .mkr-num{color:#fff;font-size:11px;font-weight:800;min-width:32px;height:20px;text-align:center;display:flex;align-items:center;justify-content:center;font-family:inherit;background:#0b1a2b;border:1px solid #2a4d74;border-radius:6px;padding:0 2px;letter-spacing:.02em}
 
 /* Legend */
-.legend{position:absolute;left:10px;bottom:10px;background:rgba(15,25,35,.95);border:1px solid rgba(200,168,75,.5);border-radius:6px;padding:6px 10px 8px;font-size:10.5px;z-index:8;width:230px;min-width:100px;min-height:60px;max-width:none;height:auto;overflow:visible;resize:none;box-shadow:0 4px 16px rgba(0,0,0,.5);font-family:inherit;user-select:none;cursor:grab}
+.legend{position:absolute;left:10px;bottom:10px;background:rgba(15,25,35,.95);border:1px solid rgba(200,168,75,.5);border-radius:6px;padding:6px 10px 8px;font-size:10.5px;z-index:11;width:230px;min-width:100px;min-height:60px;max-width:none;height:auto;overflow:visible;resize:none;box-shadow:0 4px 16px rgba(0,0,0,.5);font-family:inherit;user-select:none;cursor:grab}
 .legend:active{cursor:grabbing}
 .legend .mpl-leg{border-radius:5px;overflow:hidden}
 .legend .leg-resize{position:absolute;z-index:9;touch-action:none}
 /* Como una ventana: se agarra cualquier borde (n s e w) o esquina (ne nw se sw)
-   y el borde sigue al mouse. Franjas de 12px a caballo de la línea (6px dentro,
-   6px fuera); el cursor cambia y el borde se tiñe de dorado al pasar el mouse. */
-.legend .leg-rz-n{top:-6px;left:14px;right:14px;height:12px;cursor:ns-resize}
-.legend .leg-rz-s{bottom:-6px;left:14px;right:14px;height:12px;cursor:ns-resize}
-.legend .leg-rz-e{right:-6px;top:14px;bottom:14px;width:12px;cursor:ew-resize}
-.legend .leg-rz-w{left:-6px;top:14px;bottom:14px;width:12px;cursor:ew-resize}
-.legend .leg-rz-ne{top:-7px;right:-7px;width:20px;height:20px;cursor:nesw-resize}
-.legend .leg-rz-sw{bottom:-7px;left:-7px;width:20px;height:20px;cursor:nesw-resize}
-.legend .leg-rz-nw{top:-7px;left:-7px;width:20px;height:20px;cursor:nwse-resize}
-.legend .leg-rz-se{bottom:-7px;right:-7px;width:20px;height:20px;cursor:nwse-resize}
-.legend .leg-rz:hover{background:rgba(200,168,75,.65);border-radius:3px}
+   y el borde sigue al mouse. Las zonas quedan casi todas AFUERA de la línea
+   (4px dentro, 14px fuera) para no tapar los botones del encabezado, y se
+   escalan con --rzk (=1/zoom real de la leyenda) para que no se vuelvan finas
+   al hacer zoom al plano. El cursor cambia y el borde se tiñe de dorado. */
+.legend{--rzk:1}
+.legend .leg-rz-n{top:calc(-14px*var(--rzk));height:calc(18px*var(--rzk));left:calc(14px*var(--rzk));right:calc(14px*var(--rzk));cursor:ns-resize}
+.legend .leg-rz-s{bottom:calc(-14px*var(--rzk));height:calc(18px*var(--rzk));left:calc(14px*var(--rzk));right:calc(14px*var(--rzk));cursor:ns-resize}
+.legend .leg-rz-e{right:calc(-14px*var(--rzk));width:calc(18px*var(--rzk));top:calc(14px*var(--rzk));bottom:calc(14px*var(--rzk));cursor:ew-resize}
+.legend .leg-rz-w{left:calc(-14px*var(--rzk));width:calc(18px*var(--rzk));top:calc(14px*var(--rzk));bottom:calc(14px*var(--rzk));cursor:ew-resize}
+.legend .leg-rz-ne,.legend .leg-rz-nw,.legend .leg-rz-se,.legend .leg-rz-sw{width:calc(26px*var(--rzk));height:calc(26px*var(--rzk))}
+.legend .leg-rz-ne{top:calc(-14px*var(--rzk));right:calc(-14px*var(--rzk));cursor:nesw-resize}
+.legend .leg-rz-sw{bottom:calc(-14px*var(--rzk));left:calc(-14px*var(--rzk));cursor:nesw-resize}
+.legend .leg-rz-nw{top:calc(-14px*var(--rzk));left:calc(-14px*var(--rzk));cursor:nwse-resize}
+.legend .leg-rz-se{bottom:calc(-14px*var(--rzk));right:calc(-14px*var(--rzk));cursor:nwse-resize}
+.legend .leg-rz:hover{background:rgba(200,168,75,.7);border-radius:3px}
+.legend:hover{box-shadow:0 0 0 2px rgba(200,168,75,.85),0 4px 16px rgba(0,0,0,.5)}
 .legend-drag{display:flex;align-items:center;gap:6px;color:var(--acc);font-size:11px;font-weight:700;padding:4px 2px 8px;border-bottom:1px solid rgba(200,168,75,.3);margin-bottom:5px}
 .legend-drag .leg-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .leg-sz{background:rgba(255,255,255,.1);border:1px solid rgba(200,168,75,.4);color:var(--acc);border-radius:3px;width:18px;height:18px;font-size:13px;line-height:1;cursor:pointer;padding:0;flex:0 0 18px;display:flex;align-items:center;justify-content:center}

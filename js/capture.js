@@ -135,6 +135,7 @@ window.__mplLegSync=function(){
   var ls=(typeof _legendScale!=='undefined'?_legendScale:1);
   var lr=(typeof _legendRot!=='undefined'?_legendRot:0);
   var z=(typeof _zw!=='undefined'?_zw:100);
+  lg.style.setProperty('--rzk',Math.min(4,1/Math.max(.25,ls*z/100)));
   lg.style.transform='translate(-50%,-50%) scale('+(ls*z/100)+') rotate('+lr+'deg)';
   lg.style.transformOrigin='center center';
 };

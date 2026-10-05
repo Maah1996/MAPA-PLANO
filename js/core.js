@@ -135,7 +135,9 @@ var _legendScale=1,_legendRot=0;
   var _dragging=false,_offX=0,_offY=0;
 
   function _applyLegTransform(){
-    legendEl.style.transform='translate(-50%,-50%) scale('+(_legendScale*(typeof _zw!=='undefined'?_zw/100:1))+') rotate('+_legendRot+'deg)';
+    var _k=_legendScale*(typeof _zw!=='undefined'?_zw/100:1);
+    legendEl.style.setProperty('--rzk',Math.min(4,1/Math.max(.25,_k)));
+    legendEl.style.transform='translate(-50%,-50%) scale('+_k+') rotate('+_legendRot+'deg)';
     legendEl.style.transformOrigin='center center';
   }
   /* La primera vez que se toca la leyenda, convierte su posición actual
