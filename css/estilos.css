@@ -251,14 +251,19 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 .legend>.mpl-leg>.mpl-body>.mpl-block>*{flex-shrink:0}
 .legend>.mpl-leg>.mpl-body>.mpl-block>.mpl-row{flex:1 0 auto}
 .legend>.mpl-leg>.mpl-drag{flex-shrink:0}
-/* ── Orientación HORIZONTAL: tabla ancha, una sección al lado de otra. Cada sección reparte
-   sus filas en columnas (máx. 4 por columna, ver --cols); el encabezado (título + datos)
-   queda a la izquierda con ancho fijo. ── */
+/* ── Orientación HORIZONTAL: tabla ancha, una sección al lado de otra. El encabezado (título +
+   datos + "Estoy aquí") queda a la izquierda con ancho fijo; cada sección es una REJILLA de
+   hasta 3 columnas (--cols) donde las filas (ícono + nombre) se llenan de izquierda a derecha. ── */
+.legend .mpl-ea-h{display:none}
+.legend.horiz .mpl-ea-h{display:flex;border-top:1.4px solid #16314f;border-bottom:0}
+.legend.horiz .mpl-ea-v{display:none}
+.legend.horiz>.mpl-leg>.mpl-body>.mpl-block.mpl-only-ea{display:none}
 .legend.horiz>.mpl-leg>.mpl-body{flex-direction:row;gap:8px;align-items:stretch}
-.legend.horiz>.mpl-leg>.mpl-body>.mpl-block{margin-bottom:0;flex:var(--cols,1) 1 calc(var(--cols,1)*200px);min-width:calc(var(--cols,1)*170px);display:block;column-count:var(--cols,1);column-gap:0;column-rule:1px solid #e4e4e4}
-.legend.horiz>.mpl-leg>.mpl-body>.mpl-block:first-child{flex:0 0 250px;column-count:1}
-.legend.horiz .mpl-block>.mpl-h,.legend.horiz .mpl-block>.mpl-hz{column-span:all}
-.legend.horiz .mpl-block .mpl-row{break-inside:avoid}
+.legend.horiz>.mpl-leg>.mpl-body>.mpl-block{margin-bottom:0;flex:var(--cols,1) 1 calc(var(--cols,1)*190px);min-width:calc(var(--cols,1)*165px);display:grid;grid-template-columns:repeat(var(--cols,1),1fr);align-content:start}
+.legend.horiz>.mpl-leg>.mpl-body>.mpl-block:first-child{flex:0 0 250px;min-width:250px;display:block}
+.legend.horiz .mpl-block>.mpl-h,.legend.horiz .mpl-block>.mpl-hz{grid-column:1/-1}
+.legend.horiz .mpl-block .mpl-row{border-right:1px solid #e4e4e4;border-bottom:1px solid #e4e4e4}
+.legend.horiz .mpl-block .mpl-row.lastcol{border-right:0}
 .legend:hover{box-shadow:0 0 0 2px rgba(200,168,75,.85),0 4px 16px rgba(0,0,0,.5)}
 .legend-drag{display:flex;align-items:center;gap:6px;color:var(--acc);font-size:11px;font-weight:700;padding:4px 2px 8px;border-bottom:1px solid rgba(200,168,75,.3);margin-bottom:5px}
 .legend-drag .leg-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

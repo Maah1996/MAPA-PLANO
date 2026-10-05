@@ -91,11 +91,20 @@ function _mplLegendData(){
   return {risks:risks,evac:evac,zonas:zonas,arrows:arrows,eaCnt:eaCnt};
 }
 
-/* Nº de columnas de una sección en horizontal (máx. 4 filas por columna) */
-function _mplCols(n){return 'style="--cols:'+Math.max(1,Math.ceil(n/4))+'"';}
+/* Columnas de una sección en horizontal: hasta 3, con las filas llenando de izquierda a
+   derecha (como una tabla). */
+function _mplCols(n){return Math.min(3,Math.max(1,n));}
+/* Sección = título + filas. Marca con "lastcol" la última celda de cada fila de la rejilla
+   (para no dibujar su borde derecho) y deja el nº de columnas en --cols. */
+function _mplBlock(titleHTML,rows,extraCls,nCols){
+  var k=_mplCols(nCols!=null?nCols:rows.length);
+  var body=rows.map(function(h,i){return ((i+1)%k===0)?h.replace('class="mpl-row','class="mpl-row lastcol'):h;}).join('');
+  return '<div class="mpl-block'+(extraCls?' '+extraCls:'')+'" style="--cols:'+k+'">'+titleHTML+body+'</div>';
+}
 
-/* Caja de título + metadatos */
-function _mplHeaderHTML(opt){
+/* Caja de título + metadatos. "extra" (p.ej. la fila "Estoy aquí" de la leyenda horizontal) va
+   al final del recuadro, debajo de "Elaborado por". */
+function _mplHeaderHTML(opt,extra){
   var ed=opt&&opt.editable;
   function fld(k,def){
     var kk=_mplMK(k);                                   /* clave propia de este modo */
@@ -113,37 +122,43 @@ function _mplHeaderHTML(opt){
       '<tr><td class="k">Fecha</td><td class="v">'+fld('fecha','')+'</td></tr>'+
       '<tr><td class="k">Versión</td><td class="v">'+fld('version','')+'</td></tr>'+
       '<tr><td class="k">Elaborado por</td><td class="v">'+fld('elaborado','')+'</td></tr>'+
-    '</table></div>';
+    '</table>'+(extra||'')+'</div>';
 }
 
-/* HTML de la leyenda (cabecera + bloques con contenido) */
+/* HTML de la leyenda (cabecera + bloques con contenido).
+   "Estoy aquí": en VERTICAL va dentro de "Leyenda riesgos" (como siempre); en HORIZONTAL se
+   muestra dentro del recuadro de datos, bajo "Elaborado por", y la sección "Leyenda riesgos"
+   desaparece si solo tenía ese ícono (así se gana el espacio del centro). Ambas versiones se
+   generan y el CSS (.horiz) decide cuál se ve. */
 function _mplLegendHTML(opt){
   opt=opt||{};var ICO=opt.ico||34,EICO=opt.eico||38;
   var d=_mplLegendData();
-  var out=_mplHeaderHTML(opt);
+  var eaRow=function(cls){return '<div class="mpl-row '+cls+'"><span class="mpl-ic">'+(typeof iconSVGEstoyAqui==='function'?iconSVGEstoyAqui(ICO):'')+'</span><span class="mpl-nm">Estoy aquí</span></div>';};
+  var out=_mplHeaderHTML(opt,d.eaCnt?eaRow('mpl-ea-h'):'');
   /* LEYENDA RIESGOS */
-  var riskRows='';
+  var riskRows=[];
   d.risks.slice().sort(function(a,b){return _mplRiskRank(a.color)-_mplRiskRank(b.color);}).forEach(function(r){
     var rk=null;RISKS.forEach(function(x){if(x.id===r.id)rk=x;});
     var nm=rk?rk.name:r.id,ico=rk?iconSVG(rk.g,r.color,ICO):'';
-    riskRows+='<div class="mpl-row mpl-find" data-fid="'+r.id+'" data-fcolor="'+r.color+'"><span class="mpl-ic">'+ico+'</span><span class="mpl-nm">'+nm+'</span></div>';
+    riskRows.push('<div class="mpl-row mpl-find" data-fid="'+r.id+'" data-fcolor="'+r.color+'"><span class="mpl-ic">'+ico+'</span><span class="mpl-nm">'+nm+'</span></div>');
   });
-  if(d.eaCnt){riskRows+='<div class="mpl-row"><span class="mpl-ic">'+(typeof iconSVGEstoyAqui==='function'?iconSVGEstoyAqui(ICO):'')+'</span><span class="mpl-nm">Estoy aquí</span></div>';}
-  if(riskRows)out+='<div class="mpl-block" '+_mplCols(d.risks.length+(d.eaCnt?1:0))+'><div class="mpl-h">Leyenda riesgos</div>'+riskRows+'</div>';
+  var nRisk=riskRows.length;
+  if(d.eaCnt)riskRows.push(eaRow('mpl-ea-v'));
+  if(riskRows.length)out+=_mplBlock('<div class="mpl-h">Leyenda riesgos</div>',riskRows,nRisk?'':'mpl-only-ea',nRisk||1);
   /* SIMBOLOGÍA */
-  var symRows='';
+  var symRows=[];
   d.evac.forEach(function(id){
     var it=null;if(typeof EVAC_ITEMS!=='undefined')EVAC_ITEMS.forEach(function(x){if(x.id===id)it=x;});
     var nm=it?it.name:id,ico=it?'<img src="'+(it._png||it.img)+'" style="width:'+EICO+'px;height:auto">':'';
-    symRows+='<div class="mpl-row"><span class="mpl-ic">'+ico+'</span><span class="mpl-nm">'+nm+'</span></div>';
+    symRows.push('<div class="mpl-row"><span class="mpl-ic">'+ico+'</span><span class="mpl-nm">'+nm+'</span></div>');
   });
-  if(d.arrows){var aico=typeof arrowSVGThumb==='function'?arrowSVGThumb(0):'→';symRows+='<div class="mpl-row"><span class="mpl-ic" style="width:'+EICO+'px;justify-content:center">'+aico+'</span><span class="mpl-nm">Vía de evacuación</span></div>';}
-  if(symRows)out+='<div class="mpl-block" '+_mplCols(d.evac.length+(d.arrows?1:0))+'><div class="mpl-h">Simbología</div>'+symRows+'</div>';
+  if(d.arrows){var aico=typeof arrowSVGThumb==='function'?arrowSVGThumb(0):'→';symRows.push('<div class="mpl-row"><span class="mpl-ic" style="width:'+EICO+'px;justify-content:center">'+aico+'</span><span class="mpl-nm">Vía de evacuación</span></div>');}
+  if(symRows.length)out+=_mplBlock('<div class="mpl-h">Simbología</div>',symRows);
   /* ZONA DE SEGURIDAD */
   if(d.zonas.length){
-    var zr='';
-    d.zonas.forEach(function(id){var it=null;if(typeof EVAC_ITEMS!=='undefined')EVAC_ITEMS.forEach(function(x){if(x.id===id)it=x;});var nm=it?it.name:id,ico=it?'<img src="'+(it._png||it.img)+'" style="width:'+(EICO+6)+'px;height:auto">':'';zr+='<div class="mpl-row"><span class="mpl-ic">'+ico+'</span><span class="mpl-znm">'+nm+'</span></div>';});
-    out+='<div class="mpl-block" '+_mplCols(d.zonas.length)+'><div class="mpl-hz">Zona de seguridad / Punto de encuentro</div>'+zr+'</div>';
+    var zr=[];
+    d.zonas.forEach(function(id){var it=null;if(typeof EVAC_ITEMS!=='undefined')EVAC_ITEMS.forEach(function(x){if(x.id===id)it=x;});var nm=it?it.name:id,ico=it?'<img src="'+(it._png||it.img)+'" style="width:'+(EICO+6)+'px;height:auto">':'';zr.push('<div class="mpl-row"><span class="mpl-ic">'+ico+'</span><span class="mpl-znm">'+nm+'</span></div>');});
+    out+=_mplBlock('<div class="mpl-hz">Zona de seguridad / Punto de encuentro</div>',zr);
   }
   return out;
 }

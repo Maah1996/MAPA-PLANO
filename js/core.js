@@ -297,6 +297,16 @@ function _growSheetForLegend(){
     if(nh>_sheetH&&nh<=80){_sheetH=nh;_applySheet();}
   }
 }
+/* Desplaza la vista del plano hasta dejar la leyenda a la vista (si cabe, centrada; si es más
+   alta que la vista, alineada arriba). Al elegir Horizontal la hoja queda DEBAJO del plano,
+   normalmente fuera de pantalla: sin esto parecía que "no pasó nada" o que la leyenda se perdió. */
+function _scrollToLegend(){
+  var wrap=document.getElementById('zoom-wrap');if(!wrap||!legendEl)return;
+  var w=wrap.getBoundingClientRect(),l=legendEl.getBoundingClientRect();
+  var dy=(l.height<=w.height)?((l.top+l.bottom)/2-(w.top+w.bottom)/2):(l.top-w.top-12);
+  var dx=(l.width<=w.width)?((l.left+l.right)/2-(w.left+w.right)/2):(l.left-w.left-12);
+  wrap.scrollTop+=dy;wrap.scrollLeft+=dx;
+}
 /* Cambia la orientación de la leyenda (desplegable de su barra). silent=true: solo aplica
    clase y hoja (al restaurar un plano guardado), sin recolocar ni redimensionar. */
 function _setLegendOrient(o,silent){
@@ -325,12 +335,13 @@ function _setLegendOrient(o,silent){
   if(typeof _fitLegendContent==='function')_fitLegendContent();
   if(window.__mplLegSync)window.__mplLegSync();
   _placeLegendOnSheet(true);
+  _scrollToLegend();
 }
 (function(){
   var s=document.getElementById('legendSheet'),btn=document.getElementById('toggleSheet');
   if(btn)btn.onclick=function(){
     _sheetOn=!_sheetOn;_applySheet();
-    if(_sheetOn)_placeLegendOnSheet();                         /* al activarla, la leyenda se ubica sobre ella */
+    if(_sheetOn){_placeLegendOnSheet();_scrollToLegend();}     /* al activarla, la leyenda se ubica sobre ella y se muestra */
     else{                                                      /* sin hoja no puede quedar fuera del plano */
       if(parseFloat(legendEl.style.left)>100)legendEl.style.left='96%';
       if(parseFloat(legendEl.style.top)>100)legendEl.style.top='96%';
