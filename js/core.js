@@ -160,32 +160,34 @@ var _legendScale=1,_legendRot=0;
      de la leyenda (para que funcione bien aunque esté rotada) y descuenta la
      escala real en pantalla (_legendScale × zoom del plano). */
   /* dir: borde o esquina que se agarra: e, w, n, s, ne, nw, se, sw.
-     Como una ventana: el borde agarrado SIGUE al mouse y el borde opuesto queda
-     quieto. La leyenda está anclada por su centro, así que al cambiar el tamaño
-     se corre el centro la mitad de lo que creció (a lo largo de los ejes locales,
-     ya rotados). El alto se guarda como min-height: la leyenda nunca recorta su
-     contenido (ni en pantalla ni al exportar), solo puede crecer más allá. */
+     Arrastrar escala TODA la leyenda (textos, íconos y tablas juntos) sin tocar
+     los íconos del plano ni dejar espacio en blanco: cambia _legendScale, el
+     mismo valor de los botones − / +. El borde agarrado SIGUE al mouse y el
+     opuesto queda fijo: como la leyenda está anclada por su centro, se corre el
+     centro la mitad de lo que creció, sobre los ejes locales (ya rotados). */
   function _startLegResize(e,dir){
     e.preventDefault();e.stopPropagation();
     _ensureLegPosPct();
     dir=dir||'se';
     var kx=dir.indexOf('e')>-1?1:(dir.indexOf('w')>-1?-1:0);
     var ky=dir.indexOf('s')>-1?1:(dir.indexOf('n')>-1?-1:0);
-    var mx=e.clientX,my=e.clientY;
-    var sw=legendEl.offsetWidth,sh=legendEl.offsetHeight;
+    var mx=e.clientX,my=e.clientY,s0=_legendScale;
+    var z=(typeof _zw!=='undefined'?_zw/100:1),sc0=s0*(z||1);
+    var W=legendEl.offsetWidth*sc0,H=legendEl.offsetHeight*sc0;   /* tamaño en pantalla */
     var r0=legendEl.getBoundingClientRect(),c0x=r0.left+r0.width/2,c0y=r0.top+r0.height/2;
     var rad=_legendRot*Math.PI/180,cos=Math.cos(rad),sin=Math.sin(rad);
-    var z=(typeof _zw!=='undefined'?_zw/100:1),sc=(_legendScale||1)*(z||1);
     function _rzMove(ev){
       var dx=ev.clientX-mx,dy=ev.clientY-my;
-      var lx=(dx*cos+dy*sin)/sc,ly=(-dx*sin+dy*cos)/sc;
-      if(kx)legendEl.style.width=Math.max(100,Math.min(1600,sw+kx*lx))+'px';
-      if(ky)legendEl.style.minHeight=Math.max(0,sh+ky*ly)+'px';
-      /* crecimiento REAL logrado (el alto no baja del contenido) → mover el centro */
-      var gw=kx?(legendEl.offsetWidth-sw)*kx/2:0,gh=ky?(legendEl.offsetHeight-sh)*ky/2:0;
-      var px=sc*(gw*cos-gh*sin),py=sc*(gw*sin+gh*cos);
-      var p=_toLocalPct(c0x+px,c0y+py);
+      var lx=dx*cos+dy*sin,ly=-dx*sin+dy*cos;               /* mouse en ejes locales (px de pantalla) */
+      var fx=kx?(W+kx*lx)/W:null,fy=ky?(H+ky*ly)/H:null;
+      var f=fx!==null&&fy!==null?(fx+fy)/2:(fx!==null?fx:fy);
+      var ns=Math.min(4,Math.max(0.3,s0*f));
+      var g=ns/s0;                                           /* factor real tras limitar */
+      _legendScale=ns;
+      var gw=kx*(W*g-W)/2,gh=ky*(H*g-H)/2;
+      var p=_toLocalPct(c0x+gw*cos-gh*sin,c0y+gw*sin+gh*cos);
       legendEl.style.left=p.x+'%';legendEl.style.top=p.y+'%';
+      _applyLegTransform();
     }
     function _rzUp(){document.removeEventListener('mousemove',_rzMove);document.removeEventListener('mouseup',_rzUp);}
     document.addEventListener('mousemove',_rzMove);document.addEventListener('mouseup',_rzUp);
@@ -225,7 +227,7 @@ function _serializeLegend(){
   if(!legendEl)return null;
   return {
     left:legendEl.style.left||'',top:legendEl.style.top||'',
-    width:legendEl.style.width||'',height:legendEl.style.minHeight||'',
+    width:legendEl.style.width||'',height:'',
     scale:_legendScale,rot:_legendRot
   };
 }
@@ -234,8 +236,7 @@ function _restoreLegend(o){
   _legendScale=parseFloat(o.scale)||1;
   _legendRot=parseFloat(o.rot)||0;
   if(o.width)legendEl.style.width=o.width;
-  legendEl.style.height='';
-  legendEl.style.minHeight=o.height||'';
+  legendEl.style.height='';legendEl.style.minHeight='';
   /* Solo reubicar+transformar cuando la posición quedó anclada al centro en %
      (es decir, el usuario ya la movió/rotó). Si nunca la tocó, se respeta la
      posición por defecto. El transform (incluye el zoom del plano) lo recalcula

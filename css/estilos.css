@@ -223,7 +223,21 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 .legend .leg-rz-sw{bottom:calc(-14px*var(--rzk));left:calc(-14px*var(--rzk));cursor:nesw-resize}
 .legend .leg-rz-nw{top:calc(-14px*var(--rzk));left:calc(-14px*var(--rzk));cursor:nwse-resize}
 .legend .leg-rz-se{bottom:calc(-14px*var(--rzk));right:calc(-14px*var(--rzk));cursor:nwse-resize}
-.legend .leg-rz:hover{background:rgba(200,168,75,.7);border-radius:3px}
+/* La zona de agarre es invisible; al pasar el mouse solo se marca una línea fina
+   sobre el borde (o un punto en la esquina). */
+.legend .leg-rz::after{content:"";position:absolute;opacity:0;background:#c8a84b;border-radius:2px;pointer-events:none}
+.legend .leg-rz:hover::after{opacity:1}
+.legend .leg-rz-n::after,.legend .leg-rz-s::after{left:0;right:0;height:3px}
+.legend .leg-rz-n::after{top:13px}
+.legend .leg-rz-s::after{top:2px}
+.legend .leg-rz-e::after,.legend .leg-rz-w::after{top:0;bottom:0;width:3px}
+.legend .leg-rz-e::after{left:2px}
+.legend .leg-rz-w::after{left:13px}
+.legend .leg-rz-ne::after,.legend .leg-rz-nw::after,.legend .leg-rz-se::after,.legend .leg-rz-sw::after{width:10px;height:10px;border-radius:50%}
+.legend .leg-rz-ne::after{left:7px;top:9px}
+.legend .leg-rz-nw::after{left:9px;top:9px}
+.legend .leg-rz-se::after{left:7px;top:7px}
+.legend .leg-rz-sw::after{left:9px;top:7px}
 .legend:hover{box-shadow:0 0 0 2px rgba(200,168,75,.85),0 4px 16px rgba(0,0,0,.5)}
 .legend-drag{display:flex;align-items:center;gap:6px;color:var(--acc);font-size:11px;font-weight:700;padding:4px 2px 8px;border-bottom:1px solid rgba(200,168,75,.3);margin-bottom:5px}
 .legend-drag .leg-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
