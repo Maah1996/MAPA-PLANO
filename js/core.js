@@ -157,7 +157,10 @@ var _legendScale=1,_legendRot=0;
      directamente. Proyecta el desplazamiento del mouse sobre los ejes locales
      de la leyenda (para que funcione bien aunque esté rotada) y descuenta la
      escala real en pantalla (_legendScale × zoom del plano). */
-  function _startLegResize(e){
+  /* mode: 'x' (solo ancho, borde derecho), 'y' (solo alto, borde inferior) o
+     'xy' (esquina). El alto se guarda como min-height: la leyenda nunca recorta
+     su contenido (ni en pantalla ni al exportar), solo puede crecer más allá. */
+  function _startLegResize(e,mode){
     e.preventDefault();e.stopPropagation();
     _ensureLegPosPct();
     var sx=e.clientX,sy=e.clientY;
@@ -167,8 +170,8 @@ var _legendScale=1,_legendRot=0;
     function _rzMove(ev){
       var dx=ev.clientX-sx,dy=ev.clientY-sy;
       var lx=(dx*cos+dy*sin)/sc,ly=(-dx*sin+dy*cos)/sc;
-      legendEl.style.width=Math.max(150,Math.min(600,sw+lx))+'px';
-      legendEl.style.height=Math.max(70,sh+ly)+'px';
+      if(mode!=='y')legendEl.style.width=Math.max(100,Math.min(1600,sw+lx))+'px';
+      if(mode!=='x')legendEl.style.minHeight=Math.max(0,sh+ly)+'px';
     }
     function _rzUp(){document.removeEventListener('mousemove',_rzMove);document.removeEventListener('mouseup',_rzUp);}
     document.addEventListener('mousemove',_rzMove);document.addEventListener('mouseup',_rzUp);
@@ -176,7 +179,7 @@ var _legendScale=1,_legendRot=0;
 
   legendEl.addEventListener('mousedown',function(e){
     var rzHandle=e.target.closest&&e.target.closest('.leg-resize');
-    if(rzHandle){_startLegResize(e);return;}
+    if(rzHandle){_startLegResize(e,rzHandle.dataset.rz||'xy');return;}
     var rotBtn=e.target.closest&&e.target.closest('.leg-rot');
     if(rotBtn){e.stopPropagation();_ensureLegPosPct();_legendRot=(_legendRot+90)%360;_applyLegTransform();return;}
     var rotBtnL=e.target.closest&&e.target.closest('.leg-rotl');
@@ -208,7 +211,7 @@ function _serializeLegend(){
   if(!legendEl)return null;
   return {
     left:legendEl.style.left||'',top:legendEl.style.top||'',
-    width:legendEl.style.width||'',height:legendEl.style.height||'',
+    width:legendEl.style.width||'',height:legendEl.style.minHeight||'',
     scale:_legendScale,rot:_legendRot
   };
 }
@@ -217,7 +220,8 @@ function _restoreLegend(o){
   _legendScale=parseFloat(o.scale)||1;
   _legendRot=parseFloat(o.rot)||0;
   if(o.width)legendEl.style.width=o.width;
-  if(o.height)legendEl.style.height=o.height;
+  legendEl.style.height='';
+  legendEl.style.minHeight=o.height||'';
   /* Solo reubicar+transformar cuando la posición quedó anclada al centro en %
      (es decir, el usuario ya la movió/rotó). Si nunca la tocó, se respeta la
      posición por defecto. El transform (incluye el zoom del plano) lo recalcula

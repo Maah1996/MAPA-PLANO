@@ -204,10 +204,18 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 .marker .mkr-num{color:#fff;font-size:11px;font-weight:800;min-width:32px;height:20px;text-align:center;display:flex;align-items:center;justify-content:center;font-family:inherit;background:#0b1a2b;border:1px solid #2a4d74;border-radius:6px;padding:0 2px;letter-spacing:.02em}
 
 /* Legend */
-.legend{position:absolute;left:10px;bottom:10px;background:rgba(15,25,35,.95);border:1px solid rgba(200,168,75,.5);border-radius:6px;padding:6px 10px 8px;font-size:10.5px;z-index:8;width:230px;min-width:150px;min-height:60px;max-width:600px;height:auto;overflow:auto;resize:none;box-shadow:0 4px 16px rgba(0,0,0,.5);font-family:inherit;user-select:none;cursor:grab}
+.legend{position:absolute;left:10px;bottom:10px;background:rgba(15,25,35,.95);border:1px solid rgba(200,168,75,.5);border-radius:6px;padding:6px 10px 8px;font-size:10.5px;z-index:8;width:230px;min-width:100px;min-height:60px;max-width:none;height:auto;overflow:visible;resize:none;box-shadow:0 4px 16px rgba(0,0,0,.5);font-family:inherit;user-select:none;cursor:grab}
 .legend:active{cursor:grabbing}
-.legend .leg-resize{position:absolute;right:2px;bottom:2px;width:18px;height:18px;cursor:nwse-resize;z-index:9;background:linear-gradient(135deg,transparent 45%,#16314f 45%,#16314f 60%,transparent 60%,transparent 72%,#16314f 72%,#16314f 88%,transparent 88%);border-radius:0 0 5px 0;opacity:.55}
-.legend .leg-resize:hover{opacity:1}
+.legend .mpl-leg{border-radius:5px;overflow:hidden}
+.legend .leg-resize{position:absolute;z-index:9;touch-action:none}
+/* Borde derecho = ancho, borde inferior = alto, esquina = ambos. Franjas de
+   14px a caballo del borde (7px adentro/7px afuera) para que sean fáciles de
+   agarrar; se tiñen de dorado al pasar el mouse. */
+.legend .leg-rz-x{top:12px;bottom:12px;right:-7px;width:14px;cursor:ew-resize}
+.legend .leg-rz-y{left:12px;right:12px;bottom:-7px;height:14px;cursor:ns-resize}
+.legend .leg-rz-x:hover,.legend .leg-rz-y:hover{background:rgba(200,168,75,.55);border-radius:4px}
+.legend .leg-rz-xy{right:-9px;bottom:-9px;width:24px;height:24px;cursor:nwse-resize;border-radius:50%;background:#16314f;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5);background-image:linear-gradient(135deg,transparent 40%,#fff 40%,#fff 52%,transparent 52%,transparent 64%,#fff 64%,#fff 76%,transparent 76%)}
+.legend .leg-rz-xy:hover{background-color:#c8a84b}
 .legend-drag{display:flex;align-items:center;gap:6px;color:var(--acc);font-size:11px;font-weight:700;padding:4px 2px 8px;border-bottom:1px solid rgba(200,168,75,.3);margin-bottom:5px}
 .legend-drag .leg-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .leg-sz{background:rgba(255,255,255,.1);border:1px solid rgba(200,168,75,.4);color:var(--acc);border-radius:3px;width:18px;height:18px;font-size:13px;line-height:1;cursor:pointer;padding:0;flex:0 0 18px;display:flex;align-items:center;justify-content:center}

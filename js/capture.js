@@ -145,7 +145,7 @@ function _renderLegendSummary(){
   var lg=document.getElementById('legend');if(!lg)return;
   _mplEnsureCSS();
   lg.style.background='#fff';lg.style.color='#1a1a1a';lg.style.border='1.5px solid #16314f';
-  lg.style.borderRadius='6px';lg.style.padding='0';lg.style.overflow='auto';
+  lg.style.borderRadius='6px';lg.style.padding='0';lg.style.overflow='visible';lg.style.height='auto';
   if(!lg.style.width||['230px','250px','280px'].indexOf(lg.style.width)>=0)lg.style.width='300px';
   /* Anclar en % del markerLayer para que escale con el zoom del plano */
   if(!lg.style.left||lg.style.left.indexOf('%')===-1){lg.style.left='15%';lg.style.top='70%';lg.style.bottom='auto';lg.style.right='auto';}
@@ -154,7 +154,9 @@ function _renderLegendSummary(){
     '<button class="leg-sz" data-d="1" title="Agrandar">+</button>'+
     '<button class="leg-sz leg-rotl" title="Girar a la izquierda">↺</button>'+
     '<button class="leg-sz leg-rot" title="Girar a la derecha">↻</button></div>';
-  lg.innerHTML='<div class="mpl-leg">'+header+_mplLegendHTML({ico:32,eico:36,editable:true})+'</div>'+'<div class="leg-resize" title="Arrastra para cambiar ancho y alto"></div>';
+  lg.innerHTML='<div class="mpl-leg">'+header+_mplLegendHTML({ico:32,eico:36,editable:true})+'</div>'+'<div class="leg-resize leg-rz-x" data-rz="x" title="Arrastra para cambiar el ANCHO"></div>'
+    +'<div class="leg-resize leg-rz-y" data-rz="y" title="Arrastra para cambiar el ALTO"></div>'
+    +'<div class="leg-resize leg-rz-xy" data-rz="xy" title="Arrastra para cambiar ancho y alto"></div>';
   /* Campos de metadatos editables */
   lg.querySelectorAll('.mpl-ed').forEach(function(sp){
     sp.addEventListener('mousedown',function(e){e.stopPropagation();});
