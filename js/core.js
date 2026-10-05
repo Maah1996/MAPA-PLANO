@@ -189,11 +189,11 @@ var _legendScale=1,_legendRot=0;
       var lx=(dx*ax+dy*ay)/sc,ly=(-dx*ay+dy*ax)/sc;          /* mouse en ejes locales de la leyenda */
       if(kx)legendEl.style.width=Math.max(120,Math.min(1600,sw+kx*lx))+'px';
       if(ky)legendEl.style.minHeight=Math.max(0,sh+ky*ly)+'px';
+      _fitLegendContent();                                    /* puede ensanchar al mínimo del contenido */
       /* crecimiento REAL logrado (el alto no baja del contenido) → mover el centro */
       var gw=kx?(legendEl.offsetWidth-sw)*kx/2*sc:0,gh=ky?(legendEl.offsetHeight-sh)*ky/2*sc:0;
       var p=_toLocalPct(c0x+gw*ax-gh*ay,c0y+gw*ay+gh*ax);
       legendEl.style.left=p.x+'%';legendEl.style.top=p.y+'%';
-      _fitLegendContent();
     }
     function _rzUp(){document.removeEventListener('mousemove',_rzMove);document.removeEventListener('mouseup',_rzUp);}
     document.addEventListener('mousemove',_rzMove);document.addEventListener('mouseup',_rzUp);
@@ -249,11 +249,29 @@ function _fitLegendContent(){
   var ch=lg.querySelector('.mpl-leg');if(!ch)return;
   function reset(){ch.style.width='';ch.style.height='';ch.style.flex='';ch.style.transform='';ch.style.transformOrigin='';}
   reset();
+  /* Reparto del espacio sobrante: los bloques con UNA sola fila (p.ej. solo
+     "Estoy aquí") quedan fijos, no se inflan; el resto absorbe el sobrante. */
+  [].forEach.call(ch.querySelectorAll(':scope>.mpl-block'),function(b){
+    if(b.previousElementSibling&&b.previousElementSibling.classList.contains('mpl-drag'))return;   /* encabezado */
+    b.style.flexGrow=b.querySelectorAll('.mpl-row').length>1?'':'0';
+  });
+  var bw=lg.offsetWidth-lg.clientWidth;                         /* borde izq + der */
+  /* Ancho mínimo: el del contenido a escala 1 (palabra más larga + ícono + márgenes).
+     Más angosta que eso el texto se cortaría, así que la leyenda no baja de ahí. */
+  if(lg.offsetWidth){
+    ch.style.width='0px';
+    var mw=Math.ceil(ch.scrollWidth+bw+6);
+    ch.style.width='';
+    if(lg.offsetWidth<mw)lg.style.width=mw+'px';
+  }
   var mh=parseFloat(lg.style.minHeight),W=lg.offsetWidth;
   if(!mh||!W)return;
-  var bw=lg.offsetWidth-lg.clientWidth;                         /* borde izq + der */
   var keep=lg.style.minHeight;lg.style.minHeight='0px';
-  function nat(s){ch.style.width=((W-bw)/s)+'px';return ch.offsetHeight*s+bw;}
+  function nat(s){
+    ch.style.width=((W-bw)/s)+'px';
+    if(ch.scrollWidth>ch.clientWidth+1)return 1e9;              /* no cabe a esa escala */
+    return ch.offsetHeight*s+bw;
+  }
   var s=1;
   if(nat(1)<mh){
     var lo=1,hi=4;
