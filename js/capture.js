@@ -421,6 +421,28 @@ function _exportFileName(){
   return planName?(modeLabel+'_'+planName):modeLabel;
 }
 
+/* Vista previa: la misma imagen que saldría en PNG/PDF, a pantalla completa (Esc o clic para cerrar) */
+document.getElementById('previewBtn').onclick=async function(){
+  var btn=this;btn.textContent='Generando...';btn.disabled=true;
+  try{
+    var c=await _capturePlan(2);
+    var ov=document.createElement('div');
+    ov.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(8,12,20,.96);display:flex;flex-direction:column;align-items:center;padding:12px;box-sizing:border-box';
+    var bar=document.createElement('div');
+    bar.style.cssText='color:#ddd;font:13px sans-serif;margin-bottom:8px;display:flex;gap:14px;align-items:center';
+    bar.innerHTML='<span>Vista previa — así saldrá al imprimir o descargar</span><button style="background:#c9a227;border:0;border-radius:4px;padding:6px 14px;font-weight:700;cursor:pointer">Cerrar (Esc)</button>';
+    var im=document.createElement('img');
+    im.src=c.toDataURL('image/png');
+    im.style.cssText='max-width:100%;max-height:calc(100% - 40px);object-fit:contain;background:#fff;box-shadow:0 0 30px #000';
+    ov.appendChild(bar);ov.appendChild(im);document.body.appendChild(ov);
+    var close=function(){ov.remove();document.removeEventListener('keydown',onKey,true);};
+    var onKey=function(e){if(e.key==='Escape'){e.stopPropagation();close();}};
+    document.addEventListener('keydown',onKey,true);
+    ov.onclick=close;
+  }catch(err){alert('Error en la vista previa: '+err);}
+  btn.textContent='Vista previa';btn.disabled=false;
+};
+
 document.getElementById('exportBtn').onclick=async function(){
   this.textContent='Generando...';this.disabled=true;
   try{
