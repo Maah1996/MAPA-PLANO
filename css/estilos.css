@@ -240,7 +240,9 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 .legend>.mpl-leg{flex:1 1 auto;display:flex;flex-direction:column}
 .legend>.mpl-leg>.mpl-block{flex:1 1 auto;display:flex;flex-direction:column}
 .legend>.mpl-leg>.mpl-drag+.mpl-block{flex:0 0 auto}
-.legend>.mpl-leg>.mpl-block>.mpl-row{flex:1 1 auto}
+.legend>.mpl-leg>.mpl-block>*{flex-shrink:0}
+.legend>.mpl-leg>.mpl-block>.mpl-row{flex:1 0 auto}
+.legend>.mpl-leg>.mpl-drag{flex-shrink:0}
 .legend:hover{box-shadow:0 0 0 2px rgba(200,168,75,.85),0 4px 16px rgba(0,0,0,.5)}
 .legend-drag{display:flex;align-items:center;gap:6px;color:var(--acc);font-size:11px;font-weight:700;padding:4px 2px 8px;border-bottom:1px solid rgba(200,168,75,.3);margin-bottom:5px}
 .legend-drag .leg-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

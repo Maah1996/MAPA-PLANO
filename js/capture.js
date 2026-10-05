@@ -13,7 +13,9 @@ function _mplEsc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function _mplEnsureCSS(){
   var st=document.getElementById('mpl-leg-css');
   var css=
-    ".mpl-leg{font-family:'Times New Roman',Georgia,serif;color:#1a1a1a;background:#fff;box-sizing:border-box;padding:8px}"+
+    /* line-height:normal: #markerLayer tiene line-height:0 (por la imagen del plano) y la
+       leyenda lo heredaba, por lo que el texto en 2 líneas se encimaba. */
+    ".mpl-leg{font-family:'Times New Roman',Georgia,serif;color:#1a1a1a;background:#fff;box-sizing:border-box;padding:8px;line-height:normal}"+
     ".mpl-leg *{box-sizing:border-box}"+
     ".mpl-block{border:1.6px solid #16314f;margin-bottom:8px;background:#fff}"+
     ".mpl-block:last-child{margin-bottom:0}"+
@@ -177,6 +179,8 @@ function _renderLegendSummary(){
       setTimeout(function(){match.style.outline='';match.style.outlineOffset='';},4000);
     });
   });
+  /* Si el usuario estiró la leyenda, ajustar el contenido a su caja */
+  if(typeof _fitLegendContent==='function')_fitLegendContent();
   /* Aplicar el zoom actual del plano a la leyenda */
   if(window.__mplLegSync)window.__mplLegSync();
 }
@@ -236,6 +240,10 @@ async function _capturePlan(scaleFactor){
   var legEl=document.getElementById('legend');
   var _legOverflow=legEl.style.overflow,_legResize=legEl.style.resize,_legVis=legEl.style.visibility,_legTr=legEl.style.transform;
   legEl.style.overflow='visible';legEl.style.resize='none';
+  /* El contenido interno puede ir escalado (leyenda estirada): html2canvas recorta
+     por la caja SIN escalar si el contenedor tiene overflow:hidden → sale cortada. */
+  var _legCh=legEl.querySelector('.mpl-leg'),_legChOv=_legCh?_legCh.style.overflow:'';
+  if(_legCh)_legCh.style.overflow='visible';
   /* La leyenda se captura EN SU LUGAR sobre el plano (igual que en pantalla).
      Como el markerLayer se resetea a 100% (paso 5), la leyenda debe quedar con
      su propio zoom (_legendScale) SIN el factor de zoom del plano (_zw). */
@@ -273,6 +281,7 @@ async function _capturePlan(scaleFactor){
     ml.style.width=origW;ml.style.marginTop=origMT;
     ml.style.transform=origTr;ml.style.marginBottom=origMB;ml.style.marginLeft=origML;
     _activeImg().style.width='100%';
+    if(_legCh)_legCh.style.overflow=_legChOv;
     legEl.style.overflow=_legOverflow;legEl.style.resize=_legResize;legEl.style.visibility=_legVis;legEl.style.transform=_legTr;
     if(window.__mplLegSync)window.__mplLegSync();
     document.querySelectorAll('.del,.mkr-size,.arr-del,.arr-resize,.leg-resize,.mpl-drag').forEach(function(d){d.style.display='';});

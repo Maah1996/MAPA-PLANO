@@ -193,6 +193,7 @@ var _legendScale=1,_legendRot=0;
       var gw=kx?(legendEl.offsetWidth-sw)*kx/2*sc:0,gh=ky?(legendEl.offsetHeight-sh)*ky/2*sc:0;
       var p=_toLocalPct(c0x+gw*ax-gh*ay,c0y+gw*ay+gh*ax);
       legendEl.style.left=p.x+'%';legendEl.style.top=p.y+'%';
+      _fitLegendContent();
     }
     function _rzUp(){document.removeEventListener('mousemove',_rzMove);document.removeEventListener('mouseup',_rzUp);}
     document.addEventListener('mousemove',_rzMove);document.addEventListener('mouseup',_rzUp);
@@ -236,6 +237,38 @@ function _serializeLegend(){
     scale:_legendScale,rot:_legendRot
   };
 }
+/* ── Ajustar el contenido de la leyenda a su caja ──
+   Cuando el usuario estira la leyenda más alto que su contenido, en vez de dejar
+   espacio entre filas se AGRANDA el contenido (íconos, nombres y títulos juntos)
+   hasta llenar la caja: se busca la mayor escala s (1..4) tal que el contenido,
+   maquetado a un ancho (W-borde)/s y multiplicado por s, quepa en el alto elegido.
+   Si la caja es más baja que el contenido natural (o no hay alto elegido) el
+   contenido queda a escala 1 y la leyenda crece sola al agregar íconos. */
+function _fitLegendContent(){
+  var lg=legendEl;if(!lg)return;
+  var ch=lg.querySelector('.mpl-leg');if(!ch)return;
+  function reset(){ch.style.width='';ch.style.height='';ch.style.flex='';ch.style.transform='';ch.style.transformOrigin='';}
+  reset();
+  var mh=parseFloat(lg.style.minHeight),W=lg.offsetWidth;
+  if(!mh||!W)return;
+  var bw=lg.offsetWidth-lg.clientWidth;                         /* borde izq + der */
+  var keep=lg.style.minHeight;lg.style.minHeight='0px';
+  function nat(s){ch.style.width=((W-bw)/s)+'px';return ch.offsetHeight*s+bw;}
+  var s=1;
+  if(nat(1)<mh){
+    var lo=1,hi=4;
+    for(var i=0;i<14;i++){var m=(lo+hi)/2;if(nat(m)<=mh-1)lo=m;else hi=m;}
+    s=lo;
+  }
+  lg.style.minHeight=keep;
+  if(s<=1.001){reset();return;}
+  ch.style.width=((W-bw)/s)+'px';
+  ch.style.height=((mh-bw)/s)+'px';
+  ch.style.flex='none';
+  ch.style.transformOrigin='0 0';
+  ch.style.transform='scale('+s+')';
+}
+
 function _restoreLegend(o){
   if(!legendEl||!o)return;
   _legendScale=parseFloat(o.scale)||1;
@@ -251,6 +284,7 @@ function _restoreLegend(o){
     legendEl.style.left=o.left;legendEl.style.top=o.top;
     legendEl.style.bottom='auto';legendEl.style.right='auto';
   }
+  _fitLegendContent();
   if(window.__mplLegSync)window.__mplLegSync();
 }
 
