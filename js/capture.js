@@ -24,8 +24,14 @@ function _mplEnsureCSS(){
     ".mpl-meta{width:100%;border-collapse:collapse;font-size:12px}"+
     ".mpl-meta td{border:1px solid #9fb0c3;padding:5px 9px;color:#20242b;vertical-align:middle}"+
     ".mpl-meta td.k{background:#eef1f5;font-weight:bold;width:44%;color:#16314f}"+
-    ".mpl-ed{outline:none;display:inline-block;min-width:40px;min-height:1.1em}"+
-    ".mpl-ed:focus{background:#fff7cc;border-radius:2px}"+
+    /* Campos editables: ocupan TODA la celda (antes solo ~40px y había que atinarle a la raya) */
+    ".mpl-ed{outline:none;display:block;width:100%;min-height:1.25em;cursor:text;-webkit-user-select:text;user-select:text;word-break:break-word}"+
+    ".mpl-ed:hover{background:#fff9d6}"+
+    ".mpl-ed:focus{background:#fff2a8;box-shadow:inset 0 0 0 1.5px #c8a84b}"+
+    ".mpl-meta td.v{padding:0}"+
+    ".mpl-meta td.v>span{display:block;padding:5px 9px;min-height:2em}"+
+    ".mpl-hd-title>span{display:block}"+
+    ".mpl-hd-sub>span{display:block;min-height:1.3em}"+
     ".mpl-ed:empty:before{content:'\\2014';color:#c3c3c3}"+
     ".mpl-h{text-align:center;font-weight:bold;color:#16314f;font-size:13.5px;letter-spacing:1px;padding:12px 8px 11px;border-bottom:1.6px solid #16314f;text-transform:uppercase}"+
     ".mpl-row{display:flex;align-items:center;gap:13px;padding:9px 12px;border-bottom:1px solid #e4e4e4}"+
@@ -77,14 +83,16 @@ function _mplHeaderHTML(opt){
     if(ed)return '<span class="mpl-ed" contenteditable="true" data-k="'+k+'">'+v+'</span>';
     return '<span>'+v+'</span>';
   }
-  var _hdTitle=(typeof _appMode!=='undefined'&&_appMode==='evacuacion')?'PLANO DE EVACUACIÓN':'MAPA DE RIESGOS';
+  var _isEv=(typeof _appMode!=='undefined'&&_appMode==='evacuacion');
+  var _hdTitle=_isEv?'PLANO DE EVACUACIÓN':'MAPA DE RIESGOS';
+  /* El título se puede reescribir; se guarda por modo (si se borra vuelve al original). */
   return '<div class="mpl-block">'+
-    '<div class="mpl-hd-title">'+_hdTitle+'</div>'+
+    '<div class="mpl-hd-title">'+fld(_isEv?'titulo_evac':'titulo_riesgos',_hdTitle)+'</div>'+
     '<div class="mpl-hd-sub">'+fld('local','')+'</div>'+
     '<table class="mpl-meta">'+
-      '<tr><td class="k">Fecha</td><td>'+fld('fecha','')+'</td></tr>'+
-      '<tr><td class="k">Versión</td><td>'+fld('version','')+'</td></tr>'+
-      '<tr><td class="k">Elaborado por</td><td>'+fld('elaborado','')+'</td></tr>'+
+      '<tr><td class="k">Fecha</td><td class="v">'+fld('fecha','')+'</td></tr>'+
+      '<tr><td class="k">Versión</td><td class="v">'+fld('version','')+'</td></tr>'+
+      '<tr><td class="k">Elaborado por</td><td class="v">'+fld('elaborado','')+'</td></tr>'+
     '</table></div>';
 }
 
@@ -161,7 +169,9 @@ function _renderLegendSummary(){
   /* Campos de metadatos editables */
   lg.querySelectorAll('.mpl-ed').forEach(function(sp){
     sp.addEventListener('mousedown',function(e){e.stopPropagation();});
-    sp.addEventListener('input',function(){_legMeta[sp.dataset.k]=sp.textContent;_legMetaSave();});
+    sp.addEventListener('input',function(){_legMeta[sp.dataset.k]=sp.textContent;_legMetaSave();if(typeof _fitLegendContent==='function')_fitLegendContent();});
+    sp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();sp.blur();}e.stopPropagation();});
+    sp.addEventListener('paste',function(e){e.preventDefault();var tx=((e.clipboardData||window.clipboardData).getData('text')||'').replace(/\s+/g,' ');document.execCommand('insertText',false,tx);});
   });
   /* Clic en fila de riesgo: ubica ese ícono en el plano */
   lg.querySelectorAll('.mpl-find').forEach(function(row){
