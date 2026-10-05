@@ -157,21 +157,33 @@ var _legendScale=1,_legendRot=0;
      directamente. Proyecta el desplazamiento del mouse sobre los ejes locales
      de la leyenda (para que funcione bien aunque esté rotada) y descuenta la
      escala real en pantalla (_legendScale × zoom del plano). */
-  /* mode: 'x' (solo ancho, borde derecho), 'y' (solo alto, borde inferior) o
-     'xy' (esquina). El alto se guarda como min-height: la leyenda nunca recorta
-     su contenido (ni en pantalla ni al exportar), solo puede crecer más allá. */
-  function _startLegResize(e,mode){
+  /* dir: borde o esquina que se agarra: e, w, n, s, ne, nw, se, sw.
+     Como una ventana: el borde agarrado SIGUE al mouse y el borde opuesto queda
+     quieto. La leyenda está anclada por su centro, así que al cambiar el tamaño
+     se corre el centro la mitad de lo que creció (a lo largo de los ejes locales,
+     ya rotados). El alto se guarda como min-height: la leyenda nunca recorta su
+     contenido (ni en pantalla ni al exportar), solo puede crecer más allá. */
+  function _startLegResize(e,dir){
     e.preventDefault();e.stopPropagation();
     _ensureLegPosPct();
-    var sx=e.clientX,sy=e.clientY;
+    dir=dir||'se';
+    var kx=dir.indexOf('e')>-1?1:(dir.indexOf('w')>-1?-1:0);
+    var ky=dir.indexOf('s')>-1?1:(dir.indexOf('n')>-1?-1:0);
+    var mx=e.clientX,my=e.clientY;
     var sw=legendEl.offsetWidth,sh=legendEl.offsetHeight;
+    var r0=legendEl.getBoundingClientRect(),c0x=r0.left+r0.width/2,c0y=r0.top+r0.height/2;
     var rad=_legendRot*Math.PI/180,cos=Math.cos(rad),sin=Math.sin(rad);
     var z=(typeof _zw!=='undefined'?_zw/100:1),sc=(_legendScale||1)*(z||1);
     function _rzMove(ev){
-      var dx=ev.clientX-sx,dy=ev.clientY-sy;
+      var dx=ev.clientX-mx,dy=ev.clientY-my;
       var lx=(dx*cos+dy*sin)/sc,ly=(-dx*sin+dy*cos)/sc;
-      if(mode!=='y')legendEl.style.width=Math.max(100,Math.min(1600,sw+lx))+'px';
-      if(mode!=='x')legendEl.style.minHeight=Math.max(0,sh+ly)+'px';
+      if(kx)legendEl.style.width=Math.max(100,Math.min(1600,sw+kx*lx))+'px';
+      if(ky)legendEl.style.minHeight=Math.max(0,sh+ky*ly)+'px';
+      /* crecimiento REAL logrado (el alto no baja del contenido) → mover el centro */
+      var gw=kx?(legendEl.offsetWidth-sw)*kx/2:0,gh=ky?(legendEl.offsetHeight-sh)*ky/2:0;
+      var px=sc*(gw*cos-gh*sin),py=sc*(gw*sin+gh*cos);
+      var p=_toLocalPct(c0x+px,c0y+py);
+      legendEl.style.left=p.x+'%';legendEl.style.top=p.y+'%';
     }
     function _rzUp(){document.removeEventListener('mousemove',_rzMove);document.removeEventListener('mouseup',_rzUp);}
     document.addEventListener('mousemove',_rzMove);document.addEventListener('mouseup',_rzUp);
@@ -179,7 +191,7 @@ var _legendScale=1,_legendRot=0;
 
   legendEl.addEventListener('mousedown',function(e){
     var rzHandle=e.target.closest&&e.target.closest('.leg-resize');
-    if(rzHandle){_startLegResize(e,rzHandle.dataset.rz||'xy');return;}
+    if(rzHandle){_startLegResize(e,rzHandle.dataset.rz);return;}
     var rotBtn=e.target.closest&&e.target.closest('.leg-rot');
     if(rotBtn){e.stopPropagation();_ensureLegPosPct();_legendRot=(_legendRot+90)%360;_applyLegTransform();return;}
     var rotBtnL=e.target.closest&&e.target.closest('.leg-rotl');

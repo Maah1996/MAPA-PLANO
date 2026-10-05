@@ -154,9 +154,7 @@ function _renderLegendSummary(){
     '<button class="leg-sz" data-d="1" title="Agrandar">+</button>'+
     '<button class="leg-sz leg-rotl" title="Girar a la izquierda">↺</button>'+
     '<button class="leg-sz leg-rot" title="Girar a la derecha">↻</button></div>';
-  lg.innerHTML='<div class="mpl-leg">'+header+_mplLegendHTML({ico:32,eico:36,editable:true})+'</div>'+'<div class="leg-resize leg-rz-x" data-rz="x" title="Arrastra para cambiar el ANCHO"></div>'
-    +'<div class="leg-resize leg-rz-y" data-rz="y" title="Arrastra para cambiar el ALTO"></div>'
-    +'<div class="leg-resize leg-rz-xy" data-rz="xy" title="Arrastra para cambiar ancho y alto"></div>';
+  lg.innerHTML='<div class="mpl-leg">'+header+_mplLegendHTML({ico:32,eico:36,editable:true})+'</div>'+['n','s','e','w','ne','nw','se','sw'].map(function(d){return '<div class="leg-resize leg-rz leg-rz-'+d+'" data-rz="'+d+'"></div>';}).join('');
   /* Campos de metadatos editables */
   lg.querySelectorAll('.mpl-ed').forEach(function(sp){
     sp.addEventListener('mousedown',function(e){e.stopPropagation();});
