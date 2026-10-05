@@ -269,7 +269,10 @@ function _applyBanner(){
   var btn=document.getElementById('toggleTitle');if(btn)btn.textContent='Título: '+(_titleOn?'sí':'no');
   if(!_titleOn){b.style.display='none';if(wrap)wrap.style.paddingTop='';return;}
   if(typeof _planRot==='undefined')return;                    /* aún no se inicializó el giro (carga) */
-  var ml=document.getElementById('markerLayer');if(!ml||!ml.offsetWidth||!ml.offsetHeight)return;
+  var ml=document.getElementById('markerLayer');
+  /* Sin imagen cargada el plano mide unos px de alto y el cálculo daría una barra absurda: se espera a que
+     tenga tamaño real (ver el ResizeObserver más abajo, que vuelve a llamar cuando cambia su tamaño). */
+  if(!ml||ml.offsetWidth<80||ml.offsetHeight<80){b.style.display='none';if(wrap)wrap.style.paddingTop='';return;}
   var r=ml.getBoundingClientRect(),H=Math.max(26,Math.round(r.width*0.05));
   var ext=(_sheetOn&&_legOrient==='v')?_sheetGeom().px:0;     /* con la hoja a la derecha, la barra la cubre también */
   var p1=_toLocalPct(r.left,r.top-H,true),p2=_toLocalPct(r.right+ext,r.top,true);
@@ -301,6 +304,12 @@ function _updateBannerText(){
 (function(){
   var tx=document.querySelector('#planTitle .pt-tx'),btn=document.getElementById('toggleTitle');
   if(btn)btn.onclick=function(){_titleOn=!_titleOn;_applyBanner();};
+  /* El plano cambia de tamaño al CARGAR su imagen, al hacer zoom, al redimensionar la ventana o al
+     aparecer una barra de desplazamiento: la hoja y la barra de título se recalculan solas. */
+  var ml0=document.getElementById('markerLayer'),raf=0;
+  function resync(){if(raf)return;raf=setTimeout(function(){raf=0;if(typeof _applySheet==='function')_applySheet();},30);}
+  if(window.ResizeObserver&&ml0)new ResizeObserver(resync).observe(ml0);
+  var pi=document.getElementById('planImg');if(pi)pi.addEventListener('load',resync);
   if(tx){
     tx.addEventListener('mousedown',function(e){e.stopPropagation();});
     tx.addEventListener('input',function(){
