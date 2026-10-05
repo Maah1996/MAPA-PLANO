@@ -473,8 +473,14 @@ function _applyZoom(){
   setTimeout(_centerView,0);
   if(window.__mplLegSync)window.__mplLegSync();
 }
-function zoomIn(){_zw=Math.min(500,_zw+25);_applyZoom();}
-function zoomOut(){_zw=Math.max(30,_zw-25);_applyZoom();}
+/* Zoom de 10 en 10 (+/− y Ctrl+rueda). Si el valor actual no es múltiplo de 10 (p.ej.
+   uno guardado antes con pasos de 25) se ajusta al múltiplo de 10 más cercano en esa dirección. */
+function _zoomStep(dir){
+  var v=dir>0?Math.floor(_zw/10+1e-9)*10+10:Math.ceil(_zw/10-1e-9)*10-10;
+  _zw=Math.min(500,Math.max(30,v));_applyZoom();
+}
+function zoomIn(){_zoomStep(1);}
+function zoomOut(){_zoomStep(-1);}
 function zoomReset(){_zw=100;_applyZoom();}
 
 /* ── Rotación del plano completo ── */
@@ -537,7 +543,7 @@ function _toLocalPct(clientX,clientY){
   return{x:Math.max(0,Math.min(100,(lx+origW/2)/origW*100)),y:Math.max(0,Math.min(100,(ly+origH/2)/origH*100))};
 }
 
-document.getElementById('zoom-wrap').addEventListener('wheel',function(e){if(e.ctrlKey){e.preventDefault();e.stopPropagation();_zw=Math.min(500,Math.max(30,_zw+(e.deltaY<0?25:-25)));_applyZoom();}else{e.preventDefault();e.stopPropagation();this.scrollTop+=e.deltaY;this.scrollLeft+=e.deltaX;}},{passive:false,capture:true});
+document.getElementById('zoom-wrap').addEventListener('wheel',function(e){if(e.ctrlKey){e.preventDefault();e.stopPropagation();_zoomStep(e.deltaY<0?1:-1);}else{e.preventDefault();e.stopPropagation();this.scrollTop+=e.deltaY;this.scrollLeft+=e.deltaX;}},{passive:false,capture:true});
 (function(){var wrap=document.getElementById('zoom-wrap'),drag=false,sx=0,sy=0,sl=0,st=0;wrap.addEventListener('mousedown',function(e){if(e.button!==0)return;if(e.target.closest&&e.target.closest('.marker'))return;drag=true;sx=e.clientX;sy=e.clientY;sl=wrap.scrollLeft;st=wrap.scrollTop;wrap.style.cursor='grabbing';});document.addEventListener('mousemove',function(e){if(!drag)return;wrap.scrollLeft=sl-(e.clientX-sx);wrap.scrollTop=st-(e.clientY-sy);});document.addEventListener('mouseup',function(){if(drag){drag=false;wrap.style.cursor='grab';}});})();
 
 /* ── showPlan: refresca visibilidad de markers del plano actual + zoom ── */
