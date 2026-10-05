@@ -253,15 +253,16 @@ function _applySheet(){
   var b=document.getElementById('toggleSheet');if(b)b.textContent='Hoja: '+(_sheetOn?'sí':'no');
 }
 /* Ubica la leyenda arriba y centrada sobre la hoja (usa el tamaño real en pantalla) */
-function _placeLegendOnSheet(){
+function _placeLegendOnSheet(ajustar){
   if(!legendEl)return;
   var ml=document.getElementById('markerLayer'),r=ml.getBoundingClientRect(),lr=legendEl.getBoundingClientRect();
   var rotado=(_planRot===90||_planRot===270);
   var hPx=rotado?r.width:r.height,wPx=rotado?r.height:r.width;
   /* La hoja se ensancha lo necesario para que la leyenda quepa con margen (máx. 80%) */
   var lw=(((_planRot+_legendRot)%180)===0)?lr.width:lr.height;
-  var need=Math.min(80,Math.ceil((lw+28)/wPx*100));
-  if(need>_sheetW){_sheetW=need;_applySheet();}
+  var need=Math.max(10,Math.min(80,Math.ceil((lw+28)/wPx*100)));
+  /* ajustar=true: la hoja queda JUSTA para la leyenda (puede angostarse); si no, solo crece */
+  if(ajustar?need!==_sheetW:need>_sheetW){_sheetW=need;_applySheet();}
   var lh=(((_planRot+_legendRot)%180)===0)?lr.height:lr.width;
   legendEl.style.left=(100+_sheetW/2)+'%';
   legendEl.style.top=Math.min(90,(lh/2+14)/hPx*100)+'%';
@@ -340,7 +341,8 @@ function _restoreLegend(o){
   if(!legendEl||!o)return;
   _legendScale=parseFloat(o.scale)||1;
   _legendRot=parseFloat(o.rot)||0;
-  if(typeof o.sheetOn!=='undefined'){_sheetOn=!!o.sheetOn;_sheetW=parseFloat(o.sheetW)||24;_applySheet();}
+  var _guardadoConHoja=(typeof o.sheetOn!=='undefined');
+  if(_guardadoConHoja){_sheetOn=!!o.sheetOn;_sheetW=parseFloat(o.sheetW)||24;_applySheet();}
   if(o.width)legendEl.style.width=o.width;
   legendEl.style.height='';
   legendEl.style.minHeight=o.height||'';
@@ -354,6 +356,9 @@ function _restoreLegend(o){
   }
   _fitLegendContent();
   if(window.__mplLegSync)window.__mplLegSync();
+  /* Plano guardado ANTES de existir la hoja: su leyenda quedó sobre el plano (o colgando
+     de su borde derecho). Se pasa a la hoja una vez, y desde ahí se guarda con la hoja. */
+  if(!_guardadoConHoja&&_sheetOn)setTimeout(function(){_fitLegendContent();_placeLegendOnSheet(true);},200);
 }
 
 /* ── Drag & Drop ── */
