@@ -248,19 +248,32 @@ function _svgAspect(dataUri){
 function _rasterizeEvacItem(item){
   return new Promise(function(res){
     if(!item||!item.img){res();return;}
-    var aspect=_svgAspect(item.img)||1;
-    var im=new Image();
-    im.onload=function(){
-      try{
-        var W=280,H=Math.max(1,Math.round(W/aspect));
-        var cv=document.createElement('canvas');cv.width=W;cv.height=H;
-        cv.getContext('2d').drawImage(im,0,0,W,H);
-        item._png=cv.toDataURL('image/png');
-      }catch(e){}
-      res();
-    };
-    im.onerror=function(){res();};
-    im.src=item.img;
+    /* Un PNG ya es seguro para html2canvas: se usa tal cual. Reescalarlo (antes se llevaba todo a
+       280 px de ancho) solo lo desenfocaba. */
+    if(/\.png(\?.*)?$/i.test(item.img)||/^data:image\/png/i.test(item.img)){item._png=item.img;res();return;}
+    /* SVG: se rasteriza a 720 px de ancho (antes 280) y con SU PROPORCIÓN REAL. Antes la proporción se
+       leía de un data-URI incrustado; al mover los íconos a archivos (img/iconos-evac/) esa lectura fallaba,
+       asumía 1:1 y aplastaba cada ícono dentro de un cuadrado de 280x280 (se veían desfigurados). */
+    function dibujar(aspect){
+      var im=new Image();
+      im.onload=function(){
+        try{
+          var a=aspect||((im.naturalWidth&&im.naturalHeight)?im.naturalWidth/im.naturalHeight:1);
+          var W=720,H=Math.max(1,Math.round(W/a));
+          var cv=document.createElement('canvas');cv.width=W;cv.height=H;
+          cv.getContext('2d').drawImage(im,0,0,W,H);
+          item._png=cv.toDataURL('image/png');
+        }catch(e){}
+        res();
+      };
+      im.onerror=function(){res();};
+      im.src=item.img;
+    }
+    if(/^data:/.test(item.img)){dibujar(_svgAspect(item.img));return;}
+    fetch(item.img).then(function(r){return r.text();}).then(function(txt){
+      var m=txt.match(/viewBox\s*=\s*"[\d.\-]+\s+[\d.\-]+\s+([\d.]+)\s+([\d.]+)"/);
+      dibujar(m?parseFloat(m[1])/parseFloat(m[2]):0);
+    }).catch(function(){dibujar(0);});
   });
 }
 /* Si un ícono de evacuación ya se colocó en el plano ANTES de que termine su
