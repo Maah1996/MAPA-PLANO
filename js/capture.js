@@ -329,29 +329,43 @@ async function _capturePlan(scaleFactor){
   /* La hoja de la leyenda (si está activa) se extiende a la derecha del plano: el área
      capturada es el plano + la hoja. Mientras tanto #zoom-wrap no debe recortarla. */
   var _zwrap=document.getElementById('zoom-wrap'),_zwOv=_zwrap?_zwrap.style.overflow:'';
-  if(_zwrap)_zwrap.style.overflow='visible';
+  /* El desplazamiento de la vista se guarda y se pone a 0 durante la captura: con scroll, el recorte
+     por coordenadas (x,y) saldría corrido, porque el exportador no lo contempla. Se restaura al final. */
+  var _zwSL=_zwrap?_zwrap.scrollLeft:0,_zwST=_zwrap?_zwrap.scrollTop:0;
+  if(_zwrap){_zwrap.scrollLeft=0;_zwrap.scrollTop=0;_zwrap.style.overflow='visible';}
   /* El ancho del plano se fija en px: si el exportador usara una ventana más ancha, el 100%
      estiraría el plano y la hoja (que es % de ese ancho) quedaría desproporcionada. */
   var _plW=ml.offsetWidth;
   ml.style.width=_plW+'px';
-  var _hojaOn=(typeof _sheetOn!=='undefined'&&_sheetOn),_hojaAbajo=(typeof _legOrient!=='undefined'&&_legOrient==='h');
-  var _plH=ml.offsetHeight;
-  var _capW=Math.round(_plW*(1+((_hojaOn&&!_hojaAbajo)?_sheetW/100:0)));
-  var _capH=Math.round(_plH*(1+((_hojaOn&&_hojaAbajo)?_sheetH/100:0)));
+  /* La hoja se pega a un lado del plano (en SUS ejes; ver _sheetSidePlan): se reserva ese espacio.
+     Si cae a la izquierda o arriba, el plano se desplaza con margen para que quepa en el lienzo. */
+  var _hojaOn=(typeof _sheetOn!=='undefined'&&_sheetOn),_plH=ml.offsetHeight,_shEl=document.getElementById('legendSheet');
+  var _lado=(_hojaOn&&_shEl&&typeof _sheetSidePlan==='function')?_sheetSidePlan():null;
+  var _exL=0,_exT=0,_exR=0,_exB=0;
+  if(_lado==='right')_exR=_shEl.offsetWidth;else if(_lado==='left')_exL=_shEl.offsetWidth;
+  else if(_lado==='bottom')_exB=_shEl.offsetHeight;else if(_lado==='top')_exT=_shEl.offsetHeight;
+  ml.style.marginLeft=_exL+'px';ml.style.marginTop=_exT+'px';
+  var _capW=Math.round(_plW+_exL+_exR),_capH=Math.round(_plH+_exT+_exB);
   var _maxDim=Math.max(_capW||1000,_capH||1000);
   var _capScale=Math.min(scaleFactor,Math.max(1,16000/_maxDim));
 
   var planCanvas;
   try{
-    planCanvas=await html2canvas(ml,{
+    var _h2c={
       backgroundColor:'#ffffff',scale:_capScale,useCORS:true,allowTaint:false,imageTimeout:20000,
       scrollX:0,scrollY:0,
       width:_capW,height:_capH,
       logging:false
-    });
+    };
+    /* El exportador siempre parte de la esquina superior-izquierda del elemento (ignora x,y). Si la hoja
+       cae a la izquierda o arriba del plano, esa zona queda FUERA del plano: se captura entonces el
+       contenedor (#zoom-wrap), donde el plano está desplazado por márgenes y la hoja queda dentro. */
+    var _raiz=ml,_zwBg='';
+    if((_exL||_exT)&&_zwrap){_raiz=_zwrap;_zwBg=_zwrap.style.background;_zwrap.style.background='#fff';}
+    planCanvas=await html2canvas(_raiz,_h2c);
   }finally{
     /* Restaurar estado original */
-    if(_zwrap)_zwrap.style.overflow=_zwOv;
+    if(_zwrap){_zwrap.style.overflow=_zwOv;if(_raiz===_zwrap)_zwrap.style.background=_zwBg;}
     ml.style.width=origW;ml.style.marginTop=origMT;
     ml.style.transform=origTr;ml.style.marginBottom=origMB;ml.style.marginLeft=origML;
     _activeImg().style.width='100%';
@@ -365,6 +379,7 @@ async function _capturePlan(scaleFactor){
       m.style.transformOrigin=m._origOrg||'50% 50%';
     });
     _scaleMarkers();_scaleArrows();
+    if(_zwrap){_zwrap.scrollLeft=_zwSL;_zwrap.scrollTop=_zwST;}
   }
 
   /* 5. Auto-detectar área en blanco superior escaneando filas de píxeles
