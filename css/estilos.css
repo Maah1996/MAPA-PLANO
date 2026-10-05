@@ -208,36 +208,39 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 .legend:active{cursor:grabbing}
 .legend .mpl-leg{border-radius:5px;overflow:hidden}
 .legend .leg-resize{position:absolute;z-index:9;touch-action:none}
-/* Como una ventana: se agarra cualquier borde (n s e w) o esquina (ne nw se sw)
-   y el borde sigue al mouse. Las zonas quedan casi todas AFUERA de la línea
-   (4px dentro, 14px fuera) para no tapar los botones del encabezado, y se
-   escalan con --rzk (=1/zoom real de la leyenda) para que no se vuelvan finas
-   al hacer zoom al plano. El cursor cambia y el borde se tiñe de dorado. */
+/* Como una ventana: se agarra cualquier borde (n s e w) o esquina (ne nw se sw).
+   Cada zona está CENTRADA sobre la línea del borde (8px dentro, 8px fuera) y se
+   escala con --rzk (=1/zoom real de la leyenda) para no afinarse al hacer zoom.
+   El borde n termina antes de los botones − + ↺ ↻ del encabezado. */
 .legend{--rzk:1}
-.legend .leg-rz-n{top:calc(-14px*var(--rzk));height:calc(18px*var(--rzk));left:calc(14px*var(--rzk));right:calc(14px*var(--rzk));cursor:ns-resize}
-.legend .leg-rz-s{bottom:calc(-14px*var(--rzk));height:calc(18px*var(--rzk));left:calc(14px*var(--rzk));right:calc(14px*var(--rzk));cursor:ns-resize}
-.legend .leg-rz-e{right:calc(-14px*var(--rzk));width:calc(18px*var(--rzk));top:calc(14px*var(--rzk));bottom:calc(14px*var(--rzk));cursor:ew-resize}
-.legend .leg-rz-w{left:calc(-14px*var(--rzk));width:calc(18px*var(--rzk));top:calc(14px*var(--rzk));bottom:calc(14px*var(--rzk));cursor:ew-resize}
-.legend .leg-rz-ne,.legend .leg-rz-nw,.legend .leg-rz-se,.legend .leg-rz-sw{width:calc(26px*var(--rzk));height:calc(26px*var(--rzk))}
-.legend .leg-rz-ne{top:calc(-14px*var(--rzk));right:calc(-14px*var(--rzk));cursor:nesw-resize}
-.legend .leg-rz-sw{bottom:calc(-14px*var(--rzk));left:calc(-14px*var(--rzk));cursor:nesw-resize}
-.legend .leg-rz-nw{top:calc(-14px*var(--rzk));left:calc(-14px*var(--rzk));cursor:nwse-resize}
-.legend .leg-rz-se{bottom:calc(-14px*var(--rzk));right:calc(-14px*var(--rzk));cursor:nwse-resize}
-/* La zona de agarre es invisible; al pasar el mouse solo se marca una línea fina
-   sobre el borde (o un punto en la esquina). */
+.legend .leg-rz-n{top:calc(-8px*var(--rzk));height:calc(14px*var(--rzk));left:calc(16px*var(--rzk));right:calc(104px*var(--rzk));cursor:ns-resize}
+.legend .leg-rz-s{bottom:calc(-8px*var(--rzk));height:calc(16px*var(--rzk));left:calc(16px*var(--rzk));right:calc(16px*var(--rzk));cursor:ns-resize}
+.legend .leg-rz-e{right:calc(-8px*var(--rzk));width:calc(16px*var(--rzk));top:calc(16px*var(--rzk));bottom:calc(16px*var(--rzk));cursor:ew-resize}
+.legend .leg-rz-w{left:calc(-8px*var(--rzk));width:calc(16px*var(--rzk));top:calc(16px*var(--rzk));bottom:calc(16px*var(--rzk));cursor:ew-resize}
+.legend .leg-rz-ne,.legend .leg-rz-nw,.legend .leg-rz-se,.legend .leg-rz-sw{width:calc(24px*var(--rzk));height:calc(24px*var(--rzk))}
+.legend .leg-rz-ne{top:calc(-8px*var(--rzk));right:calc(-8px*var(--rzk));cursor:nesw-resize}
+.legend .leg-rz-sw{bottom:calc(-8px*var(--rzk));left:calc(-8px*var(--rzk));cursor:nesw-resize}
+.legend .leg-rz-nw{top:calc(-8px*var(--rzk));left:calc(-8px*var(--rzk));cursor:nwse-resize}
+.legend .leg-rz-se{bottom:calc(-8px*var(--rzk));right:calc(-8px*var(--rzk));cursor:nwse-resize}
+/* La zona es invisible; al pasar el mouse solo se marca una línea fina sobre el
+   borde (o un punto en la esquina). */
 .legend .leg-rz::after{content:"";position:absolute;opacity:0;background:#c8a84b;border-radius:2px;pointer-events:none}
 .legend .leg-rz:hover::after{opacity:1}
-.legend .leg-rz-n::after,.legend .leg-rz-s::after{left:0;right:0;height:3px}
-.legend .leg-rz-n::after{top:13px}
-.legend .leg-rz-s::after{top:2px}
-.legend .leg-rz-e::after,.legend .leg-rz-w::after{top:0;bottom:0;width:3px}
-.legend .leg-rz-e::after{left:2px}
-.legend .leg-rz-w::after{left:13px}
-.legend .leg-rz-ne::after,.legend .leg-rz-nw::after,.legend .leg-rz-se::after,.legend .leg-rz-sw::after{width:10px;height:10px;border-radius:50%}
-.legend .leg-rz-ne::after{left:7px;top:9px}
-.legend .leg-rz-nw::after{left:9px;top:9px}
-.legend .leg-rz-se::after{left:7px;top:7px}
-.legend .leg-rz-sw::after{left:9px;top:7px}
+.legend .leg-rz-n::after,.legend .leg-rz-s::after{left:0;right:0;height:calc(3px*var(--rzk))}
+.legend .leg-rz-n::after,.legend .leg-rz-s::after{top:calc(7px*var(--rzk))}
+.legend .leg-rz-e::after,.legend .leg-rz-w::after{top:0;bottom:0;width:calc(3px*var(--rzk));left:calc(7px*var(--rzk))}
+.legend .leg-rz-ne::after,.legend .leg-rz-nw::after,.legend .leg-rz-se::after,.legend .leg-rz-sw::after{width:calc(10px*var(--rzk));height:calc(10px*var(--rzk));border-radius:50%}
+.legend .leg-rz-nw::after{left:calc(3px*var(--rzk));top:calc(3px*var(--rzk))}
+.legend .leg-rz-ne::after{left:calc(11px*var(--rzk));top:calc(3px*var(--rzk))}
+.legend .leg-rz-sw::after{left:calc(3px*var(--rzk));top:calc(11px*var(--rzk))}
+.legend .leg-rz-se::after{left:calc(11px*var(--rzk));top:calc(11px*var(--rzk))}
+/* Al estirar la leyenda (min-height), el contenido se reparte para llenarla:
+   sin espacio en blanco abajo. El encabezado (título + datos) no se estira. */
+.legend{display:flex;flex-direction:column}
+.legend>.mpl-leg{flex:1 1 auto;display:flex;flex-direction:column}
+.legend>.mpl-leg>.mpl-block{flex:1 1 auto;display:flex;flex-direction:column}
+.legend>.mpl-leg>.mpl-drag+.mpl-block{flex:0 0 auto}
+.legend>.mpl-leg>.mpl-block>.mpl-row{flex:1 1 auto}
 .legend:hover{box-shadow:0 0 0 2px rgba(200,168,75,.85),0 4px 16px rgba(0,0,0,.5)}
 .legend-drag{display:flex;align-items:center;gap:6px;color:var(--acc);font-size:11px;font-weight:700;padding:4px 2px 8px;border-bottom:1px solid rgba(200,168,75,.3);margin-bottom:5px}
 .legend-drag .leg-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
