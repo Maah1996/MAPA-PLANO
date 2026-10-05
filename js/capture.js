@@ -142,7 +142,7 @@ function _mplLegendHTML(opt){
   });
   var nRisk=riskRows.length;
   if(d.eaCnt)riskRows.push(eaRow('mpl-ea-v'));
-  if(riskRows.length)out+=_mplBlock('<div class="mpl-h">Leyenda riesgos</div>',riskRows,nRisk?'':'mpl-only-ea',nRisk||1);
+  if(riskRows.length)out+=_mplBlock('<div class="mpl-h">Leyenda</div>',riskRows,nRisk?'':'mpl-only-ea',nRisk||1);
   /* SIMBOLOGÍA */
   var symRows=[];
   d.evac.forEach(function(id){
