@@ -174,7 +174,12 @@ function _renderLegendSummary(){
   lg.style.borderRadius='6px';lg.style.padding='0';lg.style.overflow='visible';lg.style.height='auto';
   if(!lg.style.width||['230px','250px','280px'].indexOf(lg.style.width)>=0)lg.style.width='300px';
   /* Anclar en % del markerLayer para que escale con el zoom del plano */
-  if(!lg.style.left||lg.style.left.indexOf('%')===-1){lg.style.left='15%';lg.style.top='70%';lg.style.bottom='auto';lg.style.right='auto';}
+  var _sinPos=(!lg.style.left||lg.style.left.indexOf('%')===-1);
+  if(_sinPos){
+    var _enHoja=(typeof _sheetOn!=='undefined'&&_sheetOn);
+    lg.style.left=_enHoja?(100+_sheetW/2)+'%':'15%';lg.style.top=_enHoja?'12%':'70%';
+    lg.style.bottom='auto';lg.style.right='auto';
+  }
   var header='<div class="mpl-drag"><span class="mpl-tt">Leyenda</span>'+
     '<button class="leg-sz" data-d="-1" title="Achicar">−</button>'+
     '<button class="leg-sz" data-d="1" title="Agrandar">+</button>'+
@@ -208,6 +213,8 @@ function _renderLegendSummary(){
   if(typeof _fitLegendContent==='function')_fitLegendContent();
   /* Aplicar el zoom actual del plano a la leyenda */
   if(window.__mplLegSync)window.__mplLegSync();
+  /* Leyenda nueva (sin posición guardada) y hoja activa: centrarla arriba sobre la hoja */
+  if(_sinPos&&typeof _sheetOn!=='undefined'&&_sheetOn&&typeof _placeLegendOnSheet==='function')_placeLegendOnSheet();
 }
 async function _renderLegendCanvas(finWidth,scaleFactor){
   var cssW=Math.round(finWidth/scaleFactor);
@@ -228,7 +235,7 @@ async function _capturePlan(scaleFactor){
   var ml=document.getElementById('markerLayer');
 
   /* 1. Ocultar controles UI (incluida la barra de arrastre de la leyenda) */
-  document.querySelectorAll('.del,.mkr-size,.arr-del,.arr-resize,.leg-resize,.afp-toggle,#arr-float-panel,.mpl-drag').forEach(function(d){d.style.display='none';});
+  document.querySelectorAll('.del,.mkr-size,.arr-del,.arr-resize,.leg-resize,.sheet-resize,.afp-toggle,#arr-float-panel,.mpl-drag').forEach(function(d){d.style.display='none';});
   /* Quitar el recuadro punteado de selección para que no salga en el PNG/PDF. */
   document.querySelectorAll('.marker.mkr-sel').forEach(function(m){m.classList.remove('mkr-sel');});
 
@@ -290,7 +297,16 @@ async function _capturePlan(scaleFactor){
   /* Tope de escala: los navegadores limitan el canvas (~16384px por lado). Si
      el plano es grande, bajamos la escala para no obtener un PNG en blanco o
      con íconos faltantes (html2canvas descarta lo que se sale del límite). */
-  var _maxDim=Math.max(ml.offsetWidth||1000,ml.offsetHeight||1000);
+  /* La hoja de la leyenda (si está activa) se extiende a la derecha del plano: el área
+     capturada es el plano + la hoja. Mientras tanto #zoom-wrap no debe recortarla. */
+  var _zwrap=document.getElementById('zoom-wrap'),_zwOv=_zwrap?_zwrap.style.overflow:'';
+  if(_zwrap)_zwrap.style.overflow='visible';
+  /* El ancho del plano se fija en px: si el exportador usara una ventana más ancha, el 100%
+     estiraría el plano y la hoja (que es % de ese ancho) quedaría desproporcionada. */
+  var _plW=ml.offsetWidth;
+  ml.style.width=_plW+'px';
+  var _capW=Math.round(_plW*(1+((typeof _sheetOn!=='undefined'&&_sheetOn)?_sheetW/100:0)));
+  var _maxDim=Math.max(_capW||1000,ml.offsetHeight||1000);
   var _capScale=Math.min(scaleFactor,Math.max(1,16000/_maxDim));
 
   var planCanvas;
@@ -298,18 +314,19 @@ async function _capturePlan(scaleFactor){
     planCanvas=await html2canvas(ml,{
       backgroundColor:'#ffffff',scale:_capScale,useCORS:true,allowTaint:false,imageTimeout:20000,
       scrollX:0,scrollY:0,
-      width:ml.offsetWidth,height:ml.offsetHeight,
+      width:_capW,height:ml.offsetHeight,
       logging:false
     });
   }finally{
     /* Restaurar estado original */
+    if(_zwrap)_zwrap.style.overflow=_zwOv;
     ml.style.width=origW;ml.style.marginTop=origMT;
     ml.style.transform=origTr;ml.style.marginBottom=origMB;ml.style.marginLeft=origML;
     _activeImg().style.width='100%';
     if(_legCh)_legCh.style.overflow=_legChOv;
     legEl.style.overflow=_legOverflow;legEl.style.resize=_legResize;legEl.style.visibility=_legVis;legEl.style.transform=_legTr;
     if(window.__mplLegSync)window.__mplLegSync();
-    document.querySelectorAll('.del,.mkr-size,.arr-del,.arr-resize,.leg-resize,.mpl-drag').forEach(function(d){d.style.display='';});
+    document.querySelectorAll('.del,.mkr-size,.arr-del,.arr-resize,.leg-resize,.sheet-resize,.mpl-drag').forEach(function(d){d.style.display='';});
     document.querySelectorAll('.marker').forEach(function(m){m.style.visibility=m._origVis||'visible';});
     document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){
       m.style.transform=m._origTr||'';

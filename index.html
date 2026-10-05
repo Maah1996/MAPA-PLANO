@@ -19,7 +19,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <script src="js/firebase-config.js?v=202609050922"></script>
-<link rel="stylesheet" href="css/estilos.css?v=202610051154">
+<link rel="stylesheet" href="css/estilos.css?v=202610051231">
 </head>
 <body>
 
@@ -390,6 +390,7 @@
     <div class="toolbar">
       <input type="text" id="titleInput" placeholder="Título del mapa" value="Mapa de Riesgos">
       <button class="btn ghost" id="toggleLegend">Ocultar leyenda</button>
+      <button class="btn ghost" id="toggleSheet" title="Hoja blanca a la derecha del plano para ubicar la leyenda (sale en el PNG/PDF)">Hoja: sí</button>
       <button class="btn ghost" id="clearBtn">Limpiar</button>
       <button class="btn primary" id="exportBtn">Exportar PNG</button>
       <button class="btn pdf-btn" id="pdfBtn">Exportar PDF</button>
@@ -418,18 +419,19 @@
     <div id="zoom-wrap">
       <div id="markerLayer">
         <img id="planImg" class="plan" src="" alt="Plano">
+        <div id="legendSheet"><div class="sheet-resize" title="Arrastra para ensanchar o angostar la hoja"></div></div>
         <div class="legend" id="legend"></div>
       </div>
     </div>
   </main>
 </div>
-<script src="js/core.js?v=202610051219"></script>
+<script src="js/core.js?v=202610051231"></script>
 <script src="js/evac_items.js?v=202609050922"></script>
 <script src="js/evac_arrows.js?v=202609020957"></script>
 <script src="js/save_load.js?v=202609050939"></script>
 <script src="js/cad.js?v=202609041502"></script>
 <script src="js/iper.js?v=202609050939"></script>
-<script src="js/capture.js?v=202610051213"></script>
+<script src="js/capture.js?v=202610051231"></script>
 <script src="js/version_check.js?v=202608311145"></script>
 </body>
 </html>

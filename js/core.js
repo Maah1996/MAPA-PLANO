@@ -149,7 +149,7 @@ var _legendScale=1,_legendRot=0;
        propio: así queda correcto también cuando el plano está rotado, donde
        el bounding box de ml ya viene con ancho/alto intercambiados. */
     var lr=legendEl.getBoundingClientRect();
-    var pos=_toLocalPct(lr.left+lr.width/2,lr.top+lr.height/2);
+    var pos=_toLocalPct(lr.left+lr.width/2,lr.top+lr.height/2,true);
     legendEl.style.left=pos.x+'%';legendEl.style.top=pos.y+'%';
     legendEl.style.bottom='auto';legendEl.style.right='auto';
     _applyLegTransform();
@@ -192,7 +192,7 @@ var _legendScale=1,_legendRot=0;
       _fitLegendContent();                                    /* puede ensanchar al mínimo del contenido */
       /* crecimiento REAL logrado (el alto no baja del contenido) → mover el centro */
       var gw=kx?(legendEl.offsetWidth-sw)*kx/2*sc:0,gh=ky?(legendEl.offsetHeight-sh)*ky/2*sc:0;
-      var p=_toLocalPct(c0x+gw*ax-gh*ay,c0y+gw*ay+gh*ax);
+      var p=_toLocalPct(c0x+gw*ax-gh*ay,c0y+gw*ay+gh*ax,true);
       legendEl.style.left=p.x+'%';legendEl.style.top=p.y+'%';
     }
     function _rzUp(){document.removeEventListener('mousemove',_rzMove);document.removeEventListener('mouseup',_rzUp);}
@@ -212,16 +212,18 @@ var _legendScale=1,_legendRot=0;
        donde el usuario ponga la mano, desde ahí se mueve la leyenda. */
     _ensureLegPosPct();
     _dragging=true;
-    var pos=_toLocalPct(e.clientX,e.clientY);
+    var pos=_toLocalPct(e.clientX,e.clientY,true);
     _offX=pos.x-parseFloat(legendEl.style.left);_offY=pos.y-parseFloat(legendEl.style.top);
     e.preventDefault();e.stopPropagation();
     document.addEventListener('mousemove',_legMove);document.addEventListener('mouseup',_legUp);
   });
   function _legMove(e){
     if(!_dragging)return;
-    var pos=_toLocalPct(e.clientX,e.clientY);
-    legendEl.style.left=(pos.x-_offX)+'%';
-    legendEl.style.top=(pos.y-_offY)+'%';
+    var pos=_toLocalPct(e.clientX,e.clientY,true);
+    /* la leyenda puede salir del plano solo hasta el borde de la hoja (si está visible) */
+    var xmax=100+(_sheetOn?_sheetW:0),nx=pos.x-_offX,ny=pos.y-_offY;
+    legendEl.style.left=Math.max(0,Math.min(xmax,nx))+'%';
+    legendEl.style.top=Math.max(0,Math.min(100,ny))+'%';
   }
   function _legUp(){_dragging=false;document.removeEventListener('mousemove',_legMove);document.removeEventListener('mouseup',_legUp);}
 })();
@@ -234,9 +236,56 @@ function _serializeLegend(){
   return {
     left:legendEl.style.left||'',top:legendEl.style.top||'',
     width:legendEl.style.width||'',height:legendEl.style.minHeight||'',
-    scale:_legendScale,rot:_legendRot
+    scale:_legendScale,rot:_legendRot,
+    sheetOn:_sheetOn,sheetW:_sheetW
   };
 }
+
+/* ── Hoja blanca para la leyenda (a la derecha del plano) ──
+   Es una extensión del "papel": #legendSheet, hija de #markerLayer, pegada a su borde
+   derecho, con ancho _sheetW (% del ancho del plano). La leyenda se arrastra sobre ella y
+   el export PNG/PDF la incluye. Se guarda junto con el estado de la leyenda (por plano). */
+var _sheetOn=true,_sheetW=24;
+function _applySheet(){
+  var s=document.getElementById('legendSheet');if(!s)return;
+  s.style.display=_sheetOn?'block':'none';
+  s.style.width=_sheetW+'%';
+  var b=document.getElementById('toggleSheet');if(b)b.textContent='Hoja: '+(_sheetOn?'sí':'no');
+}
+/* Ubica la leyenda arriba y centrada sobre la hoja (usa el tamaño real en pantalla) */
+function _placeLegendOnSheet(){
+  if(!legendEl)return;
+  var ml=document.getElementById('markerLayer'),r=ml.getBoundingClientRect(),lr=legendEl.getBoundingClientRect();
+  var rotado=(_planRot===90||_planRot===270);
+  var hPx=rotado?r.width:r.height,wPx=rotado?r.height:r.width;
+  /* La hoja se ensancha lo necesario para que la leyenda quepa con margen (máx. 80%) */
+  var lw=(((_planRot+_legendRot)%180)===0)?lr.width:lr.height;
+  var need=Math.min(80,Math.ceil((lw+28)/wPx*100));
+  if(need>_sheetW){_sheetW=need;_applySheet();}
+  var lh=(((_planRot+_legendRot)%180)===0)?lr.height:lr.width;
+  legendEl.style.left=(100+_sheetW/2)+'%';
+  legendEl.style.top=Math.min(90,(lh/2+14)/hPx*100)+'%';
+  legendEl.style.bottom='auto';legendEl.style.right='auto';
+  if(window.__mplLegSync)window.__mplLegSync();
+}
+(function(){
+  var s=document.getElementById('legendSheet'),btn=document.getElementById('toggleSheet');
+  if(btn)btn.onclick=function(){
+    _sheetOn=!_sheetOn;_applySheet();
+    if(_sheetOn)_placeLegendOnSheet();                         /* al activarla, la leyenda se ubica sobre ella */
+    else if(parseFloat(legendEl.style.left)>100){legendEl.style.left='96%';if(window.__mplLegSync)window.__mplLegSync();}  /* sin hoja no puede quedar fuera */
+  };
+  if(s){
+    var h=s.querySelector('.sheet-resize');
+    if(h)h.addEventListener('mousedown',function(e){
+      e.preventDefault();e.stopPropagation();
+      function mv(ev){var p=_toLocalPct(ev.clientX,ev.clientY,true);_sheetW=Math.max(10,Math.min(80,Math.round(p.x-100)));_applySheet();}
+      function up(){document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);}
+      document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);
+    });
+  }
+  _applySheet();
+})();
 /* ── Ajustar el contenido de la leyenda a su caja ──
    Cuando el usuario estira la leyenda más alto que su contenido, en vez de dejar
    espacio entre filas se AGRANDA el contenido (íconos, nombres y títulos juntos)
@@ -291,6 +340,7 @@ function _restoreLegend(o){
   if(!legendEl||!o)return;
   _legendScale=parseFloat(o.scale)||1;
   _legendRot=parseFloat(o.rot)||0;
+  if(typeof o.sheetOn!=='undefined'){_sheetOn=!!o.sheetOn;_sheetW=parseFloat(o.sheetW)||24;_applySheet();}
   if(o.width)legendEl.style.width=o.width;
   legendEl.style.height='';
   legendEl.style.minHeight=o.height||'';
@@ -528,9 +578,11 @@ document.getElementById('btnRotL').onclick=function(){_planRot=(_planRot-90+360)
 document.getElementById('btnRotR').onclick=function(){_planRot=(_planRot+90)%360;_planRotByMode[_appMode]=_planRot;_applyPlanRotation();if(typeof _saveAppState==='function')_saveAppState();};
 
 /* ── Conversión de coordenadas de pantalla a % locales del markerLayer (considera rotación) ── */
-function _toLocalPct(clientX,clientY){
+function _toLocalPct(clientX,clientY,free){
+  /* free=true: sin tope 0..100 (la leyenda puede ubicarse sobre la hoja a la derecha del plano) */
   var ml=document.getElementById('markerLayer'),r=ml.getBoundingClientRect();
   if(_planRot===0){
+    if(free)return{x:(clientX-r.left)/r.width*100,y:(clientY-r.top)/r.height*100};
     return{x:Math.max(0,Math.min(100,(clientX-r.left)/r.width*100)),y:Math.max(0,Math.min(100,(clientY-r.top)/r.height*100))};
   }
   var cx=r.left+r.width/2,cy=r.top+r.height/2;
@@ -540,6 +592,7 @@ function _toLocalPct(clientX,clientY){
   var ly=dx*Math.sin(rad)+dy*Math.cos(rad);
   var origW=(_planRot===90||_planRot===270)?r.height:r.width;
   var origH=(_planRot===90||_planRot===270)?r.width:r.height;
+  if(free)return{x:(lx+origW/2)/origW*100,y:(ly+origH/2)/origH*100};
   return{x:Math.max(0,Math.min(100,(lx+origW/2)/origW*100)),y:Math.max(0,Math.min(100,(ly+origH/2)/origH*100))};
 }
 
