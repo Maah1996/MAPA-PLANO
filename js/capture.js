@@ -59,6 +59,8 @@ function _mplEnsureCSS(){
     ".mpl-znm{font-size:13px;font-weight:bold;color:#16314f}"+
     ".mpl-empty{padding:12px;text-align:center;color:#8a8470;font-style:italic;font-size:12.5px}"+
     ".mpl-drag{display:flex;align-items:center;gap:5px;background:#16314f;padding:5px 8px;cursor:grab;margin-bottom:8px}"+
+    ".mpl-drag .leg-orient{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.55);border-radius:3px;font-size:10px;height:18px;padding:0 2px;cursor:pointer;font-family:inherit}"+
+    ".mpl-drag .leg-orient option{color:#000;background:#fff}"+
     ".mpl-drag .mpl-tt{flex:1;min-width:0;color:#fff;font-weight:bold;font-size:11px;letter-spacing:.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"+
     ".mpl-leg .leg-sz{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.55);color:#fff;border-radius:3px;width:18px;height:18px;font-size:13px;line-height:1;cursor:pointer;padding:0;flex:0 0 18px;display:flex;align-items:center;justify-content:center}"+
     ".mpl-leg .leg-sz:hover{background:rgba(255,255,255,.3)}";
@@ -88,6 +90,9 @@ function _mplLegendData(){
   }).length;
   return {risks:risks,evac:evac,zonas:zonas,arrows:arrows,eaCnt:eaCnt};
 }
+
+/* Nº de columnas de una sección en horizontal (máx. 4 filas por columna) */
+function _mplCols(n){return 'style="--cols:'+Math.max(1,Math.ceil(n/4))+'"';}
 
 /* Caja de título + metadatos */
 function _mplHeaderHTML(opt){
@@ -124,7 +129,7 @@ function _mplLegendHTML(opt){
     riskRows+='<div class="mpl-row mpl-find" data-fid="'+r.id+'" data-fcolor="'+r.color+'"><span class="mpl-ic">'+ico+'</span><span class="mpl-nm">'+nm+'</span></div>';
   });
   if(d.eaCnt){riskRows+='<div class="mpl-row"><span class="mpl-ic">'+(typeof iconSVGEstoyAqui==='function'?iconSVGEstoyAqui(ICO):'')+'</span><span class="mpl-nm">Estoy aquí</span></div>';}
-  if(riskRows)out+='<div class="mpl-block"><div class="mpl-h">Leyenda riesgos</div>'+riskRows+'</div>';
+  if(riskRows)out+='<div class="mpl-block" '+_mplCols(d.risks.length+(d.eaCnt?1:0))+'><div class="mpl-h">Leyenda riesgos</div>'+riskRows+'</div>';
   /* SIMBOLOGÍA */
   var symRows='';
   d.evac.forEach(function(id){
@@ -133,12 +138,12 @@ function _mplLegendHTML(opt){
     symRows+='<div class="mpl-row"><span class="mpl-ic">'+ico+'</span><span class="mpl-nm">'+nm+'</span></div>';
   });
   if(d.arrows){var aico=typeof arrowSVGThumb==='function'?arrowSVGThumb(0):'→';symRows+='<div class="mpl-row"><span class="mpl-ic" style="width:'+EICO+'px;justify-content:center">'+aico+'</span><span class="mpl-nm">Vía de evacuación</span></div>';}
-  if(symRows)out+='<div class="mpl-block"><div class="mpl-h">Simbología</div>'+symRows+'</div>';
+  if(symRows)out+='<div class="mpl-block" '+_mplCols(d.evac.length+(d.arrows?1:0))+'><div class="mpl-h">Simbología</div>'+symRows+'</div>';
   /* ZONA DE SEGURIDAD */
   if(d.zonas.length){
     var zr='';
     d.zonas.forEach(function(id){var it=null;if(typeof EVAC_ITEMS!=='undefined')EVAC_ITEMS.forEach(function(x){if(x.id===id)it=x;});var nm=it?it.name:id,ico=it?'<img src="'+(it._png||it.img)+'" style="width:'+(EICO+6)+'px;height:auto">':'';zr+='<div class="mpl-row"><span class="mpl-ic">'+ico+'</span><span class="mpl-znm">'+nm+'</span></div>';});
-    out+='<div class="mpl-block"><div class="mpl-hz">Zona de seguridad / Punto de encuentro</div>'+zr+'</div>';
+    out+='<div class="mpl-block" '+_mplCols(d.zonas.length)+'><div class="mpl-hz">Zona de seguridad / Punto de encuentro</div>'+zr+'</div>';
   }
   return out;
 }
@@ -181,11 +186,20 @@ function _renderLegendSummary(){
     lg.style.bottom='auto';lg.style.right='auto';
   }
   var header='<div class="mpl-drag"><span class="mpl-tt">Leyenda</span>'+
+    '<select class="leg-orient" title="Orientación de la leyenda"><option value="v">Vertical</option><option value="h">Horizontal</option></select>'+
     '<button class="leg-sz" data-d="-1" title="Achicar">−</button>'+
     '<button class="leg-sz" data-d="1" title="Agrandar">+</button>'+
     '<button class="leg-sz leg-rotl" title="Girar a la izquierda">↺</button>'+
     '<button class="leg-sz leg-rot" title="Girar a la derecha">↻</button></div>';
-  lg.innerHTML='<div class="mpl-leg">'+header+_mplLegendHTML({ico:32,eico:36,editable:true})+'</div>'+['n','s','e','w','ne','nw','se','sw'].map(function(d){return '<div class="leg-resize leg-rz leg-rz-'+d+'" data-rz="'+d+'"></div>';}).join('');
+  lg.innerHTML='<div class="mpl-leg">'+header+'<div class="mpl-body">'+_mplLegendHTML({ico:32,eico:36,editable:true})+'</div></div>'+['n','s','e','w','ne','nw','se','sw'].map(function(d){return '<div class="leg-resize leg-rz leg-rz-'+d+'" data-rz="'+d+'"></div>';}).join('');
+  /* Desplegable Vertical / Horizontal */
+  var _so=lg.querySelector('.leg-orient');
+  if(_so){
+    _so.value=(typeof _legOrient!=='undefined')?_legOrient:'v';
+    _so.addEventListener('mousedown',function(e){e.stopPropagation();});
+    _so.addEventListener('change',function(){if(typeof _setLegendOrient==='function')_setLegendOrient(_so.value);});
+  }
+  lg.classList.toggle('horiz',(typeof _legOrient!=='undefined')&&_legOrient==='h');
   /* Campos de metadatos editables */
   lg.querySelectorAll('.mpl-ed').forEach(function(sp){
     sp.addEventListener('mousedown',function(e){e.stopPropagation();});
@@ -305,8 +319,11 @@ async function _capturePlan(scaleFactor){
      estiraría el plano y la hoja (que es % de ese ancho) quedaría desproporcionada. */
   var _plW=ml.offsetWidth;
   ml.style.width=_plW+'px';
-  var _capW=Math.round(_plW*(1+((typeof _sheetOn!=='undefined'&&_sheetOn)?_sheetW/100:0)));
-  var _maxDim=Math.max(_capW||1000,ml.offsetHeight||1000);
+  var _hojaOn=(typeof _sheetOn!=='undefined'&&_sheetOn),_hojaAbajo=(typeof _legOrient!=='undefined'&&_legOrient==='h');
+  var _plH=ml.offsetHeight;
+  var _capW=Math.round(_plW*(1+((_hojaOn&&!_hojaAbajo)?_sheetW/100:0)));
+  var _capH=Math.round(_plH*(1+((_hojaOn&&_hojaAbajo)?_sheetH/100:0)));
+  var _maxDim=Math.max(_capW||1000,_capH||1000);
   var _capScale=Math.min(scaleFactor,Math.max(1,16000/_maxDim));
 
   var planCanvas;
@@ -314,7 +331,7 @@ async function _capturePlan(scaleFactor){
     planCanvas=await html2canvas(ml,{
       backgroundColor:'#ffffff',scale:_capScale,useCORS:true,allowTaint:false,imageTimeout:20000,
       scrollX:0,scrollY:0,
-      width:_capW,height:ml.offsetHeight,
+      width:_capW,height:_capH,
       logging:false
     });
   }finally{

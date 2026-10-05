@@ -187,7 +187,7 @@ var _legendScale=1,_legendRot=0;
     function _rzMove(ev){
       var dx=ev.clientX-mx,dy=ev.clientY-my;
       var lx=(dx*ax+dy*ay)/sc,ly=(-dx*ay+dy*ax)/sc;          /* mouse en ejes locales de la leyenda */
-      if(kx)legendEl.style.width=Math.max(120,Math.min(1600,sw+kx*lx))+'px';
+      if(kx)legendEl.style.width=Math.max(120,Math.min(4000,sw+kx*lx))+'px';
       if(ky)legendEl.style.minHeight=Math.max(0,sh+ky*ly)+'px';
       _fitLegendContent();                                    /* puede ensanchar al mínimo del contenido */
       /* crecimiento REAL logrado (el alto no baja del contenido) → mover el centro */
@@ -195,11 +195,12 @@ var _legendScale=1,_legendRot=0;
       var p=_toLocalPct(c0x+gw*ax-gh*ay,c0y+gw*ay+gh*ax,true);
       legendEl.style.left=p.x+'%';legendEl.style.top=p.y+'%';
     }
-    function _rzUp(){document.removeEventListener('mousemove',_rzMove);document.removeEventListener('mouseup',_rzUp);}
+    function _rzUp(){document.removeEventListener('mousemove',_rzMove);document.removeEventListener('mouseup',_rzUp);_growSheetForLegend();}
     document.addEventListener('mousemove',_rzMove);document.addEventListener('mouseup',_rzUp);
   }
 
   legendEl.addEventListener('mousedown',function(e){
+    if(e.target.closest&&e.target.closest('.leg-orient'))return;          /* deja abrir el desplegable */
     var rzHandle=e.target.closest&&e.target.closest('.leg-resize');
     if(rzHandle){_startLegResize(e,rzHandle.dataset.rz);return;}
     var rotBtn=e.target.closest&&e.target.closest('.leg-rot');
@@ -207,7 +208,7 @@ var _legendScale=1,_legendRot=0;
     var rotBtnL=e.target.closest&&e.target.closest('.leg-rotl');
     if(rotBtnL){e.stopPropagation();_ensureLegPosPct();_legendRot=(_legendRot-90+360)%360;_applyLegTransform();return;}
     var btn=e.target.closest&&e.target.closest('.leg-sz');
-    if(btn){e.stopPropagation();_ensureLegPosPct();_legendScale=Math.min(2,Math.max(0.6,_legendScale+parseInt(btn.dataset.d)*0.1));_applyLegTransform();return;}
+    if(btn){e.stopPropagation();_ensureLegPosPct();_legendScale=Math.min(2,Math.max(0.6,_legendScale+parseInt(btn.dataset.d)*0.1));_applyLegTransform();_growSheetForLegend();return;}
     /* Arrastrar desde CUALQUIER punto del panel (no solo la barra de título):
        donde el usuario ponga la mano, desde ahí se mueve la leyenda. */
     _ensureLegPosPct();
@@ -221,9 +222,9 @@ var _legendScale=1,_legendRot=0;
     if(!_dragging)return;
     var pos=_toLocalPct(e.clientX,e.clientY,true);
     /* la leyenda puede salir del plano solo hasta el borde de la hoja (si está visible) */
-    var xmax=100+(_sheetOn?_sheetW:0),nx=pos.x-_offX,ny=pos.y-_offY;
+    var xmax=100+((_sheetOn&&_legOrient==='v')?_sheetW:0),ymax=100+((_sheetOn&&_legOrient==='h')?_sheetH:0),nx=pos.x-_offX,ny=pos.y-_offY;
     legendEl.style.left=Math.max(0,Math.min(xmax,nx))+'%';
-    legendEl.style.top=Math.max(0,Math.min(100,ny))+'%';
+    legendEl.style.top=Math.max(0,Math.min(ymax,ny))+'%';
   }
   function _legUp(){_dragging=false;document.removeEventListener('mousemove',_legMove);document.removeEventListener('mouseup',_legUp);}
 })();
@@ -237,7 +238,7 @@ function _serializeLegend(){
     left:legendEl.style.left||'',top:legendEl.style.top||'',
     width:legendEl.style.width||'',height:legendEl.style.minHeight||'',
     scale:_legendScale,rot:_legendRot,
-    sheetOn:_sheetOn,sheetW:_sheetW
+    sheetOn:_sheetOn,sheetW:_sheetW,sheetH:_sheetH,orient:_legOrient
   };
 }
 
@@ -245,42 +246,107 @@ function _serializeLegend(){
    Es una extensión del "papel": #legendSheet, hija de #markerLayer, pegada a su borde
    derecho, con ancho _sheetW (% del ancho del plano). La leyenda se arrastra sobre ella y
    el export PNG/PDF la incluye. Se guarda junto con el estado de la leyenda (por plano). */
-var _sheetOn=true,_sheetW=24;
+var _sheetOn=true,_sheetW=24,_sheetH=22,_legOrient='v';
+/* Orientación de la leyenda: 'v' vertical (ficha alta; hoja a la DERECHA del plano) u 'h'
+   horizontal (tabla ancha con una columna por sección; hoja DEBAJO del plano). */
 function _applySheet(){
   var s=document.getElementById('legendSheet');if(!s)return;
+  var h=(_legOrient==='h');
+  s.classList.toggle('bottom',h);
   s.style.display=_sheetOn?'block':'none';
-  s.style.width=_sheetW+'%';
+  if(h){s.style.width='100%';s.style.height=_sheetH+'%';}
+  else{s.style.width=_sheetW+'%';s.style.height='100%';}
   var b=document.getElementById('toggleSheet');if(b)b.textContent='Hoja: '+(_sheetOn?'sí':'no');
 }
-/* Ubica la leyenda arriba y centrada sobre la hoja (usa el tamaño real en pantalla) */
+/* Ubica la leyenda sobre la hoja (derecha-arriba si es vertical, abajo-centrada si es
+   horizontal) y ajusta la hoja a su tamaño real en pantalla. Las extensiones se miden a lo
+   largo de los ejes del PLANO (por eso solo importa _planRot: el AABB de la leyenda ya
+   incluye su propio giro). */
 function _placeLegendOnSheet(ajustar){
   if(!legendEl)return;
   var ml=document.getElementById('markerLayer'),r=ml.getBoundingClientRect(),lr=legendEl.getBoundingClientRect();
   var rotado=(_planRot===90||_planRot===270);
-  var hPx=rotado?r.width:r.height,wPx=rotado?r.height:r.width;
-  /* La hoja se ensancha lo necesario para que la leyenda quepa con margen (máx. 80%) */
-  var lw=(((_planRot+_legendRot)%180)===0)?lr.width:lr.height;
-  var need=Math.max(10,Math.min(80,Math.ceil((lw+28)/wPx*100)));
-  /* ajustar=true: la hoja queda JUSTA para la leyenda (puede angostarse); si no, solo crece */
-  if(ajustar?need!==_sheetW:need>_sheetW){_sheetW=need;_applySheet();}
-  var lh=(((_planRot+_legendRot)%180)===0)?lr.height:lr.width;
-  legendEl.style.left=(100+_sheetW/2)+'%';
-  legendEl.style.top=Math.min(90,(lh/2+14)/hPx*100)+'%';
+  var hPx=rotado?r.width:r.height,wPx=rotado?r.height:r.width;      /* plano: alto y ancho en pantalla */
+  var lw=rotado?lr.height:lr.width,lh=rotado?lr.width:lr.height;    /* leyenda: extensión en X e Y del plano */
+  if(_legOrient==='h'){
+    var needH=Math.max(8,Math.min(80,Math.ceil((lh+28)/hPx*100)));
+    if(ajustar?needH!==_sheetH:needH>_sheetH){_sheetH=needH;_applySheet();}
+    legendEl.style.left='50%';
+    legendEl.style.top=(100+_sheetH/2)+'%';
+  }else{
+    /* La hoja se ensancha lo necesario para que la leyenda quepa con margen (máx. 80%) */
+    var need=Math.max(10,Math.min(80,Math.ceil((lw+28)/wPx*100)));
+    /* ajustar=true: la hoja queda JUSTA para la leyenda (puede angostarse); si no, solo crece */
+    if(ajustar?need!==_sheetW:need>_sheetW){_sheetW=need;_applySheet();}
+    legendEl.style.left=(100+_sheetW/2)+'%';
+    legendEl.style.top=Math.min(90,(lh/2+14)/hPx*100)+'%';
+  }
   legendEl.style.bottom='auto';legendEl.style.right='auto';
   if(window.__mplLegSync)window.__mplLegSync();
+}
+/* Si la leyenda agrandada sobresale de la hoja, la hoja crece lo justo (nunca se angosta sola).
+   Solo con el plano sin girar (con giro la geometría depende de más ejes). */
+function _growSheetForLegend(){
+  if(!_sheetOn||!legendEl||_planRot!==0)return;
+  var ml=document.getElementById('markerLayer'),r=ml.getBoundingClientRect(),lr=legendEl.getBoundingClientRect();
+  if(_legOrient==='v'){
+    var nw=Math.ceil((lr.right-r.right+14)/r.width*100);
+    if(nw>_sheetW&&nw<=80){_sheetW=nw;_applySheet();}
+  }else{
+    var nh=Math.ceil((lr.bottom-r.bottom+14)/r.height*100);
+    if(nh>_sheetH&&nh<=80){_sheetH=nh;_applySheet();}
+  }
+}
+/* Cambia la orientación de la leyenda (desplegable de su barra). silent=true: solo aplica
+   clase y hoja (al restaurar un plano guardado), sin recolocar ni redimensionar. */
+function _setLegendOrient(o,silent){
+  _legOrient=(o==='h')?'h':'v';
+  if(legendEl)legendEl.classList.toggle('horiz',_legOrient==='h');
+  var sel=legendEl&&legendEl.querySelector('.leg-orient');if(sel)sel.value=_legOrient;
+  if(silent){_applySheet();if(typeof _fitLegendContent==='function')_fitLegendContent();return;}
+  var ml=document.getElementById('markerLayer');
+  _legendRot=0;_sheetOn=true;
+  legendEl.style.minHeight='';
+  if(_legOrient==='h'){
+    /* La leyenda horizontal debe CABER en el ancho del plano: se mide su ancho mínimo (el que
+       evita cortar texto) y se reduce su escala hasta que ese mínimo entre en el 98% del plano
+       (máx. escala 1). Luego su ancho se estira para ocupar justo ese 98%. */
+    legendEl.style.width='10px';
+    if(typeof _fitLegendContent==='function')_fitLegendContent();   /* se ensancha sola al mínimo */
+    var mw=legendEl.offsetWidth,zf=_zw/100;
+    _legendScale=Math.max(.3,Math.min(1,Math.floor(ml.offsetWidth*0.98/(mw*zf)*100)/100));
+    legendEl.style.width=Math.max(mw,Math.min(4000,Math.floor(ml.offsetWidth*0.98/(_legendScale*zf))))+'px';
+  }else{
+    legendEl.style.width='300px';
+  }
+  _applySheet();
+  legendEl.style.left=legendEl.style.left||'50%';legendEl.style.top=legendEl.style.top||'50%';
+  legendEl.style.bottom='auto';legendEl.style.right='auto';
+  if(typeof _fitLegendContent==='function')_fitLegendContent();
+  if(window.__mplLegSync)window.__mplLegSync();
+  _placeLegendOnSheet(true);
 }
 (function(){
   var s=document.getElementById('legendSheet'),btn=document.getElementById('toggleSheet');
   if(btn)btn.onclick=function(){
     _sheetOn=!_sheetOn;_applySheet();
     if(_sheetOn)_placeLegendOnSheet();                         /* al activarla, la leyenda se ubica sobre ella */
-    else if(parseFloat(legendEl.style.left)>100){legendEl.style.left='96%';if(window.__mplLegSync)window.__mplLegSync();}  /* sin hoja no puede quedar fuera */
+    else{                                                      /* sin hoja no puede quedar fuera del plano */
+      if(parseFloat(legendEl.style.left)>100)legendEl.style.left='96%';
+      if(parseFloat(legendEl.style.top)>100)legendEl.style.top='96%';
+      if(window.__mplLegSync)window.__mplLegSync();
+    }
   };
   if(s){
     var h=s.querySelector('.sheet-resize');
     if(h)h.addEventListener('mousedown',function(e){
       e.preventDefault();e.stopPropagation();
-      function mv(ev){var p=_toLocalPct(ev.clientX,ev.clientY,true);_sheetW=Math.max(10,Math.min(80,Math.round(p.x-100)));_applySheet();}
+      function mv(ev){
+        var p=_toLocalPct(ev.clientX,ev.clientY,true);
+        if(_legOrient==='h')_sheetH=Math.max(8,Math.min(80,Math.round(p.y-100)));
+        else _sheetW=Math.max(10,Math.min(80,Math.round(p.x-100)));
+        _applySheet();
+      }
       function up(){document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);}
       document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);
     });
@@ -301,8 +367,8 @@ function _fitLegendContent(){
   reset();
   /* Reparto del espacio sobrante: los bloques con UNA sola fila (p.ej. solo
      "Estoy aquí") quedan fijos, no se inflan; el resto absorbe el sobrante. */
-  [].forEach.call(ch.querySelectorAll(':scope>.mpl-block'),function(b){
-    if(b.previousElementSibling&&b.previousElementSibling.classList.contains('mpl-drag'))return;   /* encabezado */
+  if(_legOrient!=='h')[].forEach.call(ch.querySelectorAll('.mpl-body>.mpl-block'),function(b){
+    if(b===b.parentElement.firstElementChild)return;                    /* encabezado (título + datos) */
     b.style.flexGrow=b.querySelectorAll('.mpl-row').length>1?'':'0';
   });
   var bw=lg.offsetWidth-lg.clientWidth;                         /* borde izq + der */
@@ -342,7 +408,7 @@ function _restoreLegend(o){
   _legendScale=parseFloat(o.scale)||1;
   _legendRot=parseFloat(o.rot)||0;
   var _guardadoConHoja=(typeof o.sheetOn!=='undefined');
-  if(_guardadoConHoja){_sheetOn=!!o.sheetOn;_sheetW=parseFloat(o.sheetW)||24;_applySheet();}
+  if(_guardadoConHoja){_sheetOn=!!o.sheetOn;_sheetW=parseFloat(o.sheetW)||24;_sheetH=parseFloat(o.sheetH)||22;_setLegendOrient(o.orient,true);}
   if(o.width)legendEl.style.width=o.width;
   legendEl.style.height='';
   legendEl.style.minHeight=o.height||'';
