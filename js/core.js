@@ -175,16 +175,23 @@ var _legendScale=1,_legendRot=0;
     var mx=e.clientX,my=e.clientY;
     var sw=legendEl.offsetWidth,sh=legendEl.offsetHeight;
     var r0=legendEl.getBoundingClientRect(),c0x=r0.left+r0.width/2,c0y=r0.top+r0.height/2;
-    var rad=_legendRot*Math.PI/180,cos=Math.cos(rad),sin=Math.sin(rad);
-    var z=(typeof _zw!=='undefined'?_zw/100:1),sc=(_legendScale||1)*(z||1);
+    /* Ejes REALES de la leyenda en pantalla, medidos del DOM: incluyen el giro del
+       plano, el giro propio, el zoom y la escala (antes solo se usaba _legendRot y
+       con el plano girado el arrastre quedaba descalibrado). (ax,ay) = hacia dónde
+       apunta el ANCHO en pantalla; el ALTO es su perpendicular (-ay,ax);
+       sc = px de pantalla por px local. */
+    var he=legendEl.querySelector('.leg-rz-e').getBoundingClientRect(),hw=legendEl.querySelector('.leg-rz-w').getBoundingClientRect();
+    var vx=(he.left+he.width/2)-(hw.left+hw.width/2),vy=(he.top+he.height/2)-(hw.top+hw.height/2);
+    var vl=Math.sqrt(vx*vx+vy*vy)||1;
+    var ax=vx/vl,ay=vy/vl,sc=vl/(sw||1);
     function _rzMove(ev){
       var dx=ev.clientX-mx,dy=ev.clientY-my;
-      var lx=(dx*cos+dy*sin)/sc,ly=(-dx*sin+dy*cos)/sc;     /* mouse en ejes locales de la leyenda */
+      var lx=(dx*ax+dy*ay)/sc,ly=(-dx*ay+dy*ax)/sc;          /* mouse en ejes locales de la leyenda */
       if(kx)legendEl.style.width=Math.max(120,Math.min(1600,sw+kx*lx))+'px';
       if(ky)legendEl.style.minHeight=Math.max(0,sh+ky*ly)+'px';
       /* crecimiento REAL logrado (el alto no baja del contenido) → mover el centro */
       var gw=kx?(legendEl.offsetWidth-sw)*kx/2*sc:0,gh=ky?(legendEl.offsetHeight-sh)*ky/2*sc:0;
-      var p=_toLocalPct(c0x+gw*cos-gh*sin,c0y+gw*sin+gh*cos);
+      var p=_toLocalPct(c0x+gw*ax-gh*ay,c0y+gw*ay+gh*ax);
       legendEl.style.left=p.x+'%';legendEl.style.top=p.y+'%';
     }
     function _rzUp(){document.removeEventListener('mousemove',_rzMove);document.removeEventListener('mouseup',_rzUp);}
