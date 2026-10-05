@@ -87,7 +87,6 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 #login-overlay{position:fixed;inset:0;z-index:99999;background:rgba(10,17,26,.97);display:flex;align-items:center;justify-content:center;color:var(--txt);padding:20px}
 .login-card{background:var(--surf);border:1px solid var(--brd);border-top:3px solid var(--acc);border-radius:14px;padding:30px 32px 26px;width:min(390px,94vw);box-shadow:0 20px 60px rgba(0,0,0,.6)}
 .login-card h2{font-size:21px;font-weight:700;color:var(--acc);text-align:center;line-height:1.25;margin-bottom:22px}
-.login-sub{text-align:center;opacity:.6;font-size:12px;letter-spacing:2px;margin-top:2px;margin-bottom:22px;text-transform:uppercase}
 .login-tabs{display:flex;gap:6px;background:var(--bg);border:1px solid var(--brd);border-radius:8px;padding:4px;margin-bottom:20px}
 .login-tab{flex:1;padding:9px 0;border:none;background:transparent;color:var(--txt2);font-size:13px;font-weight:700;cursor:pointer;border-radius:6px;transition:.15s;font-family:inherit}
 .login-tab.active{background:var(--surf2);color:var(--acc)}
@@ -163,8 +162,6 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 .btn.primary:hover{background:var(--acc);color:var(--bg)}
 .btn.ghost{background:transparent;color:var(--txt2);border:1px solid var(--brd)}
 .btn.ghost:hover{background:var(--surf2);color:var(--txt)}
-.btn.load-btn{background:#1e3a5f;color:#93c5fd;border:1px solid rgba(30,64,175,.5)}
-.btn.load-btn:hover{background:#1e40af;color:#fff}
 .btn.pdf-btn{background:#4a1010;color:#fca5a5;border:1px solid rgba(127,29,29,.5)}
 .btn.pdf-btn:hover{background:#7f1d1d;color:#fff}
 
@@ -279,17 +276,8 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 .legend.horiz .mpl-block .mpl-row{border-right:1px solid #e4e4e4;border-bottom:1px solid #e4e4e4}
 .legend.horiz .mpl-block .mpl-row.lastcol{border-right:0}
 .legend:hover{box-shadow:0 0 0 2px rgba(200,168,75,.85),0 4px 16px rgba(0,0,0,.5)}
-.legend-drag{display:flex;align-items:center;gap:6px;color:var(--acc);font-size:11px;font-weight:700;padding:4px 2px 8px;border-bottom:1px solid rgba(200,168,75,.3);margin-bottom:5px}
-.legend-drag .leg-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .leg-sz{background:rgba(255,255,255,.1);border:1px solid rgba(200,168,75,.4);color:var(--acc);border-radius:3px;width:18px;height:18px;font-size:13px;line-height:1;cursor:pointer;padding:0;flex:0 0 18px;display:flex;align-items:center;justify-content:center}
 .leg-sz:hover{background:rgba(200,168,75,.25)}
-.legend .lvl-head{font-size:0.78em;font-weight:bold;margin-top:3px;margin-bottom:1px}
-.legend .row{display:flex;align-items:center;gap:5px;margin:2px 0;color:var(--txt2);line-height:1.2}
-.legend .row.leg-findable{cursor:pointer;border-radius:3px}
-.legend .row.leg-findable:hover{background:rgba(200,168,75,.15)}
-.legend .row-icon{width:32px;height:32px;flex:0 0 32px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.legend .row-icon svg{width:32px;height:32px;display:block}
-.legend .row-icon img{width:32px;height:32px;object-fit:contain;display:block;border-radius:3px}
 .dragghost{position:fixed;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);opacity:.9}
 
 /* Evac Arrows */
@@ -364,16 +352,12 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 #current-plan-name{font-size:13px;font-weight:700;color:var(--acc)}
 
 /* ═══════════════════════════════════════════
-   SAVE/LOAD MODAL (legacy, sin uso)
+   SAVE/LOAD MODAL (versiones guardadas del plano; botón "Cargar")
 ═══════════════════════════════════════════ */
 #sl-overlay{position:fixed;inset:0;z-index:20000;background:rgba(5,10,18,.8);display:none;align-items:center;justify-content:center}
-#sl-overlay.open{display:flex}
 #sl-panel{background:var(--surf);border:1px solid var(--brd);border-radius:12px;width:min(560px,94vw);max-height:85vh;display:flex;flex-direction:column;box-shadow:0 16px 48px rgba(0,0,0,.7);overflow:hidden}
 #sl-header{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--brd);flex-shrink:0}
 #sl-title{font-size:16px;font-weight:700;color:var(--acc);flex:1}
-#sl-mode-badge{font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px}
-#sl-mode-badge.riesgos{background:#1e3a5f;color:#93c5fd}
-#sl-mode-badge.evacuacion{background:#14532d;color:#86efac}
 #sl-close{background:transparent;border:none;color:var(--txt2);font-size:22px;cursor:pointer;padding:0 4px;line-height:1}
 #sl-close:hover{color:var(--txt)}
 

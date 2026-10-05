@@ -42,88 +42,6 @@ var legendEl=document.getElementById('legend'),legendOn=true;
 var ghost=null,draggingNew=null,movingMarker=null;
 var _appMode='riesgos',_currentPlan=1,_zw=100;
 
-/* ── Singular/plural español para leyenda ── */
-function _singForm(name,n){
-  if(n!==1)return name;
-  return name.replace(/^(\S+)/,function(w){
-    if(/[^aeiouáéíóuAEIOUÁÉÍÓÚ]es$/i.test(w))return w.slice(0,-2); /* MEDIDORES→MEDIDOR */
-    if(/[aeiouáéíóuAEIOUÁÉÍÓÚ]s$/i.test(w))return w.slice(0,-1);   /* FLECHAS→FLECHA */
-    if(/[^aeiouáéíóuAEIOUÁÉÍÓÚ]s$/i.test(w))return w.slice(0,-1);  /* otros en S */
-    return w;
-  });
-}
-
-/* ── Leyenda dinámica ── */
-var _LEG_ICO=32; /* tamaño íconos en leyenda px */
-function _renderLegendSummary(){
-  if(!legendEl)return;
-  var isR=_appMode==='riesgos';
-  var allM=[].slice.call(document.querySelectorAll('.marker:not(.evac-arrow)'));
-  var curr=allM.filter(function(m){return(m.dataset.mode||'riesgos')===_appMode&&String(m.dataset.plan||1)===String(_currentPlan);});
-  var title=isR?'Mapa de riesgos':'Plano de evacuación';
-  var html='<div class="legend-drag"><span class="leg-title">'+title+'</span><button class="leg-sz" data-d="-1" title="Achicar">−</button><button class="leg-sz" data-d="1" title="Agrandar">+</button><button class="leg-sz leg-rotl" title="Girar a la izquierda">↺</button><button class="leg-sz leg-rot" title="Girar a la derecha">↻</button></div>';
-
-  if(isR){
-    var byLvl={},eaCnt=0;
-    curr.forEach(function(m){var id=m.dataset.itemId||'',c=m.dataset.itemColor||'';if(id==='estoy_aqui'){eaCnt++;return;}if(!byLvl[c])byLvl[c]=[];var found=false;byLvl[c].forEach(function(g){if(g.id===id){g.n++;found=true;}});if(!found)byLvl[c].push({id:id,n:1});});
-    var anyItems=Object.keys(byLvl).some(function(c){return byLvl[c].length>0;})||eaCnt>0;
-    if(!anyItems){
-      html+='<div style="opacity:0.55;font-size:0.85em;margin-top:4px">Sin íconos en este plano</div>';
-    }else{
-      Object.keys(LEVELS).forEach(function(lk){
-        var lc=LEVELS[lk].color;
-        if(!byLvl[lc]||!byLvl[lc].length)return;
-        html+='<div class="lvl-head" style="color:'+lc+'">'+LEVELS[lk].label+'</div>';
-        byLvl[lc].forEach(function(g){
-          var nm='',ico='';
-          RISKS.forEach(function(r){if(r.id===g.id){nm=r.name;ico=iconSVG(r.g,lc,_LEG_ICO);}});
-          html+='<div class="row leg-findable" data-fid="'+g.id+'" data-fcolor="'+lc+'" title="Clic para ubicarlo en el plano"><span class="row-icon">'+ico+'</span><span>'+_singForm(nm||g.id,g.n)+(g.n>1?' '+g.n:'')+'</span></div>';
-        });
-      });
-      if(eaCnt)html+='<div class="row"><span class="row-icon">'+iconSVGEstoyAqui(_LEG_ICO)+'</span><span>Estoy aquí'+(eaCnt>1?' '+eaCnt:'')+'</span></div>';
-    }
-  }else{
-    var grps=[],idSet={},eaCnt=0;
-    curr.forEach(function(m){var id=m.dataset.itemId||'';if(id==='estoy_aqui'){eaCnt++;return;}if(!idSet[id]){idSet[id]=0;grps.push(id);}idSet[id]++;});
-    var arrows=[].slice.call(document.querySelectorAll('.evac-arrow')).filter(function(m){return String(m.dataset.plan||1)===String(_currentPlan);});
-    if(!grps.length&&!eaCnt&&!arrows.length){
-      html+='<div style="opacity:0.55;font-size:0.85em;margin-top:4px">Sin elementos en este plano</div>';
-    }else{
-      grps.forEach(function(id){
-        var nm='',ico='',n=idSet[id];
-        if(typeof EVAC_ITEMS!=='undefined')EVAC_ITEMS.forEach(function(it){if(it.id===id){nm=it.name;ico='<img src="'+it.img+'" style="width:'+_LEG_ICO+'px;height:'+_LEG_ICO+'px;object-fit:contain;border-radius:3px">';}});
-        html+='<div class="row"><span class="row-icon">'+ico+'</span><span>'+_singForm(nm||id,n)+(n>1?' '+n:'')+'</span></div>';
-      });
-      if(eaCnt)html+='<div class="row"><span class="row-icon">'+iconSVGEstoyAqui(_LEG_ICO)+'</span><span>Estoy aquí'+(eaCnt>1?' '+eaCnt:'')+'</span></div>';
-      if(arrows.length){
-        var arwIco=typeof arrowSVGThumb==='function'?arrowSVGThumb(0):'→';
-        var arwNm=arrows.length===1?'Flecha evacuación':'Flechas evacuación';
-        html+='<div class="row"><span class="row-icon" style="width:36px;flex:0 0 36px">'+arwIco+'</span><span>'+arwNm+(arrows.length>1?' '+arrows.length:'')+'</span></div>';
-      }
-    }
-  }
-  legendEl.innerHTML=html;
-
-  /* Clic en una fila de la leyenda: ubica ese ícono en el plano (scroll +
-     resaltado temporal). Sirve para encontrar íconos difíciles de distinguir
-     a simple vista (p.ej. naranja vs rojo) o tapados por otro ícono. */
-  legendEl.querySelectorAll('.leg-findable').forEach(function(row){
-    row.addEventListener('mousedown',function(e){e.stopPropagation();});
-    row.addEventListener('click',function(e){
-      e.stopPropagation();
-      var fid=row.dataset.fid,fcolor=row.dataset.fcolor,match=null;
-      document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){
-        if(match)return;
-        if(m.dataset.itemId===fid&&m.dataset.itemColor===fcolor&&(m.dataset.mode||'riesgos')===_appMode&&String(m.dataset.plan||1)===String(_currentPlan))match=m;
-      });
-      if(!match){alert('No se encontró ese ícono en el plano actual. Puede estar en otro Nivel.');return;}
-      match.scrollIntoView({behavior:'smooth',block:'center',inline:'center'});
-      match.style.outline='5px solid magenta';match.style.outlineOffset='3px';
-      setTimeout(function(){match.style.outline='';match.style.outlineOffset='';},4000);
-    });
-  });
-}
-
 /* ── Drag + resize + girar leyenda ──
    Posición anclada a su CENTRO y guardada en % del markerLayer (igual que los
    íconos), no en px desde una esquina: así no desaparece al hacer zoom (el %
@@ -889,6 +807,5 @@ function switchMode(mode){
 /* ── Toolbar ── */
 document.getElementById('clearBtn').onclick=function(){var label=_appMode==='riesgos'?'íconos de riesgos':'elementos de evacuación';if(confirm('¿Eliminar todos los '+label+' del modo actual?')){document.querySelectorAll('.marker').forEach(function(m){if((m.dataset.mode||'riesgos')===_appMode)m.remove();});_renderLegendSummary();}};
 document.getElementById('toggleLegend').onclick=function(){legendOn=!legendOn;legendEl.style.display=legendOn?'':'none';this.textContent=legendOn?'Ocultar leyenda':'Mostrar leyenda';};
-_renderLegendSummary();
 _applyZoom(); /* aplicar marginTop inicial para que el plano quede pegado arriba desde el inicio */
 

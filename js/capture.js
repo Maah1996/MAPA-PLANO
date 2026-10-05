@@ -104,13 +104,11 @@ function _mplBlock(titleHTML,rows,extraCls,nCols){
 
 /* Caja de título + metadatos. "extra" (p.ej. la fila "Estoy aquí" de la leyenda horizontal) va
    al final del recuadro, debajo de "Elaborado por". */
-function _mplHeaderHTML(opt,extra){
-  var ed=opt&&opt.editable;
+function _mplHeaderHTML(extra){
   function fld(k,def){
     var kk=_mplMK(k);                                   /* clave propia de este modo */
     var v=_mplEsc(_mplMetaVal(kk,def));
-    if(ed)return '<span class="mpl-ed" contenteditable="true" data-k="'+kk+'">'+v+'</span>';
-    return '<span>'+v+'</span>';
+    return '<span class="mpl-ed" contenteditable="true" data-k="'+kk+'">'+v+'</span>';
   }
   var _isEv=(typeof _appMode!=='undefined'&&_appMode==='evacuacion');
   var _hdTitle=_isEv?'PLANO DE EVACUACIÓN':'MAPA DE RIESGOS';
@@ -134,7 +132,7 @@ function _mplLegendHTML(opt){
   opt=opt||{};var ICO=opt.ico||34,EICO=opt.eico||38;
   var d=_mplLegendData();
   var eaRow=function(cls){return '<div class="mpl-row '+cls+'"><span class="mpl-ic">'+(typeof iconSVGEstoyAqui==='function'?iconSVGEstoyAqui(ICO):'')+'</span><span class="mpl-nm">Estoy aquí</span></div>';};
-  var out=_mplHeaderHTML(opt,d.eaCnt?eaRow('mpl-ea-h'):'');
+  var out=_mplHeaderHTML(d.eaCnt?eaRow('mpl-ea-h'):'');
   /* LEYENDA RIESGOS */
   var riskRows=[];
   d.risks.slice().sort(function(a,b){return _mplRiskRank(a.color)-_mplRiskRank(b.color);}).forEach(function(r){
@@ -163,16 +161,6 @@ function _mplLegendHTML(opt){
   return out;
 }
 
-/* Export: tarjeta de ancho fijo (no se estira a todo el plano) */
-function _buildLegendEl(cssWidth){
-  _mplEnsureCSS();
-  var W=Math.min(cssWidth||420,440);
-  var el=document.createElement('div');
-  el.style.cssText='position:absolute;left:-99999px;top:0;width:'+W+'px;box-sizing:border-box;';
-  el.innerHTML='<div class="mpl-leg" style="border:2px solid #16314f">'+_mplLegendHTML({ico:40,eico:44,editable:false})+'</div>';
-  return el;
-}
-
 /* Mantiene la leyenda escalada junto con el zoom del plano (× su propio zoom) */
 window.__mplLegSync=function(){
   var lg=document.getElementById('legend');if(!lg)return;
@@ -194,7 +182,10 @@ function _renderLegendSummary(){
   lg.style.borderRadius='6px';lg.style.padding='0';lg.style.overflow='visible';lg.style.height='auto';
   if(!lg.style.width||['230px','250px','280px'].indexOf(lg.style.width)>=0)lg.style.width='300px';
   /* Anclar en % del markerLayer para que escale con el zoom del plano */
-  var _sinPos=(!lg.style.left||lg.style.left.indexOf('%')===-1);
+  var _mlg=document.getElementById('markerLayer');
+  /* Con el plano todavía sin imagen (mide unos px) no se ubica la leyenda: quedaría en un lugar absurdo y
+     ya no se volvería a colocar. Se hace en el primer dibujo con el plano cargado. */
+  var _sinPos=(!lg.style.left||lg.style.left.indexOf('%')===-1)&&_mlg&&_mlg.offsetWidth>=80&&_mlg.offsetHeight>=80;
   if(_sinPos){
     var _enHoja=(typeof _sheetOn!=='undefined'&&_sheetOn);
     lg.style.left=_enHoja?(100+_sheetW/2)+'%':'15%';lg.style.top=_enHoja?'12%':'70%';
@@ -206,7 +197,7 @@ function _renderLegendSummary(){
     '<button class="leg-sz" data-d="1" title="Agrandar">+</button>'+
     '<button class="leg-sz leg-rotl" title="Girar a la izquierda">↺</button>'+
     '<button class="leg-sz leg-rot" title="Girar a la derecha">↻</button></div>';
-  lg.innerHTML='<div class="mpl-leg">'+header+'<div class="mpl-body">'+_mplLegendHTML({ico:32,eico:36,editable:true})+'</div></div>'+['n','s','e','w','ne','nw','se','sw'].map(function(d){return '<div class="leg-resize leg-rz leg-rz-'+d+'" data-rz="'+d+'"></div>';}).join('');
+  lg.innerHTML='<div class="mpl-leg">'+header+'<div class="mpl-body">'+_mplLegendHTML({ico:32,eico:36})+'</div></div>'+['n','s','e','w','ne','nw','se','sw'].map(function(d){return '<div class="leg-resize leg-rz leg-rz-'+d+'" data-rz="'+d+'"></div>';}).join('');
   /* Desplegable Vertical / Horizontal */
   var _so=lg.querySelector('.leg-orient');
   if(_so){
@@ -246,22 +237,8 @@ function _renderLegendSummary(){
   /* Leyenda nueva (sin posición guardada) y hoja activa: centrarla arriba sobre la hoja */
   if(_sinPos&&typeof _sheetOn!=='undefined'&&_sheetOn&&typeof _placeLegendOnSheet==='function')_placeLegendOnSheet();
 }
-async function _renderLegendCanvas(finWidth,scaleFactor){
-  var cssW=Math.round(finWidth/scaleFactor);
-  var el=_buildLegendEl(cssW);
-  document.body.appendChild(el);
-  try{
-    var c=await html2canvas(el,{backgroundColor:'#ffffff',scale:scaleFactor,useCORS:true,logging:false,width:el.offsetWidth,height:el.offsetHeight});
-    return c;
-  }finally{ el.remove(); }
-}
-
 async function _capturePlan(scaleFactor){
   scaleFactor=scaleFactor||3;
-  /* Título automático según modo y piso */
-  var _planLabel=(window._currentPlanName||'').toUpperCase();
-  var _modeLabel=_appMode==='evacuacion'?'PLANO DE EVACUACIÓN':'MAPA DE RIESGOS';
-  var title=_modeLabel+(_planLabel?(' — '+_planLabel):'');
   var ml=document.getElementById('markerLayer');
 
   /* 1. Ocultar controles UI (incluida la barra de arrastre de la leyenda) */
@@ -478,3 +455,5 @@ document.getElementById('pdfBtn').onclick=async function(){
   this.textContent='Exportar PDF';this.disabled=false;
 };
 
+/* Primer dibujo de la leyenda (core.js ya no dibuja una versión propia al cargar). */
+_renderLegendSummary();

@@ -237,20 +237,12 @@ try{renderRiskEvacPalette();}catch(e){console.warn('renderRiskEvacPalette',e);}
 /* ── Rasteriza los SVG de evacuación a PNG (html2canvas renderiza PNG de forma
    fiable; los <img> con SVG data-URI se cortan/desaparecen al exportar). Se
    guarda en item._png y lo usan iconSVGEvac() y la leyenda. ── */
-function _svgAspect(dataUri){
-  try{
-    var parts=String(dataUri).split(',');var svg=parts[0].indexOf('base64')>=0?atob(parts[1]):decodeURIComponent(parts[1]);
-    var m=svg.match(/viewBox\s*=\s*"[\d.\-]+\s+[\d.\-]+\s+([\d.]+)\s+([\d.]+)"/);
-    if(m)return parseFloat(m[1])/parseFloat(m[2]);
-  }catch(e){}
-  return 1;
-}
 function _rasterizeEvacItem(item){
   return new Promise(function(res){
     if(!item||!item.img){res();return;}
     /* Un PNG ya es seguro para html2canvas: se usa tal cual. Reescalarlo (antes se llevaba todo a
        280 px de ancho) solo lo desenfocaba. */
-    if(/\.png(\?.*)?$/i.test(item.img)||/^data:image\/png/i.test(item.img)){item._png=item.img;res();return;}
+    if(/\.png(\?.*)?$/i.test(item.img)){item._png=item.img;res();return;}
     /* SVG: se rasteriza a 720 px de ancho (antes 280) y con SU PROPORCIÓN REAL. Antes la proporción se
        leía de un data-URI incrustado; al mover los íconos a archivos (img/iconos-evac/) esa lectura fallaba,
        asumía 1:1 y aplastaba cada ícono dentro de un cuadrado de 280x280 (se veían desfigurados). */
@@ -269,7 +261,6 @@ function _rasterizeEvacItem(item){
       im.onerror=function(){res();};
       im.src=item.img;
     }
-    if(/^data:/.test(item.img)){dibujar(_svgAspect(item.img));return;}
     fetch(item.img).then(function(r){return r.text();}).then(function(txt){
       var m=txt.match(/viewBox\s*=\s*"[\d.\-]+\s+[\d.\-]+\s+([\d.]+)\s+([\d.]+)"/);
       dibujar(m?parseFloat(m[1])/parseFloat(m[2]):0);
