@@ -99,7 +99,7 @@ function _mplCols(n){return Math.min(3,Math.max(1,n));}
 function _mplBlock(titleHTML,rows,extraCls,nCols){
   var k=_mplCols(nCols!=null?nCols:rows.length);
   var body=rows.map(function(h,i){return ((i+1)%k===0)?h.replace('class="mpl-row','class="mpl-row lastcol'):h;}).join('');
-  return '<div class="mpl-block'+(extraCls?' '+extraCls:'')+'" style="--cols:'+k+'">'+titleHTML+body+'</div>';
+  return '<div class="mpl-block'+(extraCls?' '+extraCls:'')+'" data-n="'+(nCols!=null?nCols:rows.length)+'" style="--cols:'+k+'">'+titleHTML+body+'</div>';
 }
 
 /* Caja de título + metadatos. "extra" (p.ej. la fila "Estoy aquí" de la leyenda horizontal) va

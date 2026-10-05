@@ -187,8 +187,18 @@ var _legendScale=1,_legendRot=0;
     function _rzMove(ev){
       var dx=ev.clientX-mx,dy=ev.clientY-my;
       var lx=(dx*ax+dy*ay)/sc,ly=(-dx*ay+dy*ax)/sc;          /* mouse en ejes locales de la leyenda */
-      if(kx)legendEl.style.width=Math.max(120,Math.min(4000,sw+kx*lx))+'px';
-      if(ky)legendEl.style.minHeight=Math.max(0,sh+ky*ly)+'px';
+      if(_legOrient==='h'){
+        /* HORIZONTAL: cualquier borde o esquina agranda/achica la leyenda COMPLETA en proporción (ancho y
+           alto juntos, siempre en 3 columnas): letras, íconos y títulos crecen con ella. El factor sale del
+           lado agarrado (en una esquina, el mayor de los dos). */
+        var fx=kx?(sw+kx*lx)/sw:null,fy=ky?(sh+ky*ly)/sh:null;
+        var f=(fx!==null&&fy!==null)?Math.max(fx,fy):(fx!==null?fx:fy);
+        legendEl.style.minHeight='';
+        legendEl.style.width=Math.max(120,Math.min(4000,sw*Math.max(.2,f)))+'px';
+      }else{
+        if(kx)legendEl.style.width=Math.max(120,Math.min(4000,sw+kx*lx))+'px';
+        if(ky)legendEl.style.minHeight=Math.max(0,sh+ky*ly)+'px';
+      }
       _fitLegendContent();                                    /* puede ensanchar al mínimo del contenido */
       /* crecimiento REAL logrado (el alto no baja del contenido) → mover el centro */
       var gw=kx?(legendEl.offsetWidth-sw)*kx/2*sc:0,gh=ky?(legendEl.offsetHeight-sh)*ky/2*sc:0;
@@ -405,6 +415,47 @@ function _setLegendOrient(o,silent){
   }
   _applySheet();
 })();
+/* ── Ajuste del contenido de la leyenda HORIZONTAL ──
+   Aquí el ancho manda: la leyenda se estira a lo largo del plano, así que al ENSANCHARLA el
+   contenido (letras, íconos, títulos) se agranda para llenar ese ancho, con las secciones en 3
+   columnas. Si además se estira en alto, el contenido sigue creciendo y las secciones pasan a 2 o
+   1 columnas cuando 3 ya no caben. Con una caja angosta (menos que el contenido a 3 columnas) la
+   escala es 1 y las columnas bajan a 2 o 1. Nunca se corta texto. */
+function _fitHoriz(lg,ch){
+  var bw=lg.offsetWidth-lg.clientWidth;
+  var blocks=[].filter.call(ch.querySelectorAll('.mpl-body>.mpl-block'),function(b){return b!==b.parentElement.firstElementChild;});
+  function setCols(c){
+    blocks.forEach(function(b){
+      var n=parseInt(b.getAttribute('data-n')||'1',10),k=Math.max(1,Math.min(c,n));
+      b.style.setProperty('--cols',k);
+      [].forEach.call(b.querySelectorAll('.mpl-row'),function(r,i){r.classList.toggle('lastcol',(i+1)%k===0);});
+    });
+  }
+  function minW(c){setCols(c);ch.style.width='0px';return ch.scrollWidth;}
+  ch.style.height='';ch.style.flex='';ch.style.transform='';ch.style.width='';
+  if(!lg.offsetWidth)return;
+  var L={1:minW(1),2:minW(2),3:minW(3)};ch.style.width='';
+  var need=Math.ceil(L[1]+bw+6);
+  if(lg.offsetWidth<need)lg.style.width=need+'px';
+  lg.style.minHeight='';                                /* en horizontal el alto lo da el contenido */
+  var avail=lg.offsetWidth-bw,mh=0;
+  function colsFor(lw){return lw>=L[3]?3:(lw>=L[2]?2:(lw>=L[1]?1:0));}
+  function layout(s){var lw=avail/s,c=colsFor(lw);if(!c)return null;setCols(c);ch.style.width=lw+'px';return ch.offsetHeight;}
+  var keep=lg.style.minHeight;lg.style.minHeight='0px';
+  var s=Math.max(1,Math.min(4,avail/L[3]));            /* escala "natural": 3 columnas llenando el ancho */
+  var h=layout(s);
+  if(h===null){s=1;h=layout(1);}
+  lg.style.minHeight=keep;
+  var boxH=Math.max(mh,Math.ceil(h*s+bw));
+  if(s>1.001){
+    ch.style.width=(avail/s)+'px';
+    ch.style.transformOrigin='0 0';ch.style.transform='scale('+s+')';
+    ch.style.flex='none';ch.style.height=((boxH-bw)/s)+'px';
+    lg.style.height=boxH+'px';
+  }else{
+    ch.style.width='';ch.style.transform='';ch.style.height='';lg.style.height='';
+  }
+}
 /* ── Ajustar el contenido de la leyenda a su caja ──
    Cuando el usuario estira la leyenda más alto que su contenido, en vez de dejar
    espacio entre filas se AGRANDA el contenido (íconos, nombres y títulos juntos)
@@ -415,8 +466,9 @@ function _setLegendOrient(o,silent){
 function _fitLegendContent(){
   var lg=legendEl;if(!lg)return;
   var ch=lg.querySelector('.mpl-leg');if(!ch)return;
-  function reset(){ch.style.width='';ch.style.height='';ch.style.flex='';ch.style.transform='';ch.style.transformOrigin='';}
+  function reset(){ch.style.width='';ch.style.height='';ch.style.flex='';ch.style.transform='';ch.style.transformOrigin='';lg.style.height='';}
   reset();
+  if(_legOrient==='h'){_fitHoriz(lg,ch);return;}
   /* Reparto del espacio sobrante: los bloques con UNA sola fila (p.ej. solo
      "Estoy aquí") quedan fijos, no se inflan; el resto absorbe el sobrante. */
   if(_legOrient!=='h')[].forEach.call(ch.querySelectorAll('.mpl-body>.mpl-block'),function(b){
