@@ -229,6 +229,7 @@ function _renderLegendSummary(){
       setTimeout(function(){match.style.outline='';match.style.outlineOffset='';},4000);
     });
   });
+  if(typeof _fitSheetToLegend==='function')_fitSheetToLegend();     /* la leyenda cambió de alto: la hoja se ajusta */
   if(typeof _updateBannerText==='function')_updateBannerText();      /* título según el modo actual */
   /* Si el usuario estiró la leyenda, ajustar el contenido a su caja */
   if(typeof _fitLegendContent==='function')_fitLegendContent();
@@ -242,7 +243,7 @@ async function _capturePlan(scaleFactor){
   var ml=document.getElementById('markerLayer');
 
   /* 1. Ocultar controles UI (incluida la barra de arrastre de la leyenda) */
-  document.querySelectorAll('.del,.mkr-size,.arr-del,.arr-resize,.leg-resize,.sheet-resize,.afp-toggle,#arr-float-panel,.mpl-drag').forEach(function(d){d.style.display='none';});
+  document.querySelectorAll('.del,.mkr-size,.arr-del,.arr-resize,.leg-resize,.afp-toggle,#arr-float-panel,.mpl-drag').forEach(function(d){d.style.display='none';});
   /* Quitar el recuadro punteado de selección para que no salga en el PNG/PDF. */
   document.querySelectorAll('.marker.mkr-sel').forEach(function(m){m.classList.remove('mkr-sel');});
 
@@ -356,7 +357,7 @@ async function _capturePlan(scaleFactor){
     if(_legCh)_legCh.style.overflow=_legChOv;
     legEl.style.overflow=_legOverflow;legEl.style.resize=_legResize;legEl.style.visibility=_legVis;legEl.style.transform=_legTr;
     if(window.__mplLegSync)window.__mplLegSync();
-    document.querySelectorAll('.del,.mkr-size,.arr-del,.arr-resize,.leg-resize,.sheet-resize,.mpl-drag').forEach(function(d){d.style.display='';});
+    document.querySelectorAll('.del,.mkr-size,.arr-del,.arr-resize,.leg-resize,.mpl-drag').forEach(function(d){d.style.display='';});
     document.querySelectorAll('.marker').forEach(function(m){m.style.visibility=m._origVis||'visible';});
     document.querySelectorAll('.marker:not(.evac-arrow)').forEach(function(m){
       m.style.transform=m._origTr||'';

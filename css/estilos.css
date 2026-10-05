@@ -194,12 +194,6 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 #legendSheet.side-left{right:100%;top:0;border-right:1px solid #c9d1dc}
 #legendSheet.side-bottom{top:100%;left:0;border-top:1px solid #c9d1dc}
 #legendSheet.side-top{bottom:100%;left:0;border-bottom:1px solid #c9d1dc}
-#legendSheet .sheet-resize{position:absolute;pointer-events:auto;z-index:2}
-#legendSheet.side-right .sheet-resize{top:0;bottom:0;right:-6px;width:12px;cursor:ew-resize}
-#legendSheet.side-left .sheet-resize{top:0;bottom:0;left:-6px;width:12px;cursor:ew-resize}
-#legendSheet.side-bottom .sheet-resize{left:0;right:0;bottom:-6px;height:12px;cursor:ns-resize}
-#legendSheet.side-top .sheet-resize{left:0;right:0;top:-6px;height:12px;cursor:ns-resize}
-#legendSheet .sheet-resize:hover{background:rgba(200,168,75,.55)}
 #markerLayer img.plan{width:100%;display:block;user-select:none;-webkit-user-drag:none}
 
 /* Markers */
