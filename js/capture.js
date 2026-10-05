@@ -7,6 +7,20 @@
 /* Metadatos de la cabecera (editables en pantalla, persistidos en localStorage) */
 var _legMeta=(function(){try{return JSON.parse(localStorage.getItem('mpl_legmeta_v1'))||{};}catch(e){return {};}})();
 function _legMetaSave(){try{localStorage.setItem('mpl_legmeta_v1',JSON.stringify(_legMeta));}catch(e){}}
+/* Los datos del cuadro son INDEPENDIENTES por modo: Mapa de Riesgos ('ri_') y Plano de
+   Evacuación ('ev_') pueden tener otra fecha, versión, autor, título o local. */
+function _mplMK(k){return ((typeof _appMode!=='undefined'&&_appMode==='evacuacion')?'ev_':'ri_')+k;}
+/* Migración única: antes los datos eran compartidos (claves sin prefijo). Se copian a
+   los dos modos para no perder lo ya escrito; desde ahí cada modo evoluciona solo. */
+(function(){
+  if(_legMeta._mig_modos)return;
+  ['local','fecha','version','elaborado'].forEach(function(k){
+    if(_legMeta[k]!=null&&_legMeta[k]!==''){if(_legMeta['ri_'+k]==null)_legMeta['ri_'+k]=_legMeta[k];if(_legMeta['ev_'+k]==null)_legMeta['ev_'+k]=_legMeta[k];}
+  });
+  if(_legMeta.titulo_riesgos)_legMeta.ri_titulo=_legMeta.titulo_riesgos;
+  if(_legMeta.titulo_evac)_legMeta.ev_titulo=_legMeta.titulo_evac;
+  _legMeta._mig_modos=1;_legMetaSave();
+})();
 function _mplMetaVal(k,def){return (_legMeta[k]!=null&&_legMeta[k]!=='')?_legMeta[k]:(def||'');}
 function _mplEsc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
@@ -79,15 +93,16 @@ function _mplLegendData(){
 function _mplHeaderHTML(opt){
   var ed=opt&&opt.editable;
   function fld(k,def){
-    var v=_mplEsc(_mplMetaVal(k,def));
-    if(ed)return '<span class="mpl-ed" contenteditable="true" data-k="'+k+'">'+v+'</span>';
+    var kk=_mplMK(k);                                   /* clave propia de este modo */
+    var v=_mplEsc(_mplMetaVal(kk,def));
+    if(ed)return '<span class="mpl-ed" contenteditable="true" data-k="'+kk+'">'+v+'</span>';
     return '<span>'+v+'</span>';
   }
   var _isEv=(typeof _appMode!=='undefined'&&_appMode==='evacuacion');
   var _hdTitle=_isEv?'PLANO DE EVACUACIÓN':'MAPA DE RIESGOS';
   /* El título se puede reescribir; se guarda por modo (si se borra vuelve al original). */
   return '<div class="mpl-block">'+
-    '<div class="mpl-hd-title">'+fld(_isEv?'titulo_evac':'titulo_riesgos',_hdTitle)+'</div>'+
+    '<div class="mpl-hd-title">'+fld('titulo',_hdTitle)+'</div>'+
     '<div class="mpl-hd-sub">'+fld('local','')+'</div>'+
     '<table class="mpl-meta">'+
       '<tr><td class="k">Fecha</td><td class="v">'+fld('fecha','')+'</td></tr>'+
