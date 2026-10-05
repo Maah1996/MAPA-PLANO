@@ -184,6 +184,14 @@ header p{font-size:11px;color:var(--txt2);margin-top:2px}
 #markerLayer{position:relative;display:inline-block;line-height:0;width:100%}
 /* Hoja blanca a la derecha del plano para ubicar la leyenda (sale en el PNG/PDF). Es hija
    de #markerLayer y se pega a su borde derecho; su ancho es % del ancho del plano. */
+/* Barra de título (azul marino, letras blancas) arriba de la imagen, a lo ancho. Es hija de #markerLayer;
+   su rectángulo (en % del plano) lo calcula _applyBanner() para que quede arriba EN PANTALLA aunque el
+   plano esté girado, y su texto se contra-gira para verse derecho. Sale en el PNG/PDF. */
+#planTitle{position:absolute;background:#16314f;z-index:1;overflow:hidden;display:none}
+#planTitle .pt-in{position:absolute;left:50%;top:50%;display:flex;align-items:center;justify-content:center}
+#planTitle .pt-tx{outline:none;color:#fff;font-family:'Times New Roman',Georgia,serif;font-weight:bold;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;cursor:text;line-height:1.1;padding:0 .5em;border-radius:3px}
+#planTitle .pt-tx:hover{background:rgba(255,255,255,.14)}
+#planTitle .pt-tx:focus{background:rgba(255,255,255,.22)}
 #legendSheet{position:absolute;background:#fff;box-sizing:border-box;z-index:1;pointer-events:none}
 #legendSheet.side-right{left:100%;top:0;border-left:1px solid #c9d1dc}
 #legendSheet.side-left{right:100%;top:0;border-right:1px solid #c9d1dc}

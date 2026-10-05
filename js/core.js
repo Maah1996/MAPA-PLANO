@@ -248,7 +248,7 @@ function _serializeLegend(){
     left:legendEl.style.left||'',top:legendEl.style.top||'',
     width:legendEl.style.width||'',height:legendEl.style.minHeight||'',
     scale:_legendScale,rot:_legendRot,
-    sheetOn:_sheetOn,sheetW:_sheetW,sheetH:_sheetH,orient:_legOrient,sheetV:2
+    sheetOn:_sheetOn,sheetW:_sheetW,sheetH:_sheetH,orient:_legOrient,sheetV:2,titleOn:_titleOn
   };
 }
 
@@ -258,6 +258,61 @@ function _serializeLegend(){
    leyenda Vertical la hoja queda a la DERECHA de la imagen y con Horizontal DEBAJO, aunque el
    plano esté girado (la hoja se pega al lado del plano original que caiga allí) y la leyenda
    siempre queda derecha. _sheetW / _sheetH = grosor en % del ancho / alto VISIBLE del plano. */
+/* ── Barra de título (arriba de la imagen, azul marino con letras blancas) ──
+   Se define según la PANTALLA: siempre arriba, a lo ancho del plano (y de la hoja de la derecha si la
+   leyenda es Vertical). Como #markerLayer puede estar girado, el rectángulo se calcula en pantalla y se
+   convierte a % del plano con _toLocalPct; el texto se contra-gira para verse derecho. El título es el
+   MISMO de la leyenda de cada modo (Mapa de Riesgos / Plano de Evacuación) y se edita desde ambos. */
+var _titleOn=true,_bnPct=null;
+function _applyBanner(){
+  var b=document.getElementById('planTitle'),wrap=document.getElementById('zoom-wrap');if(!b)return;
+  var btn=document.getElementById('toggleTitle');if(btn)btn.textContent='Título: '+(_titleOn?'sí':'no');
+  if(!_titleOn){b.style.display='none';if(wrap)wrap.style.paddingTop='';return;}
+  if(typeof _planRot==='undefined')return;                    /* aún no se inicializó el giro (carga) */
+  var ml=document.getElementById('markerLayer');if(!ml||!ml.offsetWidth||!ml.offsetHeight)return;
+  var r=ml.getBoundingClientRect(),H=Math.max(26,Math.round(r.width*0.05));
+  var ext=(_sheetOn&&_legOrient==='v')?_sheetGeom().px:0;     /* con la hoja a la derecha, la barra la cubre también */
+  var p1=_toLocalPct(r.left,r.top-H,true),p2=_toLocalPct(r.right+ext,r.top,true);
+  _bnPct={l:Math.min(p1.x,p2.x),t:Math.min(p1.y,p2.y),w:Math.abs(p2.x-p1.x),h:Math.abs(p2.y-p1.y)};
+  b.style.display='block';
+  if(wrap)wrap.style.paddingTop=H+'px';                       /* espacio para poder ver/alcanzar la barra */
+  _sizeBanner();
+  _updateBannerText();
+}
+/* Posición/tamaño de la barra y de su texto a partir del rectángulo guardado (_bnPct). También se usa al
+   exportar, cuando el plano se re-maqueta a otro ancho. */
+function _sizeBanner(){
+  var b=document.getElementById('planTitle'),ml=document.getElementById('markerLayer');
+  if(!b||!ml||!_bnPct)return;
+  var mw=ml.offsetWidth,mh=ml.offsetHeight;
+  b.style.left=_bnPct.l+'%';b.style.top=_bnPct.t+'%';b.style.width=_bnPct.w+'%';b.style.height=_bnPct.h+'%';
+  var rot=(_planRot===90||_planRot===270),ow=_bnPct.w/100*mw,oh=_bnPct.h/100*mh;
+  var iw=rot?oh:ow,ih=rot?ow:oh;                              /* medidas en sentido de pantalla */
+  var inn=b.querySelector('.pt-in');if(!inn)return;
+  inn.style.width=iw+'px';inn.style.height=ih+'px';
+  inn.style.transform='translate(-50%,-50%) rotate('+(-(_planRot||0))+'deg)';
+  inn.style.fontSize=Math.max(10,Math.round(ih*0.52))+'px';
+}
+function _updateBannerText(){
+  var tx=document.querySelector('#planTitle .pt-tx');if(!tx||document.activeElement===tx)return;
+  var def=(_appMode==='evacuacion')?'PLANO DE EVACUACIÓN':'MAPA DE RIESGOS';
+  tx.textContent=(typeof _mplMetaVal==='function'&&typeof _mplMK==='function')?_mplMetaVal(_mplMK('titulo'),def):def;
+}
+(function(){
+  var tx=document.querySelector('#planTitle .pt-tx'),btn=document.getElementById('toggleTitle');
+  if(btn)btn.onclick=function(){_titleOn=!_titleOn;_applyBanner();};
+  if(tx){
+    tx.addEventListener('mousedown',function(e){e.stopPropagation();});
+    tx.addEventListener('input',function(){
+      if(typeof _legMeta==='undefined')return;
+      _legMeta[_mplMK('titulo')]=tx.textContent;_legMetaSave();
+      var lt=legendEl&&legendEl.querySelector('.mpl-hd-title .mpl-ed');if(lt&&lt!==document.activeElement)lt.textContent=tx.textContent;
+    });
+    tx.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();tx.blur();}e.stopPropagation();});
+    tx.addEventListener('blur',function(){_updateBannerText();});
+    tx.addEventListener('paste',function(e){e.preventDefault();var s=((e.clipboardData||window.clipboardData).getData('text')||'').replace(/\s+/g,' ');document.execCommand('insertText',false,s);});
+  }
+})();
 var _sheetOn=true,_sheetW=24,_sheetH=22,_legOrient='v';
 /* Lado del plano, en SUS propios ejes (top/right/bottom/left), que queda a la derecha (vertical)
    o abajo (horizontal) en pantalla. Giro horario del plano: arriba→derecha→abajo→izquierda. */
@@ -283,6 +338,7 @@ function _applySheet(){
   if(g.side==='left'||g.side==='right'){s.style.width=g.tx+'%';s.style.height='100%';}
   else{s.style.height=g.ty+'%';s.style.width='100%';}
   var b=document.getElementById('toggleSheet');if(b)b.textContent='Hoja: '+(_sheetOn?'sí':'no');
+  if(typeof _applyBanner==='function')_applyBanner();           /* la barra de título cubre también la hoja de la derecha */
 }
 /* Límites (en % del plano, ejes del plano) hasta donde puede llegar la leyenda: el plano + la hoja */
 function _sheetBoundsPct(){
@@ -511,6 +567,7 @@ function _restoreLegend(o){
   if(!legendEl||!o)return;
   _legendScale=parseFloat(o.scale)||1;
   _legendRot=parseFloat(o.rot)||0;
+  if(typeof o.titleOn!=='undefined')_titleOn=!!o.titleOn;
   var _guardadoConHoja=(typeof o.sheetOn!=='undefined');
   if(_guardadoConHoja){_sheetOn=!!o.sheetOn;_sheetW=parseFloat(o.sheetW)||24;_sheetH=parseFloat(o.sheetH)||22;_setLegendOrient(o.orient,true);}
   if(o.width)legendEl.style.width=o.width;

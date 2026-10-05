@@ -218,7 +218,7 @@ function _renderLegendSummary(){
   /* Campos de metadatos editables */
   lg.querySelectorAll('.mpl-ed').forEach(function(sp){
     sp.addEventListener('mousedown',function(e){e.stopPropagation();});
-    sp.addEventListener('input',function(){_legMeta[sp.dataset.k]=sp.textContent;_legMetaSave();if(typeof _fitLegendContent==='function')_fitLegendContent();});
+    sp.addEventListener('input',function(){_legMeta[sp.dataset.k]=sp.textContent;_legMetaSave();if(typeof _fitLegendContent==='function')_fitLegendContent();if(sp.dataset.k===_mplMK('titulo')&&typeof _updateBannerText==='function')_updateBannerText();});
     sp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();sp.blur();}e.stopPropagation();});
     sp.addEventListener('paste',function(e){e.preventDefault();var tx=((e.clipboardData||window.clipboardData).getData('text')||'').replace(/\s+/g,' ');document.execCommand('insertText',false,tx);});
   });
@@ -238,6 +238,7 @@ function _renderLegendSummary(){
       setTimeout(function(){match.style.outline='';match.style.outlineOffset='';},4000);
     });
   });
+  if(typeof _updateBannerText==='function')_updateBannerText();      /* título según el modo actual */
   /* Si el usuario estiró la leyenda, ajustar el contenido a su caja */
   if(typeof _fitLegendContent==='function')_fitLegendContent();
   /* Aplicar el zoom actual del plano a la leyenda */
@@ -332,18 +333,23 @@ async function _capturePlan(scaleFactor){
   /* El desplazamiento de la vista se guarda y se pone a 0 durante la captura: con scroll, el recorte
      por coordenadas (x,y) saldría corrido, porque el exportador no lo contempla. Se restaura al final. */
   var _zwSL=_zwrap?_zwrap.scrollLeft:0,_zwST=_zwrap?_zwrap.scrollTop:0;
-  if(_zwrap){_zwrap.scrollLeft=0;_zwrap.scrollTop=0;_zwrap.style.overflow='visible';}
+  var _zwPT=_zwrap?_zwrap.style.paddingTop:'';
+  if(_zwrap){_zwrap.scrollLeft=0;_zwrap.scrollTop=0;_zwrap.style.overflow='visible';_zwrap.style.paddingTop='0px';}
   /* El ancho del plano se fija en px: si el exportador usara una ventana más ancha, el 100%
      estiraría el plano y la hoja (que es % de ese ancho) quedaría desproporcionada. */
   var _plW=ml.offsetWidth;
   ml.style.width=_plW+'px';
-  /* La hoja se pega a un lado del plano (en SUS ejes; ver _sheetSidePlan): se reserva ese espacio.
-     Si cae a la izquierda o arriba, el plano se desplaza con margen para que quepa en el lienzo. */
-  var _hojaOn=(typeof _sheetOn!=='undefined'&&_sheetOn),_plH=ml.offsetHeight,_shEl=document.getElementById('legendSheet');
-  var _lado=(_hojaOn&&_shEl&&typeof _sheetSidePlan==='function')?_sheetSidePlan():null;
-  var _exL=0,_exT=0,_exR=0,_exB=0;
-  if(_lado==='right')_exR=_shEl.offsetWidth;else if(_lado==='left')_exL=_shEl.offsetWidth;
-  else if(_lado==='bottom')_exB=_shEl.offsetHeight;else if(_lado==='top')_exT=_shEl.offsetHeight;
+  /* La hoja de la leyenda y la barra de título se pegan a lados del plano (en SUS ejes): se reserva el
+     espacio de la unión de sus rectángulos. Lo que cae a la izquierda o arriba se resuelve desplazando
+     el plano con márgenes para que quepa en el lienzo. */
+  var _plH=ml.offsetHeight,_shEl=document.getElementById('legendSheet'),_bnEl=document.getElementById('planTitle');
+  if(typeof _sizeBanner==='function')_sizeBanner();          /* el plano se re-maquetó a otro ancho: re-dimensionar la barra */
+  var _els=[];
+  if(_shEl&&typeof _sheetOn!=='undefined'&&_sheetOn)_els.push(_shEl);
+  if(_bnEl&&typeof _titleOn!=='undefined'&&_titleOn&&_bnEl.style.display!=='none')_els.push(_bnEl);
+  var _mnX=0,_mnY=0,_mxX=_plW,_mxY=_plH;
+  _els.forEach(function(e){_mnX=Math.min(_mnX,e.offsetLeft);_mnY=Math.min(_mnY,e.offsetTop);_mxX=Math.max(_mxX,e.offsetLeft+e.offsetWidth);_mxY=Math.max(_mxY,e.offsetTop+e.offsetHeight);});
+  var _exL=Math.max(0,Math.round(-_mnX)),_exT=Math.max(0,Math.round(-_mnY)),_exR=Math.max(0,Math.round(_mxX-_plW)),_exB=Math.max(0,Math.round(_mxY-_plH));
   ml.style.marginLeft=_exL+'px';ml.style.marginTop=_exT+'px';
   var _capW=Math.round(_plW+_exL+_exR),_capH=Math.round(_plH+_exT+_exB);
   var _maxDim=Math.max(_capW||1000,_capH||1000);
@@ -365,8 +371,9 @@ async function _capturePlan(scaleFactor){
     planCanvas=await html2canvas(_raiz,_h2c);
   }finally{
     /* Restaurar estado original */
-    if(_zwrap){_zwrap.style.overflow=_zwOv;if(_raiz===_zwrap)_zwrap.style.background=_zwBg;}
+    if(_zwrap){_zwrap.style.overflow=_zwOv;_zwrap.style.paddingTop=_zwPT;if(_raiz===_zwrap)_zwrap.style.background=_zwBg;}
     ml.style.width=origW;ml.style.marginTop=origMT;
+    if(typeof _sizeBanner==='function')setTimeout(_sizeBanner,0);
     ml.style.transform=origTr;ml.style.marginBottom=origMB;ml.style.marginLeft=origML;
     _activeImg().style.width='100%';
     if(_legCh)_legCh.style.overflow=_legChOv;
